@@ -1,0 +1,188 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 46b6eef0-d4db-462e-843b-2f8d80824353
+inputs:
+- description: ""
+  key: saved search name
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: High Or Critical Priority Host With Malware - 15 min
+name: Splunk Fetch Saved Search Results
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 527a8094-f4fb-40fb-84f3-9387a19e701b
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 527a8094-f4fb-40fb-84f3-9387a19e701b
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 2
+    reputationcalc: 1
+    scriptarguments:
+      earliest_time:
+        simple: -1h
+      extend-context:
+        simple: sid=
+      query:
+        simple: "| rest /services/search/jobs count=0 | search isDone=1 isSavedSearch=1
+          \n| table earliestTime label sid eventCount\n| search label=\"${inputs.saved
+          search name}\"\n| sort earliestTime\n| head 1"
+      update_context:
+        simple: "false"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: SplunkPy
+      description: Searches Splunk for events.
+      id: 630ae0e6-3e42-49bb-80a1-edfdc75ad877
+      iscommand: true
+      name: Get SID
+      script: SplunkPy|||splunk-search
+      type: regular
+      version: -1
+    taskid: 630ae0e6-3e42-49bb-80a1-edfdc75ad877
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 195
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: Splunk.Results=
+      sid:
+        simple: ${sid.sid}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: SplunkPy
+      description: Returns the results of a previous Splunk search. You can use this
+        command in conjunction with the splunk-job-create command.
+      id: e1f9f7bd-d100-43cb-8a66-d2be03dbdc27
+      iscommand: true
+      name: Fetch Results
+      script: SplunkPy|||splunk-results
+      type: regular
+      version: -1
+    taskid: e1f9f7bd-d100-43cb-8a66-d2be03dbdc27
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 370
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 1
+    note: false
+    quietmode: 0
+    scriptarguments:
+      dest_ip:
+        simple: ${Splunk.Results.dest_ip}
+      host:
+        simple: ${Splunk.Results.host}
+      user:
+        simple: ${Splunk.Results.user}
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ffac8227-5ffc-43f7-89b8-93e79f1ecf91
+      iscommand: false
+      name: Playbook to perform rest of task
+      playbookId: 99788f3d-2a74-4f71-86ed-63a27a121154
+      type: playbook
+      version: -1
+    taskid: ffac8227-5ffc-43f7-89b8-93e79f1ecf91
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 550
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 595,
+        "width": 380,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
