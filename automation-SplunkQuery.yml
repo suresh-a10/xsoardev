@@ -1,0 +1,66 @@
+args:
+- name: Usecase_Name
+  required: true
+commonfields:
+  id: 4cedea39-f12d-4877-80cc-d139af99847e
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SplunkQuery
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  import json
+  import sys
+  def get_splunk_query_details(splunk_queries, usecase_name):
+
+     for query_entry in splunk_queries:
+         if query_entry.get("Usecase") == usecase_name:
+             return query_entry.get("category"), query_entry.get("subcategory"), query_entry.get("splunkquery")
+     return None, None, None
+
+
+  usecase_name = demisto.args().get('Usecase_Name')
+  if not usecase_name:
+     demisto.error("Usecase name is required")
+     sys.exit(1)
+
+  splunk_query_list_response = demisto.executeCommand('getList', {'listName': 'SplunkQuery'})
+  if not splunk_query_list_response or splunk_query_list_response[0]['Type'] == 'error':
+     demisto.error(f"Failed to retrieve list: SplunkQuery")
+     sys.exit(1)
+
+  try:
+     splunk_queries = json.loads(splunk_query_list_response[0]['Contents'])
+  except json.JSONDecodeError as e:
+     demisto.error(f"Failed to parse JSON: {str(e)}")
+     sys.exit(1)
+
+  category, subcategory, splunk_query = get_splunk_query_details(splunk_queries, usecase_name)
+
+  if not splunk_query or splunk_query.strip() == "":
+     demisto.info(f"No valid Splunk query found for Usecase: {usecase_name}, category: {category}, subcategory: {subcategory}. Using default query.")
+     splunk_query = "search index=idfc_db_jdbc | head 10"
+
+  splunk_response = demisto.executeCommand('splunk-search', {'query': splunk_query})
+  print(splunk_query)
+
+  demisto.results(splunk_response)
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
