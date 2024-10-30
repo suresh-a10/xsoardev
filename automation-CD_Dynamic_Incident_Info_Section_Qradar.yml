@@ -1,0 +1,97 @@
+commonfields:
+  id: 02509685-0aae-4086-8ec6-2b5fb82b5213
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.75921
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CD_Dynamic_Incident_Info_Section_Qradar
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  #import datetime
+  import datetime, time
+  inc_data = demisto.incidents()[0]
+  state = inc_data.get("status")
+  #linkedCount = inc_data.get("linkedCount")
+  source_brand = inc_data.get("sourceBrand")
+  custom_fields = inc_data.get("CustomFields",{})
+  incident_state = custom_fields.get("cdincidentstate")
+  incident_owner = custom_fields.get("cdincidentowner")
+  LinkedIncidents = inc_data.get("linkedIncidents")
+  linkedcount = inc_data.get("linkedCount")
+  response_sla = custom_fields.get("cdresponsesla")
+  snow_id = custom_fields.get("cdsnowincidentnumber")
+  cd_priority = custom_fields.get("cdpriority")
+  incident_id= inc_data.get("id")
+  current_time = datetime.datetime.now()
+  newtime = current_time.strftime('%Y-%m-%dT%H:%M:%S+00:00')
+  if state == 2 and incident_state != "Closed":
+      demisto.executeCommand("setIncident",{"cdincidentstate":'Closed'})
+      demisto.executeCommand("setIncident",{"cdclosedby":incident_owner})
+  elif state!=2 and incident_state == "Closed":
+      demisto.executeCommand("setIncident",{"cdclosedby":""})
+      demisto.executeCommand("setIncident",{"stopslatime":""})
+      demisto.results("Incident info ds exec")
+      if incident_owner == "":
+          demisto.executeCommand("setIncident",{"cdincidentstate":'New'})
+      else:
+          demisto.results("Setting cdincidentstate to In Progress")
+          demisto.executeCommand("setIncident",{"cdincidentstate":'In Progress'})
+      if source_brand == "QRadar v3":
+          demisto.executeCommand("setIncident",{"closeinqradar":""})
+      elif source_brand == "ServiceNow v2":
+          demisto.executeCommand("setIncident",{"closingitsm":""})
+  if response_sla["runStatus"] != "ended" and response_sla["runStatus"] != "idle" and incident_owner != "" and incident_owner is not None:
+      demisto.executeCommand("setIncident",{'cdacknowledgementtime':newtime})
+      demisto.executeCommand("setIncident",{'cdincidentinprogresstimeline':newtime})
+      demisto.executeCommand('stopTimer',{ 'timerField':'cdresponsesla' })
+
+  ##Incident reopen if SNOW ticket is reopened from Cust SNOW
+
+  #PrioritySLAMapping = {"P1":2880, "P2": 5760, "P3": 8640, "P4": 11520}
+
+  # if (((snow_id is not None) or (snow_id != "")) and (state==2)):
+  #     query = "number="+str(snow_id)
+  #     #print(query)
+  #     res = demisto.executeCommand('servicenow-query-tickets',{'query':query, "system_params":"sysparm_display_value=true", "using":"Vialto_ServiceNow v2_instance"})
+  #     content = res[0]["Contents"]["result"][0]
+  #     if (content["incident_state"] =="In Progress"):
+  #         demisto.executeCommand("reopenInvestigation", {"id":incident_id})
+  #         #demisto.executeCommand("resetTimer", {'timerField':"cdresolutionsla"})
+  #         demisto.executeCommand("setIncident",{"snowincidentresolutiontime":""})
+  #         #demisto.executeCommand('startTimer',{ 'timerField':'cdresolutionsla' })
+  #         if source_brand == "QRadar v3":
+  #             demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Customer Inputs", "snowresolutioncode":"", "snowonholdreason":"","snowresolutionnotes":"", "stopslatime":"", "cdclosedby":"","closeinqradar":""})
+  #             if int(linkedcount)>=1:
+  #                 for inc in LinkedIncidents:
+  #                     priority =  demisto.executeCommand("getIncidents", {"id":inc})[0]["Contents"]["data"][0]["CustomFields"]["cdpriority"]
+  #                     print(inc, priority)
+  #                     demisto.executeCommand("reopenInvestigation", {"id":inc})
+  #                     #demisto.executeCommand("resetTimer", {"incidentId":inc, "timerField":"cdresolutionsla"})
+  #                     demisto.executeCommand("setIncident",{"id":inc,"snowincidentresolutiontime":""})
+  #                     #demisto.executeCommand('startTimer',{"incidentId":inc,'timerField':'cdresolutionsla' })
+  #                     demisto.executeCommand("setIncident",{"id":inc,"cdincidentstate":"Pending Customer Inputs", "snowresolutioncode":"", "snowonholdreason":"","snowresolutionnotes":"", "stopslatime":"", "cdclosedby":"","closeinqradar":""})
+  #         elif source_brand == "ServiceNow v2":
+  #             demisto.executeCommand("setIncident",{"cdincidentstate":"In Progress","snowresolutioncode":"", "snowonholdreason":"","snowresolutionnotes":"","snowincidentresolutiontime":"","stopslatime":"", "cdclosedby":"","closingitsm":""})
+
+
+
+
+scripttarget: 0
+subtype: python3
+tags:
+- dynamic-section
+type: python
