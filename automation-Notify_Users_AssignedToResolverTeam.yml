@@ -1,0 +1,124 @@
+comment: This script is being used to set the individual team time stamps in order
+  to identify which team have worked on the incident.
+commonfields:
+  id: a17e6d50-7782-49e4-8fa1-d0c69cd5c427
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Notify_Users_AssignedToResolverTeam
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  from datetime import datetime, timedelta
+
+  resolve_teams = {
+    'SOC_Analyst_L2' :'assignedtosocanalystl2',
+    'SOC_Analyst_L3' :'assignedtosocanalystl3',
+    'SOC_Engineering' : 'assignedtosocengg',
+    'Resolver_Team': 'assignedtoir',
+    'IT_NetSec': 'assignedtonetsec',
+    'IT_Antivirus': 'assignedtoav',
+    'BTRG': 'assignedtobtrg',
+    'Clover_NonWindows_IDC': 'assignedtocloveridc',
+    'Clover_Nonwindows_BCC': 'assignedtocloverbcc',
+    'FM_Server_Window_BCC': 'assignedtofmbcc',
+    'Fm_Server_Window_IDC': 'assignedtofmidc',
+    'FMS': 'assignedtofms',
+    'Investigation_Team': 'assignedtoinvestigateteam',
+    'IT_Database': 'assignedtodatabase',
+    'IT_Middleware': 'assignedtomiddleware',
+    'IT_Network': 'assignedtonetwork',
+    'IT_O365': 'assignedtoo365',
+    'IT_SCCM': 'assignedtosccm',
+    'RBO Helpdesk': 'assignedtorbohelpdesk',
+    'Wips_Support_Team': 'assignedtowipssupteam',
+    'Wips_Support_Team': 'assignedtowips',
+    'AD Team':'assignedtoadteam',
+    'AutomationGroup':'assignedtoautomationgroup',
+    'Cloud_SIEM_Team':'assigntocloudsiemteam',
+    'QradarChangemanagement_Approver':'assigntoqcmapprover',
+    'DAM':'assigntodam',
+    'DAM_Support_Team':'assigntodamsupportteam',
+    'Cloud_SOC_L1':'assigntocloudsocl1',
+    'Cloud_SOC_L2':'assigntocloudsocl2',
+    'AWS':'assignedtoaws',
+    'Azure':'assignedtoazure',
+    'Proxy_Team':'assignedtoproxyteam',
+    'VA_Team':'assignedtovateam',
+    'Security_Container':'assignedtosecuritycontainer',
+    'AssignedToTip_Engineering':'assignedtotipengineering',
+    'AssignedToRequestor':'assignedtorequestor',
+    'MF_VPN':'assignedtomfvpn',
+    'MF_ADDCServer':'assignedtomfaddcserver',
+    'MF_Antivirus':'assignedtomfantivirus',
+    'MF_Apache_IIS':'assignedtomfapacheiis',
+    'MF_ATP_EDR':'assignedtomfatpedr',
+    'MF_DLP':'assignedtomfdlp',
+    'MF_EmailServers':'assignedtomfemailservers',
+    'MF_Firewall':'assignedtomffirewall',
+    'MF_IPS':'assignedtomfips',
+    'MF_MDM':'assignedtomfmdm',
+    'MF_Proxy':'assignedtomfproxy',
+    'MF_RoutersSwitchesLB':'assignedtomfroutersswitcheslb',
+    'MF_SFTP':'assignedtomfsftp',
+    'MF_WAF':'assignedtomfwaf',
+    'MF_Webservers':'assignedtomfwebservers',
+    'MF_WIFI_WIPS':'assignedtomfwifiwips',
+    'MF_Network':'assignedtomfnetwork',
+    'MF_PIM':'assignedtomfpim',
+    'MF_PODMonitoring':'assignedtomfpodmonitoring',
+    'Infosec_DAM':'assignedtoinfosecdam',
+    'IT_DAM_Team':'assignedtoitdamteam',
+    'Capital_Checker':'assignedtocapitalchecker',
+    'Capital_Network':'assignedtocapitalnetwork',
+    'Capital_System':'assignedtocapitalsystem',
+    'IT_VDI_VPN':'assignedtovdivpn'
+  }
+
+
+  now = (datetime.now()+timedelta(hours=5,minutes=30)).strftime('%B %d,%Y %I:%M %p')
+  inc = demisto.incidents()[0]
+  #old = demisto.args()['old']
+  new = demisto.args()['new']
+  role=demisto.get(demisto.incidents()[0], 'roles')[0]
+
+  if role == "SOC_Analyst_L2" or role == "SOC_Analyst_L3":
+      if demisto.get(inc, 'CustomFields.assignedtoendteam') == 'N/A':
+          if new in resolve_teams.keys():
+              demisto.executeCommand("setIncident", {'assignedtoendteam': 'N/A'})
+  else:
+      if demisto.get(inc, 'CustomFields.assignedtoendteam') == 'N/A':
+          if new in resolve_teams.keys():
+              demisto.executeCommand("setIncident", {'assignedtoendteam': now})
+              time=demisto.get(inc, 'created')
+              demisto.results(demisto.executeCommand("SOC_Analyst_Analysis_Time", {'createdtime':time}))
+
+  """if demisto.get(inc, 'CustomFields.assignedtoendteam') == 'N/A':
+      if new in resolve_teams.keys():
+          demisto.executeCommand("setIncident", {'assignedtoendteam': now})"""
+
+
+  for team, field in resolve_teams.items():
+    if demisto.get(inc, 'CustomFields.' + field) == "N/A" and new == team:
+      demisto.executeCommand("setIncident", {'incidentstatus': 'Work in Progress', field: now})
+
+  demisto.results(demisto.args()['new'])
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
