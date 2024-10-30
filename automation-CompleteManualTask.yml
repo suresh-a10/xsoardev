@@ -1,0 +1,40 @@
+commonfields:
+  id: a1c0d997-d25f-4dab-8421-7dcfb0419bcf
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.1.25933
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CompleteManualTask
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  RESPONSE = "no"
+  incId = str(demisto.incidents()[0]["id"])
+  url = f'/investigation/{incId}/workplan/tasks'
+  body = {"states": ["Waiting"], "types": ["regular", "condition", "collection"]}
+
+  res = demisto.executeCommand("demisto-api-post", {"uri": url, "body": body})[0]["Contents"]["response"]
+  if res:
+      taskId = res[0]["id"]
+      if res[0]["type"] == "condition":
+          demisto.executeCommand("taskComplete", {"id": taskId, "input": RESPONSE})
+      else:
+          demisto.executeCommand("taskComplete", {"id": taskId})
+  sys.exit(0)
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
