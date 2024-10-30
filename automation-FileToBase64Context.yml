@@ -1,0 +1,66 @@
+args:
+- description: The file entry ID.
+  name: entryId
+  required: true
+comment: |
+  Encode a file as base64 and store it in context
+commonfields:
+  id: 25b3a0e5-547a-42fe-8932-5f7969dfca15
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: FileToBase64Context
+outputs:
+- contextPath: Base64Files
+  description: List of Base64 encoded files
+  type: string
+pswd: ""
+runas: DBotWeakRole
+runonce: true
+script: |
+  # This automation will base64 encode a file and return it to context.
+  # Intended for things like Images that you want to put into the HTML body of an email
+  # Use with the CreateBase64ImageHTML automation to make the link.
+
+  import base64
+
+  def get_file_data(file_path):
+      with open(file_path, 'rb') as f:
+          data = f.read()
+
+      return base64.b64encode(data)
+
+  def main():
+      entry_id = demisto.args()['entryId']
+      res = demisto.getFilePath(entry_id)
+      if not res:
+          return_error("Entry {} not found".format(entry_id))
+      file_path = res['path']
+
+      file_base64 = get_file_data(file_path)
+
+      return {
+          'Contents': file_base64,
+          'ContentsFormat': formats['text'],
+          'EntryContext': {'Base64Files': [file_base64]}
+      }
+
+  if __name__ == "__builtin__" or __name__ == '__main__':
+      demisto.results(main())
+scripttarget: 0
+subtype: python2
+tags:
+- Utility
+type: python
