@@ -1,0 +1,75 @@
+commonfields:
+  id: d9e74416-b020-4d98-8833-79ee2bc68b3d
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.8.1.5734
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Playbook_Automation_Metric
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  # res = demisto.executeCommand("demisto-api-post", {"uri" : "/playbook/search", "body" :"{\"query\":\"\\\"Service Now Default\\\"\"}"})
+  res = demisto.executeCommand("demisto-api-post", {"uri" : "/playbook/search", "body" :"{\"query\":\"system:F\"}"})
+  plabooks_table = []
+  # demisto.results(len(res[0]['Contents']['response']['playbooks']))
+  # print(res)
+  d = demisto.get(res[0],"Contents.response.playbooks")
+
+  if isinstance(d,dict):
+      d = [d]
+  if isinstance(d,list):
+      for playbook in d:
+          auto_counter = 0
+          man_counter = 0
+          cond_counter = 0
+          subpb_counter = 0
+          tasks = demisto.get(playbook,"tasks")
+          if isinstance(tasks,dict):
+              for k,v in tasks.items():
+                  task_type = demisto.get(v,"type")
+                  isCommand = demisto.get(v,"task.isCommand")
+                  scriptId = demisto.get(v,"task.scriptId")
+                  # If inner type is not None
+                  if task_type == 'regular' and (isCommand == True or scriptId != None):
+                      auto_counter += 1
+                          # if demisto.get(v,"task.name") == "Manual review (Tune - Let Sneha know to tune this)":
+                          #     demisto.results(scriptId)
+                          #     demisto.results(demisto.get(v,"task.name"))
+                  elif task_type == 'regular' and isCommand == None:
+                      man_counter += 1
+                  elif task_type == 'condition':
+                      cond_counter += 1
+                  elif task_type == 'playbook':
+                      subpb_counter += 1
+              plabooks_table.append({"Name":playbook['name'],"Automation":auto_counter,"Manual":man_counter,"Conditional":cond_counter,"Subplaybook":subpb_counter})
+          else:
+              continue
+
+  else:
+      demisto.error("Please check query")
+
+  def sortSecond(val):
+      return val['Name']
+
+  plabooks_table.sort(key=sortSecond)
+  demisto.results({"total":len(plabooks_table), "data":plabooks_table})
+  # demisto.results( {'ContentsFormat': formats['table'], 'Type': entryTypes['note'], 'Contents': plabooks_table} )
+  # demisto.results(demisto.executeCommand("ToTable", {"data":plabooks_table,"title":"Playbook Metrics","columns":"Name,Automation,Manual,Conditional,Subplaybook"}))
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
