@@ -1,0 +1,95 @@
+args:
+- description: Playbook to search for
+  name: playbookName
+- auto: PREDEFINED
+  default: true
+  defaultValue: system:F AND hidden:F AND deprecated:F
+  description: Override query for playbook list.
+  name: query
+  predefined:
+  - "Yes"
+  - "No"
+- description: Playbook to search for
+  name: playbookid
+commonfields:
+  id: c2bd2858-03d8-4a33-8ac6-900c99d7f86f
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dependson:
+  must:
+  - '|||demisto-api-post'
+dockerimage: demisto/python3:3.10.8.39276
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: getPlaybookLists
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  # Get the list of playbooks
+  playbookName = demisto.args().get('playbookName')
+  playbookId = demisto.args().get('playbookid')
+
+  if not playbookName and not playbookId:
+      demisto.results("You need to provide either playbookName or playbookId parameters.")
+      exit(0)
+
+  payload = { 'query' : demisto.args().get('query','system:F AND hidden:F AND deprecated:F') }
+
+  res = demisto.executeCommand("demisto-api-post", {"uri":"playbook/search", "body" : json.dumps(payload)})[0]["Contents"]["response"]
+
+  if not res['playbooks']:
+      demisto.results("Playbook query did not return any results")
+      exit(0)
+
+  searchList = []
+  searchResults = []
+
+  # Generate list of playbooks
+  for item in res["playbooks"]:
+      if item['name'] == playbookName or item['id'] == playbookId:
+          searchList.append({ 'name' : item['name'], 'id' : item['id']})
+
+  if len(searchList) >= 2:
+      demisto.results(f"Found more than 1 playbook with the same name, try using the id parameter {str(searchList)}" )
+  elif len(searchList) == 1:
+      demisto.results(f"Will search for {searchList[0]['name']} with id {searchList[0]['id']}")
+      # Playbook list
+      for item in res["playbooks"]:
+          # Playbook tasks
+          for task in item['tasks']:
+              if item['tasks'][task]['type'] == 'playbook':
+                  # For cases where the step is a playbook but does not exist on the current server (Missing branch)
+                  if item['tasks'][task]['task'].get('playbookId'):
+                      if item['tasks'][task]['task']['playbookId'] == searchList[0]['id']:
+                          searchResults.append({
+                              'name' : item['name'],
+                              'id' : item['id']
+                          })
+  if searchResults:
+      ec = {}
+      md = tableToMarkdown("Occurance(s) Found At:", searchResults, ["id", 'name'])
+      demisto.results({
+          'Type': entryTypes['note'],
+          "Contents" : md,
+          'ContentsFormat': formats['json'],
+          'HumanReadable': md,
+          'ReadableContentsFormat' : formats['markdown']
+      })
+  else:
+      demisto.results("No results found")
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
