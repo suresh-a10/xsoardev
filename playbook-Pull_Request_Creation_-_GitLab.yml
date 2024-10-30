@@ -1,0 +1,1153 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 1.2.23
+    packID: ContentManagement
+    packName: XSOAR CI/CD
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: This playbook creates a pull request using GitLab integration.
+id: Pull Request Creation - GitLab
+inputs:
+- description: Pull request description template.
+  key: PullRequestTemplate
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: The name of the branch you want the changes pulled into, which must
+    be an existing branch on the current repository.
+  key: MainBranch
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: The name of the branch you want the changes pulled into, which must
+    be an existing branch on the current repository.
+  key: PackName
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: Pull Request Creation - GitLab
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6e73a904-d543-431d-8baf-f64094c7f953
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 6e73a904-d543-431d-8baf-f64094c7f953
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 50
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "38"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      branch_name:
+        complex:
+          root: inputs.MainBranch
+      search:
+        simple: main
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: GitLabv2
+      description: Get a list of repository branches from a project, alphabetically
+        sorted by name.
+      id: 9d0ae47a-be51-4532-83cd-d9f99ddb46a6
+      iscommand: true
+      name: Get main branch
+      script: GitLabv2|||gitlab-branch-list
+      type: regular
+      version: -1
+    taskid: 9d0ae47a-be51-4532-83cd-d9f99ddb46a6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 895
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      branch:
+        complex:
+          root: BranchName
+      comment:
+        complex:
+          accessor: cicdpullrequestcomment
+          root: incident
+      files:
+        simple: ${File}
+      git_integration:
+        simple: Gitlab
+      pack:
+        simple: ${inputs.PackName}
+      template:
+        complex:
+          root: inputs.PullRequestTemplate
+      user:
+        complex:
+          root: DemistoUsers
+          transformers:
+          - operator: FirstArrayElement
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This script gets content files as input from the context, commits
+        the files in the correct folder and creates the pull request text.
+      id: 90d6c4f6-6720-4f8a-86e2-11ac710d1ab5
+      iscommand: false
+      name: Commit files
+      script: CommitFiles
+      type: regular
+      version: -1
+    taskid: 90d6c4f6-6720-4f8a-86e2-11ac710d1ab5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 2060
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      description:
+        simple: ${PR_text}
+      partial_response:
+        simple: "false"
+      source_branch:
+        simple: ${inputs.MainBranch}
+      target_branch:
+        simple: ${AvailableBranch}
+      title:
+        complex:
+          accessor: cicdpullrequesttitle
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: GitLabv2
+      description: Creates a new merge request.
+      id: 3fb3e8bb-cc7e-4943-8f76-6c98f5d58b37
+      iscommand: true
+      name: Create pull request
+      script: GitLabv2|||gitlab-merge-request-create
+      type: regular
+      version: -1
+    taskid: 3fb3e8bb-cc7e-4943-8f76-6c98f5d58b37
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 2730
+        }
+      }
+  "8":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      assignee_ids:
+        simple: ${incident.cicdreviewer}
+      merge_request_id:
+        simple: ${GitLab.MergeRequest.iid}
+      partial_response:
+        simple: "false"
+      target_branch:
+        simple: ${GitLab.MergeRequest.target_branch}
+      title:
+        simple: ${inputs.PackName}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: GitLabv2
+      description: Updates an existing merge request. You can change the target branch,
+        title, or even close the merge request.
+      id: dd6e4ab9-b214-4b15-87ca-07d509b61e7d
+      iscommand: true
+      name: Request pr review
+      script: GitLabv2|||gitlab-merge-request-update
+      type: regular
+      version: -1
+    taskid: dd6e4ab9-b214-4b15-87ca-07d509b61e7d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 377.5,
+          "y": 3080
+        }
+      }
+  "9":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              simple: incident.cicdreviewer
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "36"
+      "yes":
+      - "8"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Add reviewer?
+      id: 3a40890d-fd97-4731-81d0-2e974222459e
+      iscommand: false
+      name: Add reviewer?
+      type: condition
+      version: -1
+    taskid: 3a40890d-fd97-4731-81d0-2e974222459e
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 2905
+        }
+      }
+  "18":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      branch_name:
+        complex:
+          root: ${BranchName}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: GitLabv2
+      description: Get a list of repository branches from a project, alphabetically
+        sorted by name.
+      id: 365fbc78-7833-464d-8b27-1b29d015412f
+      iscommand: true
+      name: Get branch
+      script: GitLabv2|||gitlab-branch-list
+      type: regular
+      version: -1
+    taskid: 365fbc78-7833-464d-8b27-1b29d015412f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1215
+        }
+      }
+  "19":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: GitLab.Branch.name
+          operator: isEqualString
+          right:
+            value:
+              simple: ${BranchName}
+      label: "yes"
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "48"
+      "yes":
+      - "50"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Does branch exist?
+      id: 693bcb25-ccab-43ba-8f58-8bbfbf28ef35
+      iscommand: false
+      name: Does branch exist?
+      type: condition
+      version: -1
+    taskid: 693bcb25-ccab-43ba-8f58-8bbfbf28ef35
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1390
+        }
+      }
+  "20":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${IsBranchExist}
+          operator: isEqualString
+          right:
+            value:
+              simple: "true"
+      label: branch exist
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "40"
+      branch exist:
+      - "41"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Does branch exist?
+      id: 748cd435-122d-4b64-8fbc-073ac459c23d
+      iscommand: false
+      name: Does branch exist?
+      type: condition
+      version: -1
+    taskid: 748cd435-122d-4b64-8fbc-073ac459c23d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 2235
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: BranchName
+      value:
+        complex:
+          accessor: cicdbranch
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: d0d3c442-10ea-47c3-896a-ac87465aa8f8
+      iscommand: false
+      name: Set branch name from CI/CD Branch field
+      script: Set
+      type: regular
+      version: -1
+    taskid: d0d3c442-10ea-47c3-896a-ac87465aa8f8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 720
+        }
+      }
+  "26":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              simple: incident.cicdbranch
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "27"
+      "yes":
+      - "25"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Is there a branch name in the update branch field in the incident.
+      id: bc7810b4-cfbf-4865-8846-4f471db127c6
+      iscommand: false
+      name: Is CI/CD Branch field given
+      type: condition
+      version: -1
+    taskid: bc7810b4-cfbf-4865-8846-4f471db127c6
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "27":
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "28"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      pack:
+        simple: ${inputs.PackName}
+      use_command:
+        simple: gitlab-branch-list
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        The script gets the pack name as input and suggests an available branch name, for example:
+        pack name is "MyPack" the branch name will be "MyPack".
+        If a branch with the name "MyPack" exists, the script return "MyPack_1".
+      id: 27ca3ba5-6321-4cc2-8074-f58565fdbc56
+      iscommand: false
+      name: Suggest branch name
+      script: SuggestBranchName
+      type: regular
+      version: -1
+    taskid: 27ca3ba5-6321-4cc2-8074-f58565fdbc56
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 545
+        }
+      }
+  "28":
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: BranchName
+      value:
+        complex:
+          root: AvailableBranch
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: b5f30c74-e49f-4b1c-8833-b839b0d0c2c4
+      iscommand: false
+      name: Set branch name from SuggestBranchName output
+      script: Set
+      type: regular
+      version: -1
+    taskid: b5f30c74-e49f-4b1c-8833-b839b0d0c2c4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 720
+        }
+      }
+  "29":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              simple: incident.cicdpullrequestbranch
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "26"
+      "yes":
+      - "30"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Is there a branch name in the update branch field in the incident.
+      id: 5f725051-252d-40bf-8622-fa5998683911
+      iscommand: false
+      name: Is CI/CD Pull Request Branch field given
+      type: condition
+      version: -1
+    taskid: 5f725051-252d-40bf-8622-fa5998683911
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 195
+        }
+      }
+  "30":
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: BranchName
+      value:
+        complex:
+          accessor: cicdpullrequestbranch
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 16290b8c-3711-43ff-876f-2fd79b7eea05
+      iscommand: false
+      name: Set branch name from CI/CD Pull Request Branch field
+      script: Set
+      type: regular
+      version: -1
+    taskid: 16290b8c-3711-43ff-876f-2fd79b7eea05
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 720
+        }
+      }
+  "31":
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "51"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      partial_response:
+        simple: "false"
+      search:
+        simple: ${BranchName}
+      source_branch:
+        simple: ${BranchName}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Get all merge requests for this project.
+      id: b578fa51-7316-4d8b-840e-79ca721cb0ce
+      iscommand: true
+      name: Get merge request
+      script: GitLabv2|||gitlab-merge-request-list
+      type: regular
+      version: -1
+    taskid: b578fa51-7316-4d8b-840e-79ca721cb0ce
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 2555
+        }
+      }
+  "35":
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: MessageText
+      value:
+        simple: |-
+          This pull request for the pack ${PackName} was updated by ${DemistoUsers.[0].username}:
+          https://github.com/${GitHub.PR.Head.Repo.FullName}/pull/${GitHub.PR.Number}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: a595408c-7033-414b-82ab-60cb615b3677
+      iscommand: false
+      name: Set MessageText value for update action
+      script: Set
+      type: regular
+      version: -1
+    taskid: a595408c-7033-414b-82ab-60cb615b3677
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 2945
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: MessageText
+      value:
+        simple: |-
+          New pull request was created by ${DemistoUsers.[0].username} for the pack ${PackName}:
+          https://gitlab.com/${GitLab.PR.Head.Repo.FullName}/pull/${GitLab.PR.Number}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: c6bdf395-0ea9-4a81-8b9d-7bab0f62591f
+      iscommand: false
+      name: Set MessageText for new pull request
+      script: Set
+      type: regular
+      version: -1
+    taskid: c6bdf395-0ea9-4a81-8b9d-7bab0f62591f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 3255
+        }
+      }
+  "38":
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if branch exists and create it if not
+      id: 05b1d5e1-9e95-49f8-8687-b1a651b07c5a
+      iscommand: false
+      name: Check if branch exists and create it if not
+      type: title
+      version: -1
+    taskid: 05b1d5e1-9e95-49f8-8687-b1a651b07c5a
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1070
+        }
+      }
+  "39":
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: running the script CommitFiles
+      id: 167b1554-113b-46b7-8e5e-e5345ed5b38e
+      iscommand: false
+      name: Commit the files
+      type: title
+      version: -1
+    taskid: 167b1554-113b-46b7-8e5e-e5345ed5b38e
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1915
+        }
+      }
+  "40":
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "46"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: creating pull request
+      id: 1d56e97e-7315-436e-8759-a062164c40dc
+      iscommand: false
+      name: Create new pull request
+      type: title
+      version: -1
+    taskid: 1d56e97e-7315-436e-8759-a062164c40dc
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 2410
+        }
+      }
+  "41":
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "31"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Update existing pull request
+      id: 08dde432-36ed-4ec3-8380-6a48cbb7fa66
+      iscommand: false
+      name: Update existing pull request
+      type: title
+      version: -1
+    taskid: 08dde432-36ed-4ec3-8380-6a48cbb7fa66
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 2410
+        }
+      }
+  "45":
+    continueonerrortype: ""
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      description:
+        simple: ${PR_text}
+      partial_response:
+        simple: "false"
+      source_branch:
+        simple: ${BranchName}
+      target_branch:
+        simple: ${inputs.MainBranch}
+      title:
+        complex:
+          root: PackName
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: GitLabv2
+      description: Creates a new merge request.
+      id: ca941d2b-421b-4015-8b02-34e122f950ff
+      iscommand: true
+      name: Create pull request with pack name as title
+      script: GitLabv2|||gitlab-merge-request-create
+      type: regular
+      version: -1
+    taskid: ca941d2b-421b-4015-8b02-34e122f950ff
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 2730
+        }
+      }
+  "46":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: cicdpullrequesttitle
+                root: incident
+          operator: isEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "46"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "7"
+      "yes":
+      - "45"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Is the field of the pull request title in the incident empty?
+      id: 38a637c8-40e5-41de-8a74-0ae64584ee5e
+      iscommand: false
+      name: Is Pull Request title empty?
+      type: condition
+      version: -1
+    taskid: 38a637c8-40e5-41de-8a74-0ae64584ee5e
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 2555
+        }
+      }
+  "48":
+    continueonerrortype: ""
+    id: "48"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "49"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      branch:
+        simple: ${BranchName}
+      ref:
+        simple: main
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: GitLabv2
+      description: Creates a new branch in the repository.
+      id: 8c5eb494-d36f-448a-8fef-d708de2c259f
+      iscommand: true
+      name: Create new branch Gitlab
+      script: GitLabv2|||gitlab-branch-create
+      type: regular
+      version: -1
+    taskid: 8c5eb494-d36f-448a-8fef-d708de2c259f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1565
+        }
+      }
+  "49":
+    continueonerrortype: ""
+    id: "49"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "39"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: IsBranchExist
+      value:
+        simple: "false"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 13833930-4ea6-45d5-8f7a-3c62d73d2d54
+      iscommand: false
+      name: 'Set  creating new branch '
+      script: Set
+      type: regular
+      version: -1
+    taskid: 13833930-4ea6-45d5-8f7a-3c62d73d2d54
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1740
+        }
+      }
+  "50":
+    continueonerrortype: ""
+    id: "50"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "39"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: IsBranchExist
+      value:
+        simple: "true"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: eeb1e74f-2fc0-487a-8cd3-fd8ec0585774
+      iscommand: false
+      name: 'Set  existing branch '
+      script: Set
+      type: regular
+      version: -1
+    taskid: eeb1e74f-2fc0-487a-8cd3-fd8ec0585774
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 1740
+        }
+      }
+  "51":
+    continueonerrortype: ""
+    id: "51"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "35"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      description:
+        simple: ${PR_text}
+      merge_request_id:
+        simple: ${GitLab.MergeRequest.iid}
+      partial_response:
+        simple: "false"
+      target_branch:
+        simple: ${inputs.MainBranch}
+      title:
+        simple: ${GitLab.MergeRequest.title}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Updates an existing merge request. You can change the target branch,
+        title, or even close the merge request.
+      id: 04fc84ad-5f4f-4eb1-8ffe-6bf2dc5ecba5
+      iscommand: true
+      name: merge request update
+      script: GitLabv2|||gitlab-merge-request-update
+      type: regular
+      version: -1
+    taskid: 04fc84ad-5f4f-4eb1-8ffe-6bf2dc5ecba5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 2750
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 3300,
+        "width": 1240,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
