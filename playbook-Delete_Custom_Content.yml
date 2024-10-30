@@ -1,0 +1,421 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.8.0
+    itemVersion: 1.2.23
+    packID: ContentManagement
+    packName: XSOAR CI/CD
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: This playbook deletes custom content from the system. It deletes Playbooks,
+  Scripts, Layouts, Classifiers, Mappers, Incident Types and Incident Fields.
+id: Delete Custom Content
+inputs:
+- description: If true, will not actually delete any content entities.
+  key: dry_run
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: "true"
+- description: Core REST API instance name to use.
+  key: instance_name
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: Delete Custom Content
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b91d4d6a-5343-49d1-8854-c778204ef5c6
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: b91d4d6a-5343-49d1-8854-c778204ef5c6
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      uri:
+        simple: /content/bundle
+      using:
+        simple: ${inputs.instance_name}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Download files from Core server
+      id: fab4e101-1e2b-45b0-847e-e69efca67d62
+      iscommand: true
+      name: Download custom content
+      script: '|||core-api-download'
+      type: regular
+      version: -1
+    taskid: fab4e101-1e2b-45b0-847e-e69efca67d62
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      file_entry_id:
+        simple: ${File.EntryID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Extract custom content ids from custom content bundle file and
+        exclude ids as specified.
+      id: e20d6675-4dc5-4b6b-842b-4db3257ccfeb
+      iscommand: false
+      name: GetIdsFromCustomContent
+      script: GetIdsFromCustomContent
+      type: regular
+      version: -1
+    taskid: e20d6675-4dc5-4b6b-842b-4db3257ccfeb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 545
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      dry_run:
+        simple: ${inputs.dry_run}
+      include_ids_dict:
+        simple: ${GetIdsFromCustomContent.included_ids}
+      using:
+        simple: ${inputs.instance_name}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Delete content to keep XSOAR tidy.
+      id: b376e0ed-14a7-4a90-8e29-ec279cd50067
+      iscommand: false
+      name: Delete Content
+      script: DeleteContent
+      type: regular
+      version: -1
+    taskid: b376e0ed-14a7-4a90-8e29-ec279cd50067
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 895
+        }
+      }
+  "4":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ConfigurationSetup.Deletion.status
+          operator: isEqualString
+          right:
+            value:
+              simple: Completed
+        - left:
+            iscontext: true
+            value:
+              simple: ConfigurationSetup.Deletion.status
+          operator: isEqualString
+          right:
+            value:
+              simple: Dry run, nothing really deleted.
+      label: "yes"
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      "yes":
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7c757eec-7fe1-46c4-86b0-673004f532ba
+      iscommand: false
+      name: Check Deletion Status
+      type: condition
+      version: -1
+    taskid: 7c757eec-7fe1-46c4-86b0-673004f532ba
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1070
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: ${ConfigurationSetup.Deletion.status}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 1e75bc98-ff87-4cf7-856c-b3d7f5b670c5
+      iscommand: false
+      name: Print Status
+      script: Print
+      type: regular
+      version: -1
+    taskid: 1e75bc98-ff87-4cf7-856c-b3d7f5b670c5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1245
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      message:
+        simple: |-
+          The deletion was NOT successfully completed.
+          The status is "${ConfigurationSetup.Deletion.status}"
+          The deleted ids are: ${ConfigurationSetup.Deletion.successfully_deleted}.
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints an error entry with a given message
+      id: 9b1ed2f4-0c81-4675-8f22-1bb51118e29e
+      iscommand: false
+      name: Print Deletion Error
+      script: PrintErrorEntry
+      type: regular
+      version: -1
+    taskid: 9b1ed2f4-0c81-4675-8f22-1bb51118e29e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1245
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: acfcc1bc-7423-4d74-841b-9c97c340cd1f
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: acfcc1bc-7423-4d74-841b-9c97c340cd1f
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1420
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.10/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 24047bff-051e-4673-84aa-6f61da6bc4ce
+      iscommand: false
+      name: Delete Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 24047bff-051e-4673-84aa-6f61da6bc4ce
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 195
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+      keysToKeep:
+        simple: File,GetIdsFromCustomContent.included_ids.playbook,GetIdsFromCustomContent.included_ids.script,GetIdsFromCustomContent.included_ids.layoutscontainer,GetIdsFromCustomContent.included_ids.incidenttype,GetIdsFromCustomContent.included_ids.incidentfield,GetIdsFromCustomContent.included_ids.classifier,GetIdsFromCustomContent.included_ids.mapper
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.10/Cortex-XSOAR-Administrator-Guide/Automations
+      id: eb100a21-52ca-46e6-87b7-9189ae6dd46a
+      iscommand: false
+      name: Delete From Context Entities Not Relevant
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: eb100a21-52ca-46e6-87b7-9189ae6dd46a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 720
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "4_5_yes": 0.71
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1435,
+        "width": 810,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
