@@ -1,0 +1,60 @@
+args:
+- name: Field_Name
+  required: true
+commonfields:
+  id: 25c0b21e-7214-41b1-8384-67b17913b781
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: FetchTime
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  from datetime import datetime, timedelta
+  from dateutil import tz
+
+  def get_current_ist_time():
+
+      ist_zone = tz.gettz('Asia/Kolkata')
+
+      ist_now = datetime.now(ist_zone)
+
+      return ist_now.strftime("%d-%b-%Y %I:%M:%S %p")
+
+  field_name = demisto.args().get('Field_Name', 'YourCustomField')
+  incident_id = demisto.incidents()[0]['id']
+
+  current_ist_time = get_current_ist_time()
+
+  demisto.executeCommand('setIncident', {
+      'id': incident_id,
+      'customFields': {
+          field_name: current_ist_time
+      }
+  })
+
+  demisto.results({
+      "Type": 1,
+      "Contents":{
+          "ISTTime": current_ist_time
+      }
+
+  })
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
