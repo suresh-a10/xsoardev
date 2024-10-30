@@ -1,0 +1,93 @@
+comment: "Purpose of script: \nExample preprocessing script to dedup on incident name
+  and link & close. Create a new incident to replace the incoming incident. (Necessary
+  because otherwise it is impossible to get the incident ID of the incoming incident
+  at the time the preprocessing script is running.) If dup found, update the severity
+  of the new incident to match the severity of the original, link the new incident
+  to the original, and close the new incident.\n\nWARNING - Ensure the pre-process
+  rule is set to NOT run on the incidents created by this preprocessing script. E.g.,
+  create custom boolean field 'Created by PP Script' that is set to False for incidents
+  not created by this script, then filter the pre-process on createdbyppscript is
+  False. Otherwise you can get into an infinite loop (until timeout) of new incident
+  creations and crash your server."
+commonfields:
+  id: 1581fc81-070c-49c5-834f-b4bae4bfc520
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.5.31928
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: UpdateSeverityLinkAndClosePreProcessingExample
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2
+
+  incoming_incident = demisto.incident()
+  # Create a new incident in place of the incoming incident
+  create_res = demisto.executeCommand("createNewIncident", {
+      "name": incoming_incident.get("name"),
+      "type": incoming_incident.get("type"),
+      "createdbyppscript": True
+      # etc
+  })
+  if is_error(create_res):
+      log_msg = "ERROR failed to create new incident"
+      create_inc_bool = True
+  else:
+      new_incident_id = create_res[0].get('EntryContext').get('CreatedIncidentID')
+      log_msg = f"Created new incident with ID {new_incident_id}"
+      create_inc_bool = False
+
+      # PLACEHOLDER dedup logic
+      # (just dedups on name for demo purposes)
+      get_res = demisto.executeCommand('getIncidents', {
+          'query': f'-id:{new_incident_id} and name:{incoming_incident.get("name")}',
+          'sort': 'created.desc'  # sort by Created field, descending
+      })
+      orig_dup_incident = get_res[0].get('Contents').get('data')
+
+      if orig_dup_incident:
+          # DUP FOUND
+          orig_dup_incident = orig_dup_incident[0]
+          orig_dup_inc_id = orig_dup_incident.get('id')
+
+          # Update severity of new incident to match severity of original
+          set_res = demisto.executeCommand('setIncident', {
+              'id': new_incident_id,
+              'severity': orig_dup_incident.get("severity")
+          })
+          if is_error(set_res):
+              demisto.debug(f"ERROR setting severity of incident #{new_incident_id}")
+          # Link new incident to the original
+          link_res = demisto.executeCommand("linkIncidents", {
+              "linkedIncidentIDs": f"{new_incident_id},{orig_dup_inc_id}",
+              "incidentId": orig_dup_inc_id
+          })
+          if is_error(link_res):
+              demisto.debug(f"ERROR linking incidents #{new_incident_id} and #{orig_dup_inc_id}")
+          # Close new incident
+          close_res = demisto.executeCommand("closeInvestigation", {
+              "id": new_incident_id
+          })
+          if is_error(close_res):
+              demisto.debug(f"ERROR closing incident #{new_incident_id}")
+
+  demisto.debug(log_msg)
+  # whether to create incoming incident or not
+  return_results(create_inc_bool)
+scripttarget: 0
+subtype: python3
+tags:
+- preProcessing
+type: python
