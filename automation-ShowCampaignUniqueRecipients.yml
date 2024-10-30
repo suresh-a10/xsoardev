@@ -1,0 +1,59 @@
+comment: Displays the number of unique recipients of an email campaign.
+commonfields:
+  id: ShowCampaignUniqueRecipients
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 3.4.7
+    packID: Campaign
+    packName: Phishing Campaign
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.86272
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ShowCampaignUniqueRecipients
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('ShowCampaignUniqueRecipients', 'start', __line__())
+  ### pack version: 3.4.7
+
+
+
+  # Variable initialization:
+  html = ""
+  campaign_incidents: list[dict]
+
+  try:
+      incident_id = demisto.incidents()[0].get('id', {})
+      context = demisto.executeCommand("getContext", {'id': incident_id})
+      campaign_incidents = demisto.get(context[0], "Contents.context.EmailCampaign.incidents")
+      unique_recipients = set(recipient for incident in campaign_incidents for recipient in incident.get(
+          "recipients", []) if isinstance(incident.get("recipients"), list))
+      html = f"<div style='font-size:17px; text-align:center; padding-top: 20px;'> Unique Recipients " \
+             f"<div style='font-size:32px;'> <div> {len(unique_recipients)} </div></div>"
+  except Exception:
+      html = "<div style='text-align:center; padding-top: 20px;'> <div> No recipients </div>"
+
+  # Return the data to the layout:
+  demisto.results({
+      'ContentsFormat': EntryFormat.HTML,
+      'Type': EntryType.NOTE,
+      'Contents': html
+  })
+
+  register_module_line('ShowCampaignUniqueRecipients', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- dynamic-section
+type: python
