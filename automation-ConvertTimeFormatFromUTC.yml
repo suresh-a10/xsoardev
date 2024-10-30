@@ -1,0 +1,92 @@
+args:
+- description: Time in UTC Format
+  name: value
+  required: true
+- description: format of the time to convert(Ex:"%Y-%m-%d%H:%M:%S")
+  name: format
+  required: true
+- description: timeoffset to be converted(i.e. +2:30,+5:30)
+  name: utcoffset
+  type: unknown
+- description: Timezone to be converted (i.e 'Asia/Kolkata','Pacific/Auckland','Australia/Adelaide')
+  name: timezone
+commonfields:
+  id: 3eec4b4b-8137-4a62-8f0c-a1d361aa735b
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.51548
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ConvertTimeFormatFromUTC
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+  from datetime import datetime,timedelta
+  from dateutil import parser
+  import pytz
+
+
+
+
+
+  def convert_utctime_with_utc_offset(timestamp,time_format,utc_offset):
+
+      timedelta_data=utc_offset.strip('+').split(':')
+      date_time=(timestamp+timedelta(hours=int(timedelta_data[0]),minutes=int(timedelta_data[1]))).strftime(time_format)
+      return date_time
+
+  def convert_utctime_with_timezone(timestamp,time_format,timezone):
+
+      required_timezone = pytz.timezone(timezone)
+
+      timedelta_data = (timestamp.astimezone(required_timezone)).utcoffset()
+      timedelta_data=(str(timedelta_data)).split(':')
+      date_time = (timestamp+timedelta(hours=int(timedelta_data[0]),minutes=int(timedelta_data[1]))).strftime(time_format)
+      return date_time
+
+
+  def main():
+
+      '''Input Arguments '''
+      utc_time = demisto.args().get('value')
+
+      time_format =demisto.args().get('format')
+      utc_offset =demisto.args().get('utcoffset')
+      timezone = demisto.args().get('timezone')
+
+      timestamp = parser.parse(utc_time)
+      if utc_offset is not None:
+          return_results(convert_utctime_with_utc_offset(timestamp,time_format,utc_offset))
+      elif timezone:
+          return_results(convert_utctime_with_timezone(timestamp,time_format,timezone))
+      else:
+          print("Provide utcoffset or timezone to convert")
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags:
+- transformer
+- date
+type: python
