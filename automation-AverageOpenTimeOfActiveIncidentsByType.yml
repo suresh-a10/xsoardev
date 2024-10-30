@@ -1,0 +1,73 @@
+args:
+- name: from
+- name: to
+commonfields:
+  id: 79afb419-72cf-4484-8879-3494d5302eb2
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.6.22912
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: AverageOpenTimeOfActiveIncidentsByType
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  import json
+  import math
+  from datetime import datetime
+  now = datetime.today().isoformat()
+
+  #Provide the incident Type
+  incType = "Email Communication_copy"
+
+  incidents = demisto.executeCommand('getIncidents', {
+      'query': 'status:Active and type:'+incType,
+      "fromdate": demisto.args()["from"],
+      "todate": demisto.args()["to"]
+  })
+
+  #incidentsCount = incidents[0]['Contents']['total']
+  demisto.results(incidents)
+
+
+
+  if isError(incidents) or incidentsCount == 0:
+      demisto.results(0)
+      sys.exit()
+  else:
+      incidents = incidents[0]['Contents']['data']
+
+
+  total = 0
+  for inc in incidents:
+      incidentsince = inc['created']
+      inctime = incidentsince.split(".")
+      d1 = datetime.strptime(inctime[0], "%Y-%m-%dT%H:%M:%S")
+      ctime = now.split(".")
+      d2 = datetime.strptime(ctime[0], '%Y-%m-%dT%H:%M:%S')
+
+      timedelta = ((d2 - d1).total_seconds())
+      total += timedelta
+
+  #changing it to hours
+  total = total/3600
+
+  average = math.ceil(total/incidentsCount)
+  demisto.results(average)
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
