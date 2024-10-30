@@ -1,0 +1,2641 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 1.0.6
+    packID: ""
+    packName: XSOAR Content Update Notifications
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: "This playbook checks for any available content updates for selected
+  installed content packs and notifies users via e-mail or Slack. \nIt also contains
+  an auto-update flow that lets users decide via playbook inputs or communication
+  tasks if they want to trigger an auto-update process to install all updates that
+  were found.\nThis playbook can be used as a Cortex XSOAR job to help users track
+  marketplace pack updates and install them regularly."
+id: c2135b3e-48e4-4742-81c8-fa595d6fedd1
+inputs:
+- description: 'Provides semi-colon delimited e-mail addresses for the new content
+    notifications. Note: You must have an installed and configured integration that
+    supports the send-mail command.'
+  key: notificationemail
+  playbookInputQuery: null
+  required: true
+  value:
+    complex:
+      accessor: contentnotificationemail
+      root: incident
+- description: 'Provides a Slack username for the new content notifications. Note:
+    You must have an installed and configured Slack integration.'
+  key: slackuser
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: contentnotificationslackusername
+      root: incident
+- description: 'Provides a Slack channel for the new content notifications. Note:
+    You must have an installed and configured Slack integration. Also, make sure the
+    Cortex XSOAR application has access to this channel.'
+  key: slackchannel
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: contentnotificationslackchannel
+      root: incident
+- description: 'Provides a Slack channel ID for the new content notifications. Note:
+    You must have an installed and configured Slack integration.'
+  key: slackchannelid
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: contentnotificationslackchannelid
+      root: incident
+- description: A CSV of packs to monitor.
+  key: packs
+  playbookInputQuery: null
+  required: true
+  value:
+    complex:
+      accessor: contentpackselection
+      root: incident
+      transformers:
+      - args:
+          applyIfEmpty: {}
+          defaultValue:
+            value:
+              simple: All
+        operator: SetIfEmpty
+      - args:
+          delimiter:
+            value:
+              simple: ','
+        operator: split
+- description: |-
+    Establishes whether to automatically update the content packs if there are available updates or wait for an analyst's approval or the manual update process.
+    Specify 'Yes' for auto-update or 'No' for manual update.
+  key: auto_update
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: contentupdatesautoinstall
+      root: incident
+- description: Defines which instance of a configured Demisto API to use for checking
+    updates against.
+  key: demisto_rest_api_name
+  playbookInputQuery: null
+  required: true
+  value:
+    complex:
+      accessor: demistorestapiname
+      root: incident
+name: Content Update Manager_Custom
+outputs: []
+sourceplaybookid: Content Update Manager
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "68"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7802044e-f210-4f26-8851-18dbbf249728
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 7802044e-f210-4f26-8851-18dbbf249728
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 827.5,
+          "y": -190
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: ContentPreData=response(val.updateAvailable==true)
+      uri:
+        simple: /contentpacks/installed-expired
+      using:
+        complex:
+          root: inputs.demisto_rest_api_name
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sends an HTTP GET request to check for updates.
+      id: cde597cd-b932-47e5-83f0-0cb4394e81c1
+      iscommand: true
+      name: Check for updates
+      script: '|||demisto-api-get'
+      type: regular
+      version: -1
+    taskid: cde597cd-b932-47e5-83f0-0cb4394e81c1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 827.5,
+          "y": 310
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeNotes:
+        simple: ${incident.closeNotes}
+      closeReason:
+        simple: ${incident.closeReason}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Close the investigation.
+      id: bdd0fccb-5ea8-46c0-861a-472156f6ab29
+      iscommand: true
+      name: Close investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: bdd0fccb-5ea8-46c0-861a-472156f6ab29
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 460,
+          "y": 4690
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "59"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e2e2e3b6-6309-4efb-8a2e-458b490c522a
+      iscommand: false
+      name: Process Notifications
+      type: title
+      version: -1
+    taskid: e2e2e3b6-6309-4efb-8a2e-458b490c522a
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 420,
+          "y": 1525
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a0b29e26-cf72-41fd-8083-7dae317a64b6
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: a0b29e26-cf72-41fd-8083-7dae317a64b6
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 460,
+          "y": 4875
+        }
+      }
+  "10":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.commands.name
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: send-mail
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isNotEmpty
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.notificationemail
+          operator: isNotEmpty
+      label: Send Emails
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "43"
+      Send Emails:
+      - "46"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if e-mail addresses are provided in the inputs and whether
+        any "send-mail" compatible integrations are enabled.
+      id: efc29237-46fa-4148-8486-a302e6a6df37
+      iscommand: false
+      name: Are there e-mail addresses?
+      type: condition
+      version: -1
+    taskid: efc29237-46fa-4148-8486-a302e6a6df37
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 700,
+          "y": 1970
+        }
+      }
+  "12":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: containsString
+                    right:
+                      value:
+                        simple: Slack
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isNotEmpty
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.slackchannel
+          operator: isNotEmpty
+      label: Send Slack Channel
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "43"
+      Send Slack Channel:
+      - "18"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if a Slack channel is provided in the inputs and whether
+        any Slack integrations are configured.
+      id: 7fe3a8f0-1de8-4bdb-8c49-75b3c7973031
+      iscommand: false
+      name: Are there Slack channels?
+      type: condition
+      version: -1
+    taskid: 7fe3a8f0-1de8-4bdb-8c49-75b3c7973031
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1157.5,
+          "y": 1970
+        }
+      }
+  "13":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: containsString
+                    right:
+                      value:
+                        simple: Slack
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isNotEmpty
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.slackuser
+          operator: isNotEmpty
+      label: Send Slack User
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "43"
+      Send Slack User:
+      - "45"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if a Slack username is provided in the inputs and whether
+        any Slack integrations are configured.
+      id: 0847bde0-cd7a-4e82-8f8d-388184f55307
+      iscommand: false
+      name: Are there Slack users?
+      type: condition
+      version: -1
+    taskid: 0847bde0-cd7a-4e82-8f8d-388184f55307
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 1970
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeNotes:
+        simple: There are no available updates.
+      closeReason:
+        simple: Resolved
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Sets closing reason and notes for the investigation.
+      id: 27ffac27-60da-4493-8220-87b5a4fab3e8
+      iscommand: true
+      name: Set closing information - no updates
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 27ffac27-60da-4493-8220-87b5a4fab3e8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2010,
+          "y": 4370
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d8f30243-b1aa-47ee-8b10-0d99f3535b7f
+      iscommand: false
+      name: Close Investigation
+      type: title
+      version: -1
+    taskid: d8f30243-b1aa-47ee-8b10-0d99f3535b7f
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 460,
+          "y": 4545
+        }
+      }
+  "18":
+    continueonerror: true
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Would you like XSOAR to perform automatic update for the found content
+            packs?
+        options: []
+        optionsarg:
+        - simple: "No"
+        - simple: "Yes"
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: New content updates available for XSOAR
+      totalanswers: 0
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        complex:
+          root: ContentData
+          transformers:
+          - args:
+              field:
+                value:
+                  simple: name
+            operator: getField
+          - args:
+              prefix:
+                value:
+                  simple: '*- '
+              suffix:
+                value:
+                  simple: '*'
+            operator: concat
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+          - args:
+              prefix:
+                value:
+                  simple: |+
+                    There are content updates available for XSOAR:
+
+              suffix:
+                value:
+                  simple: |2
+
+                    View them here:
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                iscontext: true
+                value:
+                  simple: ServerURL.URL
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                value:
+                  simple: |
+                    /#/market/installed
+            operator: concat
+          - args:
+              prefix:
+                value:
+                  simple: |2+
+
+              suffix:
+                value:
+                  simple: |
+                    Please answer the survey below if you wish for XSOAR to perform an auto-update process on the packs that were found:
+            operator: concat
+      cc: null
+      format: ""
+      methods:
+      - SlackV2
+      - SlackV3
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: false
+        retriescount: 2
+        retriesinterval: 360
+      to:
+        complex:
+          root: inputs.slackchannel
+    nexttasks:
+      '#none#':
+      - "43"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      channel:
+        complex:
+          accessor: contentnotificationslackchannel
+          root: incident
+      ignoreAddURL:
+        simple: "true"
+      message:
+        complex:
+          root: ContentData
+          transformers:
+          - args:
+              field:
+                value:
+                  simple: name
+            operator: getField
+          - args:
+              prefix:
+                value:
+                  simple: '*- '
+              suffix:
+                value:
+                  simple: '*'
+            operator: concat
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+          - args:
+              prefix:
+                value:
+                  simple: |+
+                    There are content updates available for XSOAR:
+
+              suffix:
+                value:
+                  simple: |2
+
+                    View them here:
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                iscontext: true
+                value:
+                  simple: ServerURL.URL
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                value:
+                  simple: /#/market/installed
+            operator: concat
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sends a Slack message to a user, group, or channel.
+      id: d4f7ae15-20b9-4410-8c09-3143c30261a9
+      iscommand: false
+      name: Send Slack notification and question to channel
+      type: collection
+      version: -1
+    taskid: d4f7ae15-20b9-4410-8c09-3143c30261a9
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1157.5,
+          "y": 2170
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeNotes:
+        simple: The "Content Update Manager" has finished its run.
+      closeReason:
+        simple: Resolved
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Set closing reason and notes for the investigation.
+      id: 853fb38e-5ed5-48b0-88c2-7bffc4867680
+      iscommand: true
+      name: Set closing information - finished update
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 853fb38e-5ed5-48b0-88c2-7bffc4867680
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 460,
+          "y": 4380
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Get the Server URL.
+      id: 11dd1e51-719a-4e3c-80a6-2ccb54d0f15d
+      iscommand: false
+      name: Get server URL
+      script: GetServerURL
+      type: regular
+      version: -1
+    taskid: 11dd1e51-719a-4e3c-80a6-2ccb54d0f15d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 827.5,
+          "y": 135
+        }
+      }
+  "23":
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 720
+      wait: 120
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This playbook checks for content updates.
+      id: 8b3cc0bf-0701-4694-8058-c3f339a4cf3e
+      iscommand: false
+      name: Check For Content Installation
+      playbookId: Check For Content Installation
+      type: playbook
+      version: -1
+    taskid: 8b3cc0bf-0701-4694-8058-c3f339a4cf3e
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 420,
+          "y": 3030
+        }
+      }
+  "24":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: ContentData
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "38"
+      "yes":
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if relevant updates are available. It includes all updates
+        if the user selects monitoring "All" packs.
+      id: 56cb663d-7724-448b-8301-020e37fd3395
+      iscommand: false
+      name: Are there relevant updates?
+      type: condition
+      version: -1
+    taskid: 56cb663d-7724-448b-8301-020e37fd3395
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 120,
+          "y": 1350
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeNotes:
+        complex:
+          accessor: contentupdatemanagerpackselection
+          root: incident
+          transformers:
+          - args:
+              separator:
+                value:
+                  simple: ', '
+            operator: join
+          - args:
+              prefix:
+                value:
+                  simple: Updates available but they do not match the user filter
+                    (
+              suffix:
+                value:
+                  simple: )
+            operator: concat
+      closeReason:
+        simple: Resolved
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Sets closing reason and notes for the investigation.
+      id: e8c12c81-8133-4015-8f7a-fbb01cf3449b
+      iscommand: true
+      name: Set closing information - no updates
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: e8c12c81-8133-4015-8f7a-fbb01cf3449b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -390,
+          "y": 4370
+        }
+      }
+  "26":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: PacksUpdated
+          operator: isTrue
+      label: "yes"
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "50"
+      "yes":
+      - "72"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether the packs were updated after either the sub-playbook
+        timed out or there are no more updates to apply. It results in the "yes" branch
+        if the installed updates match those selected in the content packs to be monitored.
+      id: 0e89f9a5-0bff-44ba-8a79-e17da3c5de98
+      iscommand: false
+      name: Were the packs updated?
+      type: condition
+      version: -1
+    taskid: 0e89f9a5-0bff-44ba-8a79-e17da3c5de98
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 420,
+          "y": 3200
+        }
+      }
+  "29":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      channel:
+        complex:
+          root: inputs.slackchannel
+      channel_id:
+        complex:
+          root: inputs.slackchannelid
+      ignoreAddURL:
+        simple: "true"
+      message:
+        complex:
+          root: ContentDataPreCheck
+          transformers:
+          - operator: Stringify
+          - args:
+              prefix:
+                value:
+                  simple: |+
+                    The "Content Update Manager" playbook  has finished updating the packs!
+
+                    The following packs were not updated successfully:
+
+              suffix: {}
+            operator: concat
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sends a Slack message to a user, group, or channel.
+      id: ae877a73-fbd6-42b7-8fe8-8c15f28b05eb
+      iscommand: true
+      name: Send Slack notification
+      script: '|||send-notification'
+      type: regular
+      version: -1
+    taskid: ae877a73-fbd6-42b7-8fe8-8c15f28b05eb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -60,
+          "y": 3860
+        }
+      }
+  "30":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: ContentDataPreCheck
+          operator: isNotEqualString
+          right:
+            value:
+              simple: None.
+      label: "yes"
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "19"
+      "yes":
+      - "73"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Were there any failed updates?
+      id: 6517c10a-f4a7-4f3b-8f75-5610616553b4
+      iscommand: false
+      name: Were there any failed updates?
+      type: condition
+      version: -1
+    taskid: 6517c10a-f4a7-4f3b-8f75-5610616553b4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 460,
+          "y": 4040
+        }
+      }
+  "31":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.packs
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: all
+        - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.packs
+          operator: isEmpty
+      label: "No"
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "35"
+      "No":
+      - "33"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether the user provided a specific content pack update
+        filter other than "All".
+      id: 7c1f3fe5-001e-401a-8b42-0bb3399e2745
+      iscommand: false
+      name: Is there a user filter?
+      type: condition
+      version: -1
+    taskid: 7c1f3fe5-001e-401a-8b42-0bb3399e2745
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -90,
+          "y": 610
+        }
+      }
+  "33":
+    continueonerror: true
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Content Updates Available
+      output:
+        complex:
+          root: ContentData
+          transformers:
+          - operator: Stringify
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+          - args:
+              prefix:
+                value:
+                  simple: '['
+              suffix:
+                value:
+                  simple: ']'
+            operator: concat
+          - operator: 6b3c5e6d-4da6-44bc-8c19-f3608b077e72
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "false"
+      key:
+        simple: ContentData
+      value:
+        complex:
+          root: ContentPreData
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Add all of the existing updates to a check list.
+      id: 5843842a-8757-4e5e-8906-b1cef7105da7
+      iscommand: false
+      name: Add all updates to check list
+      script: Set
+      type: regular
+      version: -1
+    taskid: 5843842a-8757-4e5e-8906-b1cef7105da7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 790
+        }
+      }
+  "35":
+    continueonerror: true
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Content Updates Available
+      output:
+        complex:
+          root: ContentData
+          transformers:
+          - operator: Stringify
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+          - args:
+              prefix:
+                value:
+                  simple: '['
+              suffix:
+                value:
+                  simple: ']'
+            operator: concat
+          - operator: 6b3c5e6d-4da6-44bc-8c19-f3608b077e72
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: ContentData
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ContentPreData.name
+              operator: in
+              right:
+                iscontext: true
+                value:
+                  simple: inputs.packs
+          root: ContentPreData
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 670c2c33-ccfc-42dc-86f8-543d5f97cd0b
+      iscommand: false
+      name: Add specific updates to check list
+      script: Set
+      type: regular
+      version: -1
+    taskid: 670c2c33-ccfc-42dc-86f8-543d5f97cd0b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -300,
+          "y": 800
+        }
+      }
+  "36":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ContentPreData
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "37"
+      "yes":
+      - "74"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if there are ANY available updates.
+      id: 2b7a81f7-38d9-4817-8942-2dfaa94b4c34
+      iscommand: false
+      name: Are there available updates?
+      type: condition
+      version: -1
+    taskid: 2b7a81f7-38d9-4817-8942-2dfaa94b4c34
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 827.5,
+          "y": 485
+        }
+      }
+  "37":
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 42a9af13-2415-4dde-8b7e-d17c1e9c0619
+      iscommand: false
+      name: Close Investigation
+      type: title
+      version: -1
+    taskid: 42a9af13-2415-4dde-8b7e-d17c1e9c0619
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 2010,
+          "y": 660
+        }
+      }
+  "38":
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "25"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6b62a34f-d44e-4ff7-8d04-a723261f5a9a
+      iscommand: false
+      name: Close Investigation
+      type: title
+      version: -1
+    taskid: 6b62a34f-d44e-4ff7-8d04-a723261f5a9a
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -390,
+          "y": 1525
+        }
+      }
+  "39":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: containsString
+                    right:
+                      value:
+                        simple: Slack
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isNotEmpty
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.slackchannel
+          operator: isNotEmpty
+        - left:
+            iscontext: true
+            value:
+              simple: inputs.slackchannelid
+          operator: isNotEmpty
+      label: Send Slack channel update
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "30"
+      Send Slack channel update:
+      - "29"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if a Slack channel is provided in the inputs and whether
+        any Slack integrations are configured.
+      id: f5d31f38-ac9d-4ded-8f73-670a0f50d069
+      iscommand: false
+      name: Are there Slack channels?
+      type: condition
+      version: -1
+    taskid: f5d31f38-ac9d-4ded-8f73-670a0f50d069
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -20,
+          "y": 3690
+        }
+      }
+  "40":
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "70"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Collect packs data for packs with updates.
+      id: 64285325-6cf9-48b5-898f-2242da260eef
+      iscommand: false
+      name: Collect packs data
+      script: CollectPacksData
+      type: regular
+      version: -1
+    taskid: 64285325-6cf9-48b5-898f-2242da260eef
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 420,
+          "y": 2685
+        }
+      }
+  "43":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: "0"
+                root: New content updates available for XSOAR.Answers
+                transformers:
+                - operator: toLowerCase
+          operator: isNotEqualString
+          right:
+            value:
+              simple: "no"
+      label: "yes"
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "44"
+      "yes":
+      - "40"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Should the playbook perform auto-update?
+      id: f666034a-e5bf-42c7-8898-6aca66c354d4
+      iscommand: false
+      name: Should the playbook perform auto-update?
+      type: condition
+      version: -1
+    taskid: f666034a-e5bf-42c7-8898-6aca66c354d4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1157.5,
+          "y": 2340
+        }
+      }
+  "44":
+    continueonerrortype: ""
+    id: "44"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "62"
+      "yes":
+      - "40"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Manual - Do you allow the playbook to perform auto-update?
+      id: f2b165cb-e7a3-4627-8047-1d37739a1442
+      iscommand: false
+      name: Manual - Do you allow the playbook to perform auto-update?
+      type: condition
+      version: -1
+    taskid: f2b165cb-e7a3-4627-8047-1d37739a1442
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1377.5,
+          "y": 2510
+        }
+      }
+  "45":
+    continueonerror: true
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Would you like XSOAR to perform automatic update for the found content
+            packs?
+        options: []
+        optionsarg:
+        - simple: "No"
+        - simple: "Yes"
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: New content updates available for XSOAR
+      totalanswers: 0
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        complex:
+          root: ContentData
+          transformers:
+          - args:
+              field:
+                value:
+                  simple: name
+            operator: getField
+          - args:
+              prefix:
+                value:
+                  simple: '*- '
+              suffix:
+                value:
+                  simple: '*'
+            operator: concat
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+          - args:
+              prefix:
+                value:
+                  simple: |+
+                    There are content updates available for XSOAR:
+
+              suffix:
+                value:
+                  simple: |2
+
+                    View them here:
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                iscontext: true
+                value:
+                  simple: ServerURL.URL
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                value:
+                  simple: |
+                    /#/market/installed
+            operator: concat
+          - args:
+              prefix:
+                value:
+                  simple: |2+
+
+
+              suffix:
+                value:
+                  simple: |
+                    Please answer the survey below if you wish for XSOAR to perform an auto-update process on the packs that were found:
+            operator: concat
+      cc: null
+      format: ""
+      methods:
+      - SlackV2
+      - SlackV3
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: false
+        retriescount: 2
+        retriesinterval: 360
+      to:
+        complex:
+          root: inputs.slackuser
+    nexttasks:
+      '#none#':
+      - "43"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      channel:
+        complex:
+          accessor: contentnotificationslackusername
+          root: incident
+      ignoreAddURL:
+        simple: "true"
+      message:
+        complex:
+          root: ContentData
+          transformers:
+          - args:
+              field:
+                value:
+                  simple: name
+            operator: getField
+          - args:
+              prefix:
+                value:
+                  simple: '*- '
+              suffix:
+                value:
+                  simple: '*'
+            operator: concat
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+          - args:
+              prefix:
+                value:
+                  simple: |+
+                    There are content updates available for XSOAR:
+
+              suffix:
+                value:
+                  simple: |2
+
+                    View them here:
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                iscontext: true
+                value:
+                  simple: ServerURL.URL
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                value:
+                  simple: /#/market/installed
+            operator: concat
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sends a Slack message to a user, group, or channel.
+      id: a58cc395-b7a5-4926-8bc2-a7e2aa6ab7be
+      iscommand: false
+      name: Send Slack notification and question to user
+      type: collection
+      version: -1
+    taskid: a58cc395-b7a5-4926-8bc2-a7e2aa6ab7be
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 2170
+        }
+      }
+  "46":
+    continueonerror: true
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Would you like XSOAR to perform automatic update for the found content
+            packs?
+        options: []
+        optionsarg:
+        - simple: "No"
+        - simple: "Yes"
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: New content updates available for XSOAR
+      totalanswers: 0
+    id: "46"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        complex:
+          root: ContentData
+          transformers:
+          - args:
+              field:
+                value:
+                  simple: name
+            operator: getField
+          - args:
+              prefix:
+                value:
+                  simple: '*- '
+              suffix:
+                value:
+                  simple: '*'
+            operator: concat
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+          - args:
+              prefix:
+                value:
+                  simple: |+
+                    There are content updates available for XSOAR:
+
+              suffix:
+                value:
+                  simple: |2
+
+                    View them here:
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                iscontext: true
+                value:
+                  simple: ServerURL.URL
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                value:
+                  simple: |
+                    /#/market/installed
+            operator: concat
+          - args:
+              prefix:
+                value:
+                  simple: |2+
+
+              suffix:
+                value:
+                  simple: |
+                    Please answer the survey below if you wish for XSOAR to perform an auto-update process on the packs that were found:
+            operator: concat
+      cc: null
+      format: ""
+      methods:
+      - email
+      subject:
+        simple: New content updates available for XSOAR
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: false
+        retriescount: 2
+        retriesinterval: 360
+      to:
+        complex:
+          root: inputs.notificationemail
+    nexttasks:
+      '#none#':
+      - "43"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      channel:
+        complex:
+          accessor: contentnotificationslackchannel
+          root: incident
+      ignoreAddURL:
+        simple: "true"
+      message:
+        complex:
+          root: ContentData
+          transformers:
+          - args:
+              field:
+                value:
+                  simple: name
+            operator: getField
+          - args:
+              prefix:
+                value:
+                  simple: '*- '
+              suffix:
+                value:
+                  simple: '*'
+            operator: concat
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+          - args:
+              prefix:
+                value:
+                  simple: |+
+                    There are content updates available for XSOAR:
+
+              suffix:
+                value:
+                  simple: |2
+
+                    View them here:
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                iscontext: true
+                value:
+                  simple: ServerURL.URL
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                value:
+                  simple: /#/market/installed
+            operator: concat
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sends an email message to a user.
+      id: d5f7241f-fb70-4647-898d-fa37ed3713fc
+      iscommand: false
+      name: Send E-mail notification and question
+      type: collection
+      version: -1
+    taskid: d5f7241f-fb70-4647-898d-fa37ed3713fc
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 700,
+          "y": 2170
+        }
+      }
+  "48":
+    continueonerrortype: ""
+    id: "48"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "24"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      contentupdatesavailable:
+        complex:
+          root: ContentData
+          transformers:
+          - args:
+              headers:
+                value:
+                  simple: name,author,categories,useCases,contentItemTypes,currentVersion,lastInstallDate,premium,updated,changelog
+              is_auto_json_transform: {}
+              json_transform_properties:
+                value:
+                  simple: '{"changelog": {"keys": ["releaseNotes","released"], "is_nested":
+                    true}}'
+              title: {}
+            operator: JsonToTable
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Add the list of available updates to the layout.
+      id: 1241bf2c-6f13-4a6d-897d-c4b5b178b492
+      iscommand: true
+      name: Add available updates to layout
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 1241bf2c-6f13-4a6d-897d-c4b5b178b492
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 120,
+          "y": 1180
+        }
+      }
+  "50":
+    continueonerrortype: ""
+    id: "50"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "39"
+      - "52"
+      - "63"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3f750c44-8f55-40c3-8191-137a539c367a
+      iscommand: false
+      name: Send Slack notification
+      type: title
+      version: -1
+    taskid: 3f750c44-8f55-40c3-8191-137a539c367a
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 420,
+          "y": 3540
+        }
+      }
+  "52":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: containsString
+                    right:
+                      value:
+                        simple: Slack
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isNotEmpty
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.slackuser
+          operator: isNotEmpty
+      label: Send Slack User
+    continueonerrortype: ""
+    id: "52"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "30"
+      Send Slack User:
+      - "53"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if a Slack username is provided in the inputs and whether
+        any Slack integrations are configured.
+      id: a19f69b1-6262-47e5-8710-22e671811fae
+      iscommand: false
+      name: Are there Slack users?
+      type: condition
+      version: -1
+    taskid: a19f69b1-6262-47e5-8710-22e671811fae
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 420,
+          "y": 3690
+        }
+      }
+  "53":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "53"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ignoreAddURL:
+        simple: "true"
+      message:
+        complex:
+          root: ContentDataPreCheck
+          transformers:
+          - operator: Stringify
+          - args:
+              prefix:
+                value:
+                  simple: |+
+                    The "Content Update Manager" playbook  has finished updating the packs!
+
+                    The following packs were not updated successfully:
+
+              suffix: {}
+            operator: concat
+      to:
+        complex:
+          root: inputs.slackuser
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sends a Slack message to a user, group, or channel.
+      id: b41e03e5-1a74-4ef7-872f-697a6ac05899
+      iscommand: true
+      name: Send Slack notification
+      script: '|||send-notification'
+      type: regular
+      version: -1
+    taskid: b41e03e5-1a74-4ef7-872f-697a6ac05899
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 460,
+          "y": 3860
+        }
+      }
+  "59":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.auto_update
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: "yes"
+        - left:
+            iscontext: true
+            value:
+              simple: inputs.auto_update
+          operator: isTrue
+      label: "yes"
+    continueonerrortype: ""
+    id: "59"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "60"
+      "yes":
+      - "61"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Is the auto-update input set to yes?
+      id: d8dd8f39-f111-4239-884d-682a18dc07cf
+      iscommand: false
+      name: Is the auto-update input set to "Yes"?
+      type: condition
+      version: -1
+    taskid: d8dd8f39-f111-4239-884d-682a18dc07cf
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 420,
+          "y": 1660
+        }
+      }
+  "60":
+    continueonerrortype: ""
+    id: "60"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+      - "12"
+      - "13"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d5b43926-21fb-4a83-81d2-526a1ea65b03
+      iscommand: false
+      name: Ask by survey
+      type: title
+      version: -1
+    taskid: d5b43926-21fb-4a83-81d2-526a1ea65b03
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1157.5,
+          "y": 1830
+        }
+      }
+  "61":
+    continueonerrortype: ""
+    id: "61"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "40"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: aae1f0f7-1783-473e-8e62-e5382ce1e0ee
+      iscommand: false
+      name: Update packs
+      type: title
+      version: -1
+    taskid: aae1f0f7-1783-473e-8e62-e5382ce1e0ee
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 420,
+          "y": 2540
+        }
+      }
+  "62":
+    continueonerrortype: ""
+    id: "62"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Manually update content packs.
+      id: 8c8dd1d8-13eb-435f-81fc-879a73ca25ef
+      iscommand: false
+      name: Manually update content packs
+      type: regular
+      version: -1
+    taskid: 8c8dd1d8-13eb-435f-81fc-879a73ca25ef
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1390,
+          "y": 2720
+        }
+      }
+  "63":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.commands.name
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: send-mail
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isNotEmpty
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.notificationemail
+          operator: isNotEmpty
+      label: Send Emails
+    continueonerrortype: ""
+    id: "63"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "30"
+      Send Emails:
+      - "64"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if e-mail addresses are provided in the inputs and whether
+        any "send-mail" compatible integrations are enabled.
+      id: 3b769d4d-e1e6-4489-8959-b7f244124d40
+      iscommand: false
+      name: Are there e-mail addresses?
+      type: condition
+      version: -1
+    taskid: 3b769d4d-e1e6-4489-8959-b7f244124d40
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 860,
+          "y": 3690
+        }
+      }
+  "64":
+    continueonerrortype: ""
+    id: "64"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        complex:
+          root: ContentDataPreCheck
+          transformers:
+          - operator: Stringify
+          - args:
+              prefix:
+                value:
+                  simple: |+
+                    The "Content Update Manager" playbook  has finished updating the packs!
+
+                    The following packs were not updated successfully:
+
+              suffix: {}
+            operator: concat
+      subject:
+        simple: Content packs updated
+      to:
+        complex:
+          root: inputs.notificationemail
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sends an email notification using Gmail.
+      id: 93429695-0152-439c-8208-b0d6ada44827
+      iscommand: true
+      name: Send Email notification
+      script: '|||send-mail'
+      type: regular
+      version: -1
+    taskid: 93429695-0152-439c-8208-b0d6ada44827
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 3860
+        }
+      }
+  "68":
+    continueonerrortype: ""
+    id: "68"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      contentpackselection:
+        complex:
+          accessor: contentpackselection
+          root: incident
+          transformers:
+          - args:
+              applyIfEmpty: {}
+              defaultValue:
+                value:
+                  simple: All
+            operator: SetIfEmpty
+      usecasedescription:
+        simple: |-
+          This playbook will check to see if there are any content updates available for chosen installed content packs, and notify users via e-mail or Slack.
+          The playbook will also let users decide via playbook inputs or communication tasks on whether they want to trigger an auto-update process to install all updates that were found. The playbook can be used as an XSOAR job to help users track marketplace pack updates and install them regularly.
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Set description to layout and set default pack selection
+      id: 2ca915de-e135-46de-8fb1-b204cf3afc33
+      iscommand: true
+      name: Set description to layout and set default pack selection
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 2ca915de-e135-46de-8fb1-b204cf3afc33
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 827.5,
+          "y": -40
+        }
+      }
+  "70":
+    continueonerrortype: ""
+    id: "70"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      pack_id_key:
+        simple: packid
+      pack_version_key:
+        simple: packversion
+      packs_data:
+        simple: ${ConfigurationSetup.MarketplacePacks}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Content packs installer from marketplace.
+      id: 7c718656-b19b-41f6-85f0-3476339c0a32
+      iscommand: false
+      name: Install updates for chosen packs
+      script: ContentPackInstaller
+      type: regular
+      version: -1
+    taskid: 7c718656-b19b-41f6-85f0-3476339c0a32
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 420,
+          "y": 2850
+        }
+      }
+  "71":
+    continueonerrortype: ""
+    id: "71"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "48"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      content_data:
+        complex:
+          root: ContentData
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Get the latest release notes information.
+      id: b1f10340-625f-48e8-863c-77a4dcb32f95
+      iscommand: false
+      name: Save latest release notes
+      script: GetLatestReleaseNotes
+      type: regular
+      version: -1
+    taskid: b1f10340-625f-48e8-863c-77a4dcb32f95
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 120,
+          "y": 1000
+        }
+      }
+  "72":
+    continueonerrortype: ""
+    id: "72"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "50"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "false"
+      key:
+        simple: ContentDataPreCheck
+      value:
+        simple: None.
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set successful update.
+      id: b9410408-1241-4adb-89e5-f98c25545f72
+      iscommand: false
+      name: Set successful update
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: b9410408-1241-4adb-89e5-f98c25545f72
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 680,
+          "y": 3370
+        }
+      }
+  "73":
+    continueonerrortype: ""
+    id: "73"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Sets closing reason and notes for the investigation.
+      id: 14c8be14-3e3d-46ab-8790-5d6e87a7d4f5
+      iscommand: false
+      name: Manual - review failed update task
+      type: regular
+      version: -1
+    taskid: 14c8be14-3e3d-46ab-8790-5d6e87a7d4f5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 190,
+          "y": 4210
+        }
+      }
+  "74":
+    continueonerrortype: ""
+    id: "74"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 1
+    note: false
+    quietmode: 0
+    scriptarguments:
+      packs:
+        complex:
+          accessor: contentpackselection
+          root: incident
+          transformers:
+          - args:
+              applyIfEmpty: {}
+              defaultValue:
+                value:
+                  simple: All
+            operator: SetIfEmpty
+          - args:
+              delimiter:
+                value:
+                  simple: ','
+            operator: split
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: "This playbook checks for any available content updates for selected
+        installed content packs and notifies users via e-mail or Slack. \nIt also
+        contains an auto-update flow that lets users decide via playbook inputs or
+        communication tasks if they want to trigger an auto-update process to install
+        all updates that were found.\nThis playbook can be used as a Cortex XSOAR
+        job to help users track marketplace pack updates and install them regularly."
+      id: 87d6ef0c-9662-4f60-8ea2-663b75d4154a
+      iscommand: false
+      name: Content Update Manager_copy
+      playbookId: 620d245d-d557-4eb5-8283-0b5d3a950012
+      type: playbook
+      version: -1
+    taskid: 87d6ef0c-9662-4f60-8ea2-663b75d4154a
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 520,
+          "y": 680
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "10_43_#default#": 0.23,
+      "12_43_#default#": 0.36,
+      "13_43_#default#": 0.41,
+      "30_19_#default#": 0.43,
+      "36_37_#default#": 0.58,
+      "43_40_yes": 0.17,
+      "44_40_yes": 0.29
+    },
+    "paper": {
+      "dimensions": {
+        "height": 5130,
+        "width": 2780,
+        "x": -390,
+        "y": -190
+      }
+    }
+  }
