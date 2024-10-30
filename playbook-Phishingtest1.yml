@@ -1,0 +1,512 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 3d26e744-706b-4754-8898-bdd487bf62ed
+inputs: []
+name: Phishingtest1
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e8d41492-99b1-4bcf-80b6-7bfc42a48efc
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: e8d41492-99b1-4bcf-80b6-7bfc42a48efc
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 2
+    reputationcalc: 2
+    scriptarguments:
+      entryid:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Info
+              operator: isEqualString
+              right:
+                value:
+                  simple: eml
+            - left:
+                iscontext: true
+                value:
+                  simple: File.Info
+              operator: isEqualString
+              right:
+                value:
+                  simple: msg
+          root: File
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "60"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Parse an email from an eml or msg file and populate all relevant
+        context data to investigate the email. Also extracts inner attachments and
+        returns them to the war room. The incident labels themselves are preserved
+        and not modified - only the "Label/x" context items that originated from the
+        labels, and the best practice is to rely on these for the remainder of the
+        playbook.
+      id: 2c3920bc-c1b7-4af0-87ab-f387aabffcb6
+      iscommand: false
+      name: Parsemail
+      script: ParseEmailFiles
+      tags:
+      - emailparse
+      type: regular
+      version: -1
+    taskid: 2c3920bc-c1b7-4af0-87ab-f387aabffcb6
+    timertriggers:
+    - action: start
+      fieldname: timetoassignment
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: File.Info
+          operator: isEqualString
+          right:
+            value:
+              simple: eml
+        - left:
+            iscontext: true
+            value:
+              simple: File.info
+          operator: isEqualString
+          right:
+            value:
+              simple: msg
+      label: "yes"
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b3514ddf-24df-485c-86f1-7ae3f122682d
+      iscommand: false
+      name: Check for Email
+      type: condition
+      version: -1
+    taskid: b3514ddf-24df-485c-86f1-7ae3f122682d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 195
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeReason:
+        simple: Insufficient data since eml or msg file did not
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 2ef41b34-6429-457d-889b-094d013fb995
+      iscommand: true
+      name: Close Investiation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 2ef41b34-6429-457d-889b-094d013fb995
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 370
+        }
+      }
+  "6":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      polling:
+        simple: "true"
+      upload:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Info
+              operator: isEqualString
+              right:
+                value:
+                  simple: xlsx
+          root: File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: WildFire-v2
+      description: Uploads a file to WildFire for analysis.
+      id: fbe74384-7dee-481b-8fc3-e6af7b710493
+      iscommand: true
+      name: Upload File to wildfire
+      script: WildFire-v2|||wildfire-upload
+      type: regular
+      version: -1
+    taskid: fbe74384-7dee-481b-8fc3-e6af7b710493
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 545
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "9"
+      "yes":
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      includeSuspicious:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if the investigation found any malicious indicators (file,
+        URL, IP address, domain, or email). Returns "yes" if at least one malicious
+        indicator is found.
+      id: f61d7507-f0b5-4269-8efd-5fbec4174446
+      iscommand: false
+      name: Is Malicious
+      script: IsMaliciousIndicatorFound
+      type: condition
+      version: -1
+    taskid: f61d7507-f0b5-4269-8efd-5fbec4174446
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 895
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: emailstatus
+      value:
+        simple: malicious
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 88a1ca12-92c3-44f4-8829-7a51259e08a8
+      iscommand: false
+      name: Set Field as Phishing
+      script: Set
+      type: regular
+      version: -1
+    taskid: 88a1ca12-92c3-44f4-8829-7a51259e08a8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1070
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: mailstatus
+      value:
+        simple: no Malicious indicator
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: acdafd7f-e118-4b71-822e-6dc897dfb85c
+      iscommand: false
+      name: Email seems to be safe
+      script: Set
+      type: regular
+      version: -1
+    taskid: acdafd7f-e118-4b71-822e-6dc897dfb85c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1070
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: "Hi, \n\nfound a suspicious meial with \nSubject :${Email.Subject}
+          \nSender: ${Email.From}"
+      subject:
+        simple: Suspicious email found
+      to:
+        simple: sramesh1@paloaltonetworks.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sends an email using EWS.
+      id: e90701c6-0255-4484-8277-98faf407234a
+      iscommand: true
+      name: Send-mail to email admin
+      script: '|||send-mail'
+      type: regular
+      version: -1
+    taskid: e90701c6-0255-4484-8277-98faf407234a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1245
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeReason:
+        simple: malicious , informed admin
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 4017031e-23f3-47cb-8e82-dd9b3a71bb32
+      iscommand: true
+      name: Close case
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 4017031e-23f3-47cb-8e82-dd9b3a71bb32
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1420
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeReason:
+        simple: safe email
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 232527c8-f4a7-4152-8e85-f3b0c375c672
+      iscommand: true
+      name: close investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 232527c8-f4a7-4152-8e85-f3b0c375c672
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1245
+        }
+      }
+  "13":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hash:
+        simple: ${File.SHA256}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: WildFire-v2
+      description: Returns a verdict for a hash.
+      id: 71ec010e-55fe-4eb2-82b7-05f6992a6246
+      iscommand: true
+      name: Wildfireverdict
+      script: WildFire-v2|||wildfire-get-verdict
+      type: regular
+      version: -1
+    taskid: 71ec010e-55fe-4eb2-82b7-05f6992a6246
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 720
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1465,
+        "width": 1025,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
