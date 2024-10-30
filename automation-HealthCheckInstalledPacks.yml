@@ -1,0 +1,82 @@
+comment: "Read the installedpacks.json. \n\nCount and get packs names."
+commonfields:
+  id: HealthCheckInstalledPacks
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 2.1.3
+    packID: HealthCheck
+    packName: System Diagnostics and Health Check
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.83255
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: HealthCheckInstalledPacks
+outputs:
+- contextPath: FileData
+  description: Data read from war room file.
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('HealthCheckInstalledPacks', 'start', __line__())
+  demisto.debug('pack name = System Diagnostics and Health Check, pack version = 2.1.3')
+
+
+  packs = []
+  need_update = 0
+
+  incident = demisto.incidents()[0]
+  accountName = incident.get('account')
+  accountName = f"acc_{accountName}/" if accountName != "" else ""
+
+  config_json = demisto.executeCommand("core-api-get",
+                                       {"uri": f"{accountName}contentpacks/installed-expired"})[0]["Contents"]["response"]
+
+  for item in config_json:
+      packs.append({"packs": item['name'], "currentversion": item['currentVersion'], 'updateavailable': item['updateAvailable']})
+      if item['updateAvailable']:
+          need_update += 1
+
+
+  res = []
+
+  if need_update > 0:
+      res.append({"category": "Content packs", "severity": "Low",
+                  "description": "There are content packs that require an update",
+                  "resolution": "Navigate to the market place and update the outdated packs"
+                  })
+
+  if len(packs) > 70:
+      res.append({"category": "Content packs", "severity": "Medium",
+                  "description": "There are too many packs installed on your system",
+                  "resolution": "Delete unneeded packs, refer to:  https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-6/"
+                  "cortex-xsoar-admin/marketplace/content-pack-installation/delete-a-content-pack"
+                  })
+
+  demisto.executeCommand("setIncident", {
+      'healthcheckinstalledpacks': packs,
+      'healthchecktotalpacksinstalled': len(packs),
+      'healthchecktotaloutdatedpacks': need_update
+  })
+
+  results = CommandResults(
+      readable_output="HealchCheckInstalledPacks Done",
+      outputs_prefix="HealthCheck.ActionableItems",
+      outputs=res)
+
+  return_results(results)
+
+  register_module_line('HealthCheckInstalledPacks', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags: []
+type: python
