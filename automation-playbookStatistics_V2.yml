@@ -1,0 +1,133 @@
+args:
+- auto: PREDEFINED
+  defaultValue: "No"
+  description: Yes or No
+  name: ExportToXLSX
+  predefined:
+  - "Yes"
+  - "No"
+- name: from
+- name: to
+commonfields:
+  id: 4a87fe01-4981-4d83-8ae9-c66656f725be
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.49934
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: playbookStatistics_V2
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  register_module_line('playbookStatistics', 'start', __line__())
+
+
+  Time_Saved_Per_Playbook_list = json.loads(demisto.executeCommand("getList", {"listName":"Time_Saved_Per_Playbook_SOC_Recommendation"})[0]["Contents"])
+
+  def get_playbook_stats(from_date,to_date):
+      res = demisto.executeCommand(
+              "demisto-api-post",
+              {
+                  "uri": "/statistics/widgets/query",
+                  "body": {
+                      "size": 500,
+                      "dataType": "metrics",
+                      "params": {
+                          "groupBy": ["name"],
+                          "keys": ["sum|executionCount"],
+                          "limitType":"top",
+                          "valuesFormat":"regular"
+                      },
+                      "query": "type:playbook",
+                      "dateRange": {
+                          "fromDate":from_date,
+                          "toDate":to_date
+                      },
+                      "widgetType": "pie",
+                  },
+                  "using": "Core REST API_instance_1"
+              })
+      return res[0]["Contents"]["response"]
+
+  def get_playbook_details(playbook_name):
+
+      for item in Time_Saved_Per_Playbook_list:
+          if item["Name"] == playbook_name:
+              return item["Manual Effort Required (in seconds)"], item["Manual Effort Required (in seconds) 2"], item["Description"]
+
+      return 0, 0, "Description for this playbook has not been added yet. Reach out to XSOAR team to get it added."
+
+  def calculate_total_time(calculated_Time_Saved_Per_Playbook_list):
+      total_time_in_seconds = 0
+      total_time_in_seconds_2 = 0
+      for item in calculated_Time_Saved_Per_Playbook_list:
+          total_time_in_seconds += item["F"]
+          total_time_in_seconds_2 += item["G"]
+      new_list = [
+          {"A":f"**FTEs V1**","B":f"**{round(total_time_in_seconds/60/60/8/20)}**","C":"","D":"","E":"","F":"","G":""},
+          {"A":f"**FTEs V2**","B":f"**{round(total_time_in_seconds_2/60/60/8/20)}**","C":"","D":"","E":"","F":"","G":""},
+          {"A":f"**Total time saved (in days) V1**","B":f"**{round(total_time_in_seconds/60/60/24)}**","C":"","D":"","E":"","F":"","G":""},
+          {"A":f"**Total time saved (in days) V2**","B":f"**{round(total_time_in_seconds_2/60/60/24)}**","C":"","D":"","E":"","F":"","G":""},
+          #{"A":f"**Total time saved (in hours)**","B":f"**{round(total_time_in_seconds/60/60)}**","C":"","D":"","E":"","F":"","G":""},
+          #{"A":f"**Total time saved (in hours) 2**","B":f"**{round(total_time_in_seconds_2/60/60)}**","C":"","D":"","E":"","F":"","G":""},
+          {"A":"**Name**","B":"**Description**","C":"**Manual Effort Required (in seconds) V1**","D":"**Manual Effort Required (in seconds)** V2","E":"**Count**","F":"**Total time saved (in seconds) V1**","G":"**Total time saved (in seconds) V2**"},
+          ]
+      for item in calculated_Time_Saved_Per_Playbook_list:
+          new_list.append(item)
+      return new_list
+
+  def main():
+      try:
+          args = demisto.args()
+          #search_query = args.get("searchQuery")
+          #if not search_query:
+          #    raise DemistoException("\n\tThis dashboard works only on filtering.\n\tThe filter has to be in the format display:\"yes\".")
+          from_date = str(args.get("from"))
+          to_date = str(args.get("to"))
+          stats = get_playbook_stats(from_date,to_date)
+          calculated_Time_Saved_Per_Playbook_list = []
+          for playbook in stats:
+              item = {}
+              manual_effort, manual_effort_2, description = get_playbook_details(playbook["name"])
+              item["A"] = playbook["name"]
+              item["E"] = playbook["data"][0] #playbook count
+              item["B"] = description
+              item["C"] = manual_effort
+              item["D"] = manual_effort_2
+              item["F"] = item["E"] * manual_effort
+              item["G"] = item["E"] * manual_effort_2
+              calculated_Time_Saved_Per_Playbook_list.append(item)
+
+          sorted_calculated_Time_Saved_Per_Playbook_list = sorted(calculated_Time_Saved_Per_Playbook_list, key=lambda d:d["G"], reverse=True)
+          total_statistics = calculate_total_time(sorted_calculated_Time_Saved_Per_Playbook_list)
+          md2 = tableToMarkdown("Automation ROI", total_statistics, headers=["A","B","C","D","E","F","G"])
+          return_results(md2)
+
+          if demisto.args().get("ExportToXLSX") == "Yes":
+              excel = demisto.executeCommand("ExportToXLSX", {"file_name":"AutomationROI.xlsx","data":total_statistics,"sheet_name":"playbookStatistics","headers":"A,B,C,D,E,F,G"})
+              return_results(excel)
+      except DemistoException as error:
+          return_error("Failed to execute playbookStatistics script. Error: {}".format(str(error)))
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+
+  register_module_line('playbookStatistics', 'end', __line__())
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
