@@ -1,0 +1,60 @@
+commonfields:
+  id: 0403668d-0c3a-48c7-8805-0e739a9dc31b
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.8.39276
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: getAllAPICommands
+outputs:
+- contextPath: commandsList
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2
+
+  payload = { 'query' : demisto.args().get('query','system:F') }
+
+  res = demisto.executeCommand("demisto-api-post", {"uri":"playbook/search", "body" : json.dumps(payload)})[0]["Contents"]["response"]
+
+  if not res['playbooks']:
+      demisto.results("Playbook query did not return any results")
+      exit(0)
+
+  searchResults = []
+
+  # Generate list of APIs in used in playbooks
+  for item in res["playbooks"]:
+      commands = []
+      if len(item['commands']):
+          for command in item['commands']:
+              if "-api-" in command and len(commands) == 0:
+                  for key in item['tasks']:
+                      if 'scriptArguments' in item['tasks'][key]:
+                          if 'uri' in item['tasks'][key]['scriptArguments']:
+                              commands.append({item['tasks'][key]['task']['scriptId'] : item['tasks'][key]['scriptArguments']['uri']['simple']})
+
+      if len(commands):
+          searchResults.append({item['name'] : commands})
+
+
+  demisto.results({
+          'Contents': searchResults,
+          'ContentsFormat': formats['text'],
+          'EntryContext': {'commandsList': [searchResults]}
+      })
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
