@@ -1,0 +1,229 @@
+commonfields:
+  id: ecb39275-3a5b-4df4-87fa-caedbfd07031
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.4.27798
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: InfosysSendEmailCommunicaition
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  from typing import Dict, Any
+  import traceback
+
+  import datetime, time
+
+  inc_data = demisto.incidents()[0]
+  inc_id = inc_data.get("id")
+  cust_fields = inc_data.get("CustomFields")
+  email_to = cust_fields.get("sendemailto")
+  email_cc = cust_fields.get("sendemailcc")
+  email_message = cust_fields.get("comments",None)#.replace("\n","<br>").replace(" ","&nbsp;")
+  #email_message = "Hello"
+  email_subject = cust_fields.get("sendemailsubject")
+  cdescalationtime = cust_fields.get("cdescalationtime")
+  #using_instance =  demisto.args().get("using_instance")
+  using_instance = "Microsoft Graph Mail Single User v1_instance_1"
+  inc_number = inc_data.get("id")
+  owner = inc_data.get("cdincidentowner")
+  attachments = inc_data.get("attachment")
+  emailincidentcreationtime =  inc_data.get("emailincidentcreationtime")
+  if email_to == ""  or email_to  is None  or email_subject=="" or email_subject is None or email_message == "" or email_message is None:
+          demisto.results("Kindly fill all the mandatory fields")
+  else:
+      current_time = datetime.datetime.now()
+      newtime = current_time.strftime('%Y-%m-%dT%H:%M:%S+00:00')
+      if emailincidentcreationtime is None or emailincidentcreationtime == "":
+          demisto.executeCommand("setIncident",{"emailincidentcreationtime":newtime})
+
+          if cdescalationtime is None:
+              demisto.executeCommand("setIncident", {'cdescalationtime':newtime})
+
+          else :
+              pass
+      demisto.executeCommand('stopTimer',{ 'timerField':'cdescalationsla' })
+      demisto.executeCommand('pauseTimer',{ 'timerField':'cdresolutionsla' })
+
+      snow_inc_number = cust_fields.get("servicenowticketnumber")
+
+
+
+      ''' STANDALONE FUNCTION '''
+
+      def trim_emails(emails):
+          email_list = [ email.strip() for  email in emails.split(",") ]
+          return ",".join(email_list)
+
+      def send_email(email_to, email_cc, email_subject, email_message, attach_ids, using_instance):
+          args = {
+              "to":email_to,
+              "subject":email_subject,
+              "body":email_message,
+              "body_type":"HTML"
+          }
+          if email_cc:
+              args["cc"] = email_cc
+          if using_instance:
+              args["using"] = using_instance
+          if attach_ids:
+              args["attach_ids"] = ",".join([entry[1] for entry in attach_ids])
+
+          demisto.log(str(args))
+          res = demisto.executeCommand("send-mail",args)
+          if isError(res):
+              return_results(res)
+          return args
+
+
+      def change_inc_state(field,value):
+          res = demisto.executeCommand("setIncident",{field:value})
+          if isError(res):
+              demisto.results(res)
+
+      def stop_sla(sla_field):
+          res = demisto.executeCommand("stopTimer", {"timerField":sla_field})
+          if isError(res):
+              demisto.results(res)
+
+
+      def start_sla(sla_field):
+          pass
+
+
+      def get_incident_related_files(incident_id):
+          """Get the email reply attachments after they were uploaded to the server and saved
+          to context of the email reply related incident.
+
+          Args:
+              incident_id (str): The ID of the incident whose context we'd like to get.
+          """
+          try:
+              res = demisto.executeCommand("getContext", {'id': incident_id})
+              return dict_safe_get(res[0], ['Contents', 'context', 'File'], default_return_value=[])
+          except Exception:
+              return []
+
+      def get_entry_id_list(attachments,files):
+          """Get the entry ids for the email attachments from the email's related incident's files entry.
+          Args:
+              attachments (list): The attachments of the email.
+              files (list): The uploaded files in the context of the related incident.
+          Returns:
+              list of tuples. (attachment_name, file_entry_id).
+          """
+
+          demisto.log("...attach_ids\n"+str(attachments))
+
+          if not (attachments and files):
+              return []
+
+
+          entry_id_list = []
+          files = [files] if not isinstance(files, list) else files
+          for attachment in attachments:
+              attachment_name = attachment.get('name', '')
+              for file in files:
+                  if attachment_name == file.get('Name'):
+                      entry_id_list.append((attachment_name, file.get('EntryID')))
+
+          return entry_id_list
+
+
+
+      ''' COMMAND FUNCTION '''
+
+
+
+      def send_reply_commad(inc_number,email_to, email_cc, email_subject, email_message , using_instance):
+          inc_tag = '<#{}>'.format(inc_number)
+          email_subject = inc_tag + " comments added" if email_subject == "" or email_subject is None else email_subject
+          if not email_subject.startswith(inc_tag):
+              email_subject = '{} {}'.format(inc_tag,email_subject)
+          res = demisto.executeCommand("setIncident",{"sendemailsubject":email_subject})
+          if isError(res):
+              return_results(res)
+              return_error("error occured")
+
+          if email_to == '':
+              return_error("no email to found.")
+
+          files = get_incident_related_files(inc_id)
+
+          attach_ids = get_entry_id_list(attachments,files)
+
+
+          result = send_email(email_to,email_cc,email_subject,email_message, attach_ids, using_instance)
+
+          res = demisto.executeCommand("setIncident",{"comments":""})
+
+          #returnedBody = result.get("htmlBody","")
+          #if returnedBody is None or returnedBody == "":
+           #   returnedBody = ""
+          #human_readable = "{} added following comments : \n\n".format(owner) + returnedBody.replace("\n","<br>").replace(" ","&nbsp;")
+          #human_readable = "{} added following comments : \n\n".format(owner) + result["body"]
+          #human_readable = "{} added following mailbody : \n\n".format(owner) + result["body"].replace("\n","<br>").replace(" ","&nbsp;")
+          human_readable = "{} added following mailbody : \n\n".format(owner) + result["body"].replace("<br>","\n").replace("&nbsp;"," ")
+          entry = {'Type' : entryTypes['note'],
+                  'Contents': result,
+                  'ContentsFormat' : formats['json'],
+                  'HumanReadable': human_readable,
+                  'ReadableContentsFormat' : formats['markdown'],
+                  'Note':True,
+                  'Tags' : ['EmailThread','email-thread']}
+
+
+          return_results(entry)
+
+
+      # TODO: ADD additional command functions that translate XSOAR inputs/outputs
+
+
+      ''' MAIN FUNCTION '''
+
+
+      def main():
+          global email_message
+          if email_message != "" or email_message is not None:
+              email_to_trimmed,email_cc_trimmed=email_to,email_cc
+              if email_to:
+                  email_to_trimmed = trim_emails(email_to)
+              if email_cc:
+                  email_cc_trimmed = trim_emails(email_cc)
+
+              note='**DO NOT CHANGE SUBJECT**\n\n'
+              email_message = note.replace("\n","<br>")+email_message.replace("\n","<br>").replace(" ","&nbsp;")
+
+              print("email_message",email_message)
+
+              send_reply_commad(inc_number,email_to_trimmed,email_cc_trimmed,email_subject,email_message,using_instance)
+              change_inc_state("cdincidentstate","Pending Customer Inputs")
+              demisto.executeCommand("CD_DemistoIncidentStateChangeWorkflowChange_PROD_Ver1", {'old':"In Progress",'new':'Pending Customer Inputs'})
+              #stop_sla("cdresponsesla")
+
+          else:
+              demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">Kindly fill all the mandatory fields and try sending mail again!!!</p>'})
+              return_error("Email body is empty, Kindly fill the Comments and try again!!!")
+
+
+      ''' ENTRY POINT '''
+
+
+      if __name__ in ('__main__', '__builtin__', 'builtins'):
+          main()
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
