@@ -1,0 +1,52 @@
+args:
+- description: Instance Name
+  name: instanceName
+  required: true
+commonfields:
+  id: b96fc0e9-9c81-46a5-8942-ecc0473ba29c
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Refresh_Integration_Instance
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  var body = {size:500};
+  var res = executeCommand('demisto-api-post', {"uri":'/settings/integration/search', body: body});
+  if (isError(res[0])) {
+      return res;
+  }
+  var instances = res[0].Contents.response.instances;
+  var instance = dq({instances:instances},'instances(val.name=="'+args.instanceName+'")')[0];
+  instance.version = -1;
+  instance.enabled="false";
+  for (var i=0; i<instance.data.length; i++) {
+      instance.data[i].hasvalue = false; //
+  }
+  res = executeCommand('demisto-api-put', {uri:'/settings/integration', body:instance});
+  if (isError(res[0])) {
+      return res;
+  }
+  wait(5);
+  instance.enabled="true";
+  res = executeCommand('demisto-api-put', {uri:'/settings/integration', body:instance});
+  if (isError(res[0])) {
+      return res;
+  }
+  return 'done';
+scripttarget: 0
+tags: []
+type: javascript
