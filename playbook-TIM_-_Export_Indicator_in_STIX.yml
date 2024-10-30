@@ -1,0 +1,204 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 98b92f17-c5c6-4a91-80e0-21653cf7d605
+inputs: []
+name: TIM - Export Indicator in STIX
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f5ef2d72-1255-4bd1-83bb-27b845c91c86
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: f5ef2d72-1255-4bd1-83bb-27b845c91c86
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query:
+        simple: type:IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: |-
+        Searches Cortex XSOAR Indicators.
+
+        Search for XSOAR Indicators and returns the id, indicator_type, value, and score/verdict.
+
+        You can add additional fields from the indicators using the add_field_to_context argument.
+      id: a6b14a77-4485-4bf9-83a3-50fac15cec88
+      iscommand: false
+      name: Search Indicators
+      script: SearchIndicator
+      type: regular
+      version: -1
+    taskid: a6b14a77-4485-4bf9-83a3-50fac15cec88
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 220
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: '{"ids":${foundIndicators.id},"all":false,"filter":{"page":0,"size":50,"query":"type:IP","sort":[{"field":"calculatedTime","asc":false}],"period":{"by":"day","fromValue":7}},"columns":["indicator_type","value","score","firstSeen","lastSeen","timestamp","relatedIncCount","sourceBrands","sourceInstances","expirationStatus","expiration","isUnit42Enriched"]}'
+      extend-context:
+        simple: APIData=
+      uri:
+        simple: /indicators/batch/export/stix
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Core REST API
+      description: send HTTP POST request.
+      id: bb142a83-1ea0-4ad2-87ba-bd7011024ce5
+      iscommand: true
+      name: Batch export to STIX
+      script: Core REST API|||core-api-post
+      type: regular
+      version: -1
+    taskid: bb142a83-1ea0-4ad2-87ba-bd7011024ce5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 430
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      filename:
+        simple: Test.json
+      uri:
+        simple: /indicators/stix/${APIData.response.filename}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Core REST API
+      description: Download files from Core server.
+      id: 5bd8d3da-988e-4c25-80a8-a35cff2a1192
+      iscommand: true
+      name: Download the STIX format file
+      script: Core REST API|||core-api-download
+      type: regular
+      version: -1
+    taskid: 5bd8d3da-988e-4c25-80a8-a35cff2a1192
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 645
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      seconds:
+        simple: "5"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sleep for X seconds
+      id: a8e134c9-0714-4569-8b34-eb27605fadc4
+      iscommand: false
+      name: wait for file to generate
+      script: Sleep
+      type: regular
+      version: -1
+    taskid: a8e134c9-0714-4569-8b34-eb27605fadc4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 990,
+          "y": 550
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 690,
+        "width": 920,
+        "x": 450,
+        "y": 50
+      }
+    }
+  }
