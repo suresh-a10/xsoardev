@@ -1,0 +1,149 @@
+commonfields:
+  id: 1e3d25f3-5763-48d0-8947-db5b54c75857
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.49934
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: atomationROI_widget_linechart
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  register_module_line('atomationROI_widget_linechart', 'start', __line__())
+
+  from collections import OrderedDict
+  from calendar import monthrange
+
+  Time_Saved_Per_Playbook_list = json.loads(demisto.executeCommand("getList", {"listName":"Time_Saved_Per_Playbook_SOC_Recommendation"})[0]["Contents"])
+
+  def get_playbook_stats(from_date,to_date):
+      #0001-01-01T00:00:00Z 2022-06-01T00:00:00Z
+      res = demisto.executeCommand(
+              "demisto-api-post",
+              {
+                  "uri": "/statistics/widgets/query",
+                  "body": {
+                      "size": 500,
+                      "dataType": "metrics",
+                      "params": {
+                          "groupBy": ["name"],
+                          "keys": ["sum|executionCount"],
+                          "limitType":"top",
+                          "valuesFormat":"regular"
+                      },
+                      "query": "type:playbook",
+                      "dateRange": {
+                          "fromDate":from_date,
+                          "toDate":to_date
+                      },
+                      "widgetType": "pie",
+                  },
+                  "using": "Core REST API_instance_1"
+              })
+      return res[0]["Contents"]["response"]
+
+  def get_playbook_details(playbook_name):
+
+      for item in Time_Saved_Per_Playbook_list:
+          if item["Name"] == playbook_name:
+              return item["Manual Effort Required (in seconds)"], item["Manual Effort Required (in seconds) 2"]
+
+      return 0, 0
+
+  def calculate_total_time(calculated_Time_Saved_Per_Playbook_list):
+      total_time_in_seconds = 0
+      total_time_in_seconds_2 = 0
+      for item in calculated_Time_Saved_Per_Playbook_list:
+          total_time_in_seconds += item["F"]
+          total_time_in_seconds_2 += item["G"]
+      new_list = [
+          {"A":f"**FTEs V1**","B":f"**{round(total_time_in_seconds/60/60/8/20)}**","C":"","D":"","E":"","F":"","G":""},
+          {"A":f"**FTEs V2**","B":f"**{round(total_time_in_seconds_2/60/60/8/20)}**","C":"","D":"","E":"","F":"","G":""},
+          {"A":f"**Total time saved (in days) V1**","B":f"**{round(total_time_in_seconds/60/60/24)}**","C":"","D":"","E":"","F":"","G":""},
+          {"A":f"**Total time saved (in days) V2**","B":f"**{round(total_time_in_seconds_2/60/60/24)}**","C":"","D":"","E":"","F":"","G":""},
+          #{"A":f"**Total time saved (in hours)**","B":f"**{round(total_time_in_seconds/60/60)}**","C":"","D":"","E":"","F":"","G":""},
+          #{"A":f"**Total time saved (in hours) 2**","B":f"**{round(total_time_in_seconds_2/60/60)}**","C":"","D":"","E":"","F":"","G":""},
+          {"A":"**Name**","B":"**Description**","C":"**Manual Effort Required (in seconds) V1**","D":"**Manual Effort Required (in seconds)** V2","E":"**Count**","F":"**Total time saved (in seconds) V1**","G":"**Total time saved (in seconds) V2**"},
+          ]
+      for item in calculated_Time_Saved_Per_Playbook_list:
+          new_list.append(item)
+      return new_list
+
+  def get_start_month():
+      res = demisto.executeCommand("getIncidents", {"sort":"id.asc", "size":1, "page":0})[0]["Contents"]["data"][0]["created"] #2022-09-16T15:11:11.1865315+05:30
+      res = datetime.strptime(res[0:19], "%Y-%m-%dT%H:%M:%S")
+      return res
+
+  def get_end_month():
+      res = demisto.executeCommand("getIncidents", {"sort":"id.desc", "size":1, "page":0})[0]["Contents"]["data"][0]["created"]
+      res = datetime.strptime(res[0:19], "%Y-%m-%dT%H:%M:%S")
+      return res
+
+  def main():
+      try:
+          #search_query = demisto.args().get("searchQuery")
+          #if not search_query:
+          #    raise DemistoException("\n\tThis dashboard works only on filtering.\n\tThe filter has to be in the format display:\"yes\".")
+          output = []
+          start_date = get_start_month()
+          end_date = get_end_month()
+          range_of_dates = OrderedDict(((start_date + timedelta(_)).strftime(r"%Y-%m"), None) for _ in range((end_date-start_date).days))
+          stats = []
+          for dates in range_of_dates:
+              weekday,days = monthrange(int(dates[0:4]),int(dates[5:7]))
+              from_date = dates + "-01T00:00:00Z"
+              to_date = dates + "-" + str(days) + "T00:00:00Z"
+              playbook_stats = get_playbook_stats(from_date,to_date)
+              calculated_Time_Saved_Per_Playbook_list = []
+              total_time_in_seconds_v1 = 0
+              total_time_in_seconds_v2 = 0
+              for playbook in playbook_stats:
+                  manual_effort_v1, manual_effort_v2 = get_playbook_details(playbook["name"])
+                  time_saved_per_playbook_v1 = playbook["data"][0] * manual_effort_v1
+                  time_saved_per_playbook_v2 = playbook["data"][0] * manual_effort_v2
+                  total_time_in_seconds_v1 += time_saved_per_playbook_v1
+                  total_time_in_seconds_v2 += time_saved_per_playbook_v2
+
+              fte_v1 = round(total_time_in_seconds_v1/60/60/8/20)
+              fte_v2 = round(total_time_in_seconds_v2/60/60/8/20)
+              stats_object = {}
+              stats_object["name"] = dates
+              stats_object["data"] = [fte_v1 + fte_v2]
+              stats_object["groups"] = [
+                  {
+                      "data": [fte_v1],
+                      "name": "V1",
+                  },
+                  {
+                      "data": [fte_v2],
+                      "name": "V2",
+                  }
+                  ]
+              stats.append(stats_object)
+          return_results(json.dumps(stats))
+
+      except DemistoException as error:
+          return_error("Failed to execute atomationROI_widget_linechart script. Error: {}".format(str(error)))
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+
+  register_module_line('atomationROI_widget_linechart', 'end', __line__())
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
