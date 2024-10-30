@@ -1,0 +1,175 @@
+args:
+- defaultValue: UsecaseLibrabyAdoption
+  description: Provide the ListName
+  name: ListName
+- description: Provide the integration name
+  isArray: true
+  name: Integrations
+- description: Provide the list of technology stack
+  isArray: true
+  name: TechnologyStackList
+comment: This automation is designed to fetch the use case list from adoption library.
+commonfields:
+  id: e676e926-5e3e-4320-869e-0356f2e87683
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: docker.io/demisto/pdfwithhtmltopdfs:latest
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetUsecaseAdoptionListV2
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+  # import pdfkit
+  import tempfile
+  import shutil
+
+
+
+  ''' STANDALONE FUNCTION '''
+
+
+
+  # TODO: ADD additional command functions that translate XSOAR inputs/outputs
+
+
+
+
+  def  get_potential_usecaes(data,integrations):
+      Usecase_List = []
+      dedup_records = []
+      for integration in integrations:
+          for key,value in data.items():
+              if type(value) == dict:
+                  if value.get('mainintegration') == integration:
+                      if not (value.get("usecasenumber") in dedup_records):
+                          dedup_records.append(value.get("usecasenumber"))
+                          Usecase_List.append(value)
+                      continue
+                  if integration in value.get('enrichmentintegrations'):
+                      if not (value.get("usecasenumber") in dedup_records):
+                          dedup_records.append(value.get("usecasenumber"))
+                          Usecase_List.append(value)
+                      continue
+                  if integration in value.get('operationalintegrations'):
+                      if not (value.get("usecasenumber") in dedup_records):
+                          dedup_records.append(value.get("usecasenumber"))
+                          Usecase_List.append(value)
+                      continue
+
+      return Usecase_List
+
+
+  def convert_to_html(data,stack_list):
+      html_string=demisto.executeCommand("getList", {"listName":"UsecaseAdoptionTemplate"})[0]['Contents']
+
+      if stack_list and len(stack_list)>0:
+          html_string+="<div class=\"row\" id=\"meta\"><h3><b>Technology Stack</b></h3><table class=\"table table-bordered\"><thead><tr><th scope=\"col\">Solution Name</th><th scope=\"col\">Status</th><th scope=\"col\">Type</th></tr></thead><tbody>"
+          for element in stack_list:
+              #print(element)
+              html_string+="<tr><th scope=\"row\">"+str(element.get('solutionname'))+"</th><td>"+str(element.get('status'))+"</td><td>"+ ','.join(element.get('type'))+"</td></tr>"
+          # for i in range(len(stack_list)):
+          #     html_string+="<tr><th scope=\"row\">"+stack_list[i].get('solutionname')+"</th><td>"+stack_list[i].get('status')+"</td><td>"+(','.join([str(element) for element in (stack_list[i].get('type'))]))+"</td></tr>"
+          html_string+="</tbody></table></div>"
+      else:
+          print("No Technology Stack")
+      if len(data)>0:
+
+          for element in data:
+              html_string+="<div class=\"row\" id=\"meta\">"
+              html_string+="<h3><b>"+str(element.get('mainintegration'))+"</b></h3><div class=\"col-xs-12\">"
+              html_string+="<h4><b>Usecase ID:</b>"+str(element.get('usecasenumber'))+"</h4>"
+              html_string+="<h4><b>Usecase Name:</b>"+str(element.get('usecasename'))+"</h4>"
+              html_string+="<h4><b>Usecase Description:</b>"+str(element.get('usecasedescription'))+"</h4>"
+              html_string+="<h4><b>Usecase Document URL:</b>"+str(element.get('usecasedocumenturl'))+"</h4>"
+              html_string+="<h4><b>Operational Integrations:</b>"+(','.join(set(element.get('operationalintegrations'))))+"</h4>"
+              if element.get('enrichmentintegrations'):
+                  html_string+="<h4><b>Enrichment Integrations:</b>"+(','.join(set(element.get('enrichmentintegrations'))))+"</h4>"
+              html_string+="<h4><b>Tags:</b>"+str(element.get('tags'))+"</h4></div></div>"
+
+          html_string+="</div></body></html>"
+          filename="PotentialUsecaseReport.html"
+          return_results(fileResult(filename, html_string))
+          # convert_html_to_pdf(html_string)
+      else:
+          print("No usecases related to this Integration")
+
+  # def convert_html_to_pdf(html_data):
+  #     filename="PotentialUsecaseReport"
+  #     filename = f"{filename}.pdf"
+  #     print(html_data)
+  #     file = pdfkit.from_string(html_data, False)
+  #     if not file:
+  #         return_error('No file result returned for convert format: pdf')
+  #         return
+  #     return_results(fileResult(filename, file))
+
+  def get_adoption_report(data,integration_list,stack_list):
+      solution_names=[]
+      if integration_list is not None:
+          usecase_data=get_potential_usecaes(data,integration_list)
+          convert_to_html(usecase_data,stack_list)
+      elif stack_list is not None:
+          for i in range(len(stack_list)):
+              solution_names.append(stack_list[i].get('solutionname'))
+          usecase_data=get_potential_usecaes(data,solution_names)
+          convert_to_html(usecase_data,stack_list)
+
+  ''' MAIN FUNCTION '''
+
+  def main():
+      list_name= demisto.args()['ListName']
+      integration_list= demisto.args().get('Integrations',None)
+      try:
+          stack_list = demisto.args()['TechnologyStackList']
+      except Exception as e:
+          print(e)
+          stack_list = None
+
+      if type(stack_list) == str:
+          stack_list = json.loads(stack_list)
+      if type(stack_list) == dict:
+          stack_list = [stack_list]
+
+      if integration_list and type(integration_list) == str:
+          try:
+              integration_list = json.loads(integration_list)
+          except Exception as e:
+              print(f"Encountered the exception: {e} but continuing")
+
+      if integration_list and type(integration_list) == str:
+          integration_list = [integration_list]
+
+      list_data = demisto.executeCommand("getList", {"listName":list_name})[0]['Contents']
+      data=json.loads(list_data)
+
+
+      get_adoption_report(data,integration_list,stack_list)
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags:
+- customer adoption
+type: python
