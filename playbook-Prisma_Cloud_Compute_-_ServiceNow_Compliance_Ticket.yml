@@ -1,0 +1,883 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.10.0
+    itemVersion: 1.7.4
+    packID: PrismaCloudCompute
+    packName: Prisma Cloud Compute by Palo Alto Networks
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: |-
+  This playbook is a sub-playbook of the "Prisma Cloud Compute - Compliance Alert Host Enrichment Loop" playbook.
+  It creates a new ServiceNow ticket or updates an existing ServiceNow ticket for each compliance ID retrieved in the original Prisma Cloud compliance alert, with enriched data for each resource (host, image or container).
+id: Prisma Cloud Compute - ServiceNow Compliance Ticket
+inputs:
+- description: The compliance issue ID to open a ServiceNow ticket for.
+  key: ComplianceIssueID
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The compliance issue description to open a ServiceNow ticket for.
+  key: ComplianceIssueDescription
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The compliance issue severity.
+  key: ComplianceIssueSeverity
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: |-
+    Whether to create the ServiceNow ticket with an XLSX file by default.
+
+    Available options:
+
+    False - The playbook will create/update the ticket with an HTML table containing the compliance issues. In case the table is too big (32,000 characters and above), it will create the Jira issue with an attached XLSX file.
+
+    True - The playbook will create the ServiceNow ticket with an attached XLSX file by default.
+  key: AttachFileByDefault
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "False"
+name: Prisma Cloud Compute - ServiceNow Compliance Ticket
+outputs: []
+quiet: true
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3cd7f7e4-b8c2-4bb8-8d9f-a31ea7964a54
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 3cd7f7e4-b8c2-4bb8-8d9f-a31ea7964a54
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": -320
+        }
+      }
+  "6":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: incident.prismacloudcomputehostcomplianceissues.complianceissues
+                    operator: match
+                    right:
+                      iscontext: true
+                      value:
+                        simple: filter
+                root: incident.prismacloudcomputehostcomplianceissues
+                transformers:
+                - args:
+                    fields:
+                      value:
+                        simple: complianceissues
+                    json_object:
+                      value:
+                        simple: incident.prismacloudcomputehostcomplianceissues
+                  operator: IgnoreFieldsFromJson
+                - args:
+                    headers: {}
+                    is_auto_json_transform: {}
+                    json_transform_properties: {}
+                    title: {}
+                  operator: JsonToTable
+                - args:
+                    regex:
+                      value:
+                        simple: <br>
+                    replaceWith:
+                      value:
+                        simple: "\\\\ \n"
+                  operator: replaceMatch
+                - operator: strLength
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "32000"
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.AttachFileByDefault
+          operator: isEqualString
+          right:
+            value:
+              simple: "True"
+      label: XLSX
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "9"
+      XLSX:
+      - "10"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        This condition checks if one of the following is true:
+
+        - The HTML table with the compliance issues is too big (32,000 characters long or more)
+        - The value of the playbook input "AttachFileByDefault" is "True"
+
+        If one of the above is true, it will create the ServiceNow ticket with an attached file and not with an HTML table under the work notes.
+      id: 9d0f4862-ec1d-47dd-84ef-c9658e1ccd91
+      iscommand: false
+      name: Verify if ServiceNow issue requires XLSX or a Markdown table
+      type: condition
+      version: -1
+    taskid: 9d0f4862-ec1d-47dd-84ef-c9658e1ccd91
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 565
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: filter
+      value:
+        simple: (^|\n)${inputs.ComplianceIssueID} \(
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This task will create a string which will be used as a filter in
+        other tasks in order to extract only the relevant resources, based on the
+        compliance issue ID, from the full list of affected resources.
+      id: bbce9749-39a3-4c19-8f2b-cf6dcb07f606
+      iscommand: false
+      name: Create a filter term for extracting relevant resources
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: bbce9749-39a3-4c19-8f2b-cf6dcb07f606
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 430,
+          "y": 390
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "35"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: fc334394-43b8-4762-838b-8a8a52614204
+      iscommand: false
+      name: Create/Update a ticket with markdown table
+      type: title
+      version: -1
+    taskid: fc334394-43b8-4762-838b-8a8a52614204
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 430,
+          "y": 750
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: db8f4f4e-9b7c-47dc-8a00-fd6e2ce8f0e0
+      iscommand: false
+      name: Create/Update a ticket with XLSX file
+      type: title
+      version: -1
+    taskid: db8f4f4e-9b7c-47dc-8a00-fd6e2ce8f0e0
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 870,
+          "y": 750
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query:
+        simple: 'GOTOshort_description=Prisma Cloud Compute - compliance issues ID:
+          ${inputs.ComplianceIssueID}'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Retrieves ticket information according to the supplied query.
+        This task is used in order to decide in later stages of the playbook whether it needs to create a new ticket or update an existing one.
+      id: b4409906-8717-4f04-8876-f9b24773721d
+      iscommand: true
+      name: Search for existing open ServiceNow issues
+      script: '|||servicenow-query-tickets'
+      type: regular
+      version: -1
+    taskid: b4409906-8717-4f04-8876-f9b24773721d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 870,
+          "y": 390
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b57e3fb6-730b-4a39-848d-46e340c50366
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: b57e3fb6-730b-4a39-848d-46e340c50366
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 1770
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "37"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: ae67c2e8-98a3-459e-82e3-54de566b3dc9
+      iscommand: false
+      name: Set ticket info in layout
+      type: title
+      version: -1
+    taskid: ae67c2e8-98a3-459e-82e3-54de566b3dc9
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 1105
+        }
+      }
+  "26":
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ticketnumber:
+        complex:
+          accessor: ID
+          root: Ticket
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: The Compliance Alert incident layout displays several tabs based
+        on different filtering conditions. This task sets a value in the “ ticketnumber”
+        incident field, which will cause the “Ticketing Information” tab to be visible.
+      id: a7589c1c-4c7a-4476-8684-c27284e27dba
+      iscommand: true
+      name: Show Ticketing Information tab in the layout
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: a7589c1c-4c7a-4476-8684-c27284e27dba
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 850,
+          "y": 1600
+        }
+      }
+  "27":
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+      subplaybook:
+        simple: auto
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.12/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 4a18db06-ecfe-4a61-82aa-b1f5e64de4a6
+      iscommand: false
+      name: Delete Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 4a18db06-ecfe-4a61-82aa-b1f5e64de4a6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 220
+        }
+      }
+  "28":
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      columns:
+        simple: Ticketing System,Ticket ID,Ticket Number,Action,Title
+      context_path:
+        simple: TicketInfo
+      grid_id:
+        simple: prismacloudcomputeticketsinfo
+      keys:
+        simple: ticketingsystem,ticketid,ticketnumber,action,title
+      overwrite:
+        simple: "false"
+      sort_by:
+        simple: ticketid
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Creates a Grid table from items or key-value pairs.
+      id: bf982272-674d-42eb-8611-c2e009efa8de
+      iscommand: false
+      name: Set ticket info table grid field
+      script: SetGridField
+      type: regular
+      version: -1
+    taskid: bf982272-674d-42eb-8611-c2e009efa8de
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 440,
+          "y": 1600
+        }
+      }
+  "29":
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "28"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: TicketInfo
+      value:
+        simple: '{"ticketingsystem": "ServiceNow", "ticketid": "${Ticket.ID}", "ticketnumber":
+          "${Ticket.Number}", "action": "${TicketAction}", "title":"${Ticket.Summary}"}'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prepare the data which will be displayed under the “Ticketing Information”
+        tab in the incident’s layout.
+      id: 32635b75-3ad8-46bb-827c-f8f4f6dec4c8
+      iscommand: false
+      name: Prepare ticket info data
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: 32635b75-3ad8-46bb-827c-f8f4f6dec4c8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 440,
+          "y": 1420
+        }
+      }
+  "32":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.ComplianceIssueID
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: inputs-exist
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "33"
+      inputs-exist:
+      - "27"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: abded8ac-4cb0-4507-8a89-1aaf6a31ac4d
+      iscommand: false
+      name: Verify inputs
+      type: condition
+      version: -1
+    taskid: abded8ac-4cb0-4507-8a89-1aaf6a31ac4d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 20
+        }
+      }
+  "33":
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5af6556f-69c3-4367-8f7e-e4b018419f02
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 5af6556f-69c3-4367-8f7e-e4b018419f02
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1100,
+          "y": 190
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "33"
+      "yes":
+      - "32"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      brandname:
+        simple: ServiceNow v2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns 'yes' if integration brand is available. Otherwise returns
+        'no'.
+      id: 70aa3aeb-3c9b-49c4-8968-071a56ef28e4
+      iscommand: false
+      name: Is ServiceNow v2 integration enabled?
+      script: IsIntegrationAvailable
+      type: condition
+      version: -1
+    taskid: 70aa3aeb-3c9b-49c4-8968-071a56ef28e4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": -160
+        }
+      }
+  "35":
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ComplianceIssueDescription:
+        complex:
+          root: inputs.ComplianceIssueDescription
+      ComplianceIssueID:
+        complex:
+          root: inputs.ComplianceIssueID
+      ComplianceIssueSeverity:
+        complex:
+          root: inputs.ComplianceIssueSeverity
+      Filter:
+        complex:
+          root: filter
+      TicketID:
+        complex:
+          accessor: ID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: Ticket.Active
+              operator: isEqualString
+              right:
+                value:
+                  simple: "true"
+          root: Ticket
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 66513673-9eed-4f1c-843d-682202e28771
+      iscommand: false
+      name: Prisma Cloud Compute - ServiceNow Ticket (HTML Table)
+      playbookId: Prisma Cloud Compute - ServiceNow Ticket (HTML Table)
+      type: playbook
+      version: -1
+    taskid: 66513673-9eed-4f1c-843d-682202e28771
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 430,
+          "y": 920
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ComplianceIssueDescription:
+        complex:
+          root: inputs.ComplianceIssueDescription
+      ComplianceIssueID:
+        complex:
+          root: inputs.ComplianceIssueID
+      ComplianceIssueSeverity:
+        complex:
+          root: inputs.ComplianceIssueSeverity
+      Filter:
+        complex:
+          root: filter
+      TicketID:
+        complex:
+          accessor: ID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: Ticket.Active
+              operator: isEqualString
+              right:
+                value:
+                  simple: "true"
+          root: Ticket
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3d37b8ab-8ae0-453b-8f40-7fdc79b4d284
+      iscommand: false
+      name: Prisma Cloud Compute - ServiceNow Ticket (XLSX)
+      playbookId: Prisma Cloud Compute - ServiceNow Ticket (XLSX)
+      type: playbook
+      version: -1
+    taskid: 3d37b8ab-8ae0-453b-8f40-7fdc79b4d284
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 870,
+          "y": 920
+        }
+      }
+  "37":
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "29"
+      - "38"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "false"
+      key:
+        simple: Ticket
+      value:
+        complex:
+          accessor: '[0]'
+          root: Ticket
+          transformers:
+          - args:
+              applyIfEmpty: {}
+              defaultValue:
+                value:
+                  simple: Ticket
+            operator: SetIfEmpty
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        The reason for this task is to make sure that the next task will get a single value for each key.
+        Since this playbook may contain several "Ticket" objects with the same ID, depending on the scenario, this task will make sure only one of them will be used in the next task.
+      id: cb821891-ede4-4d78-8fdc-8b70c1b0820f
+      iscommand: false
+      name: Delete "Ticket" duplicates
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: cb821891-ede4-4d78-8fdc-8b70c1b0820f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 1250
+        }
+      }
+  "38":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: ticketnumber
+                root: incident
+          operator: isEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "21"
+      "yes":
+      - "26"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: The Compliance Alert incident layout displays several tabs based
+        on different filtering conditions. This task checks if the “Ticketing Information”
+        tab is already visible or not, based on the value under the relevant incident
+        field.
+      id: 3f3cb98f-676b-4c2d-8b30-311898db984b
+      iscommand: false
+      name: Check if Ticketing tab is already visible in the layout
+      type: condition
+      version: -1
+    taskid: 3f3cb98f-676b-4c2d-8b30-311898db984b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 850,
+          "y": 1420
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "38_21_#default#": 0.18,
+      "38_26_yes": 0.51
+    },
+    "paper": {
+      "dimensions": {
+        "height": 2155,
+        "width": 1050,
+        "x": 430,
+        "y": -320
+      }
+    }
+  }
