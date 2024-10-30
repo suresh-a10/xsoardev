@@ -1,0 +1,54 @@
+args:
+- description: comma separated list of devices, with or without brackets
+  name: devices
+  required: true
+comment: Unquarantines a comma separated list of devices, with or without brackets
+  surrounding the list. Do not include spaces.
+commonfields:
+  id: 85913c41-aca9-48e9-8235-97f899991c44
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.8.6.13358
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: pp_quarantine_list_of_devices
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  devices = demisto.args()["devices"]
+
+
+  if not isinstance(devices,list):
+      if isinstance(devices,str):
+          devices = devices.replace("[","").replace("]","").split(",")
+
+  for device in devices:
+      res = demisto.executeCommand("pp_quarantine_device",{"device_name":device})
+      context = res[1]['Contents']
+      if "offline" in context:
+          demisto.results({
+                  "ContentsFormat": formats['json'],
+                  "Contents":context,
+                  "Type": entryTypes["note"],
+                  "EntryContext":context,
+                  "Append":True
+          })
+      else:
+          demisto.results(res)
+scripttarget: 0
+subtype: python3
+tags: []
+timeout: 100ns
+type: python
