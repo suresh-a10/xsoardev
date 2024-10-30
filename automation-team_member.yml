@@ -1,0 +1,57 @@
+args:
+- name: id
+  required: true
+commonfields:
+  id: 1a2e081a-e28d-49cb-8673-3fbaa3c20a89
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: docker.io/demisto/python3:3.10.13.86272
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: team_member
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import requests
+  import urllib3
+  import json
+  urllib3.disable_warnings()
+
+  api_key = "5A73CF291A11684143514E13F6A1E6E0"
+  incident_id = demisto.incidents()[0]['id']
+  demisto_urls = demisto.demistoUrls()
+  server_url = demisto_urls['server']
+
+  headers = {
+      'Authorization': api_key,
+      'Content-Type': 'application/json'
+  }
+
+  data = {
+      "pageSize":100,
+      "lastId":"",
+      "categories":["attachments"],
+      "tags":[],
+      "users":[]
+  }
+
+  r = requests.post(f'{server_url}/investigation/{incident_id}', data=json.dumps(data), headers=headers, verify=False)
+  response_json = r.json()
+  users = response_json['users']
+  demisto.results(users)
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
