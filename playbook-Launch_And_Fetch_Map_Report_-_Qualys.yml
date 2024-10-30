@@ -1,0 +1,282 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.5.0
+    itemVersion: 3.0.2
+    packID: qualys
+    packName: Qualys
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: Launches a map scan report and fetches the report when it's ready.
+id: Launch And Fetch Map Report - Qualys
+inputs:
+- description: The template ID of the report you want to launch. Can be found by running
+    the command qualys-report-template-list.
+  key: template_id
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: One output format may be specified. When output_format=pdf is specified,
+    the Secure PDF Distribution may be used.
+  key: output_format
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: Specifies the map references (1 or 2) to include. A map reference starts
+    with the string "map/" followed by a reference ID number. When two map references
+    are given, the report compares map results. Two map references are comma separated.
+  key: report_refs
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: A user-defined report title. The title may have a maximum of 128 characters.
+    For a PCI compliance report, the report title is provided by Qualys and cannot
+    be changed.
+  key: report_title
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: (Valid for CSV format report only). Specify hide_header=1 to omit the
+    header information from the report. By default, this information is included.
+  key: hide_header
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The report recipients in the form of one or more distribution group
+    IDs. Multiple distribution group IDs are comma separated. Where do I find this
+    ID? Log in to your Qualys account, go to Users > Distribution Groups and select
+    Info for a group in the list.
+  key: recipient_group_id
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: (Required for secure PDF distribution, Manager or Unit Manager only)
+    Used for secure PDF report distribution when this feature is enabled in the user's
+    account (under Reports > Setup > Report Share). The password to be used for encryption.
+    - the password must have a minimum of 8 characters (ascii), and a maximum of 32
+    characters - the password must contain alpha and numeric characters - the password
+    cannot match the password for the user’s Qualys account. - the password must follow
+    the password security guidelines defined for your subscription (under Users >
+    Setup > Security)
+  key: pdf_password
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Used for secure PDF distribution. The report recipients in the form
+    of one or more distribution group names, as defined using the Qualys UI. Multiple
+    distribution groups are comma separated. A maximum of 50 distribution groups may
+    be entered.
+  key: recipient_group
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: For a map report, specifies certain IPs/ranges to include in the report.
+    Multiple IPs and/or ranges are comma separated.
+  key: ip_restriction
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Specifies the target domain for the map report. Include the domain
+    name only; do not enter "www." at the start of the domain name. When the special
+    “none” domain is specified as a parameter value, the ip_restriction parameter
+    is required.
+  key: domain
+  playbookInputQuery: null
+  required: true
+  value: {}
+name: Launch And Fetch Map Report - Qualys
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: feaf59d2-f107-4395-862c-895cd5406872
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: feaf59d2-f107-4395-862c-895cd5406872
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domain:
+        simple: ${inputs.domain}
+      hide_header:
+        simple: ${inputs.hide_header}
+      ip_restriction:
+        simple: ${inputs.ip_restriction}
+      output_format:
+        simple: ${inputs.output_format}
+      pdf_password:
+        simple: ${inputs.pdf_password}
+      recipient_group:
+        simple: ${inputs.recipient_group}
+      recipient_group_id:
+        simple: ${inputs.recipient_group_id}
+      report_refs:
+        simple: ${inputs.report_refs}
+      report_title:
+        simple: ${inputs.report_title}
+      template_id:
+        simple: ${inputs.template_id}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QualysV2
+      description: Launches a map report
+      id: b48ea051-7009-42cd-8e78-9e53e195d175
+      iscommand: true
+      name: qualys-report-launch-map
+      script: QualysV2|||qualys-report-launch-map
+      type: regular
+      version: -1
+    taskid: b48ea051-7009-42cd-8e78-9e53e195d175
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 210
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      execution-timeout:
+        simple: "180"
+      file_format:
+        simple: ${inputs.output_format}
+      id:
+        simple: ${Qualys.Report.ID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QualysV2
+      description: Download report
+      id: de4b20a5-28d2-445a-825f-a366c2138a34
+      iscommand: true
+      name: qualys-report-fetch
+      script: QualysV2|||qualys-report-fetch
+      type: regular
+      version: -1
+    taskid: de4b20a5-28d2-445a-825f-a366c2138a34
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 540
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 0
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Ids:
+        simple: ${Qualys.Report.ID}
+      Interval:
+        simple: "1"
+      PollingCommandArgName:
+        simple: id
+      PollingCommandName:
+        simple: qualys-report-list
+      Timeout:
+        simple: "30"
+      dt:
+        simple: Qualys.Report(val.STATUS.STATE != 'Finished').ID.
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Use this playbook as a sub-playbook to block execution of the master playbook until a remote action is complete.
+        This playbook implements polling by continuously running the command in Step \#2 until the operation completes.
+        The remote action should have the following structure:
+
+        1. Initiate the operation.
+        2. Poll to check if the operation completed.
+        3. (optional) Get the results of the operation.
+      id: 9fe76d77-ac51-4c04-862b-eb39c73eecb0
+      iscommand: false
+      name: GenericPolling
+      playbookId: GenericPolling
+      type: playbook
+      version: -1
+    taskid: 9fe76d77-ac51-4c04-862b-eb39c73eecb0
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 370
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 585,
+        "width": 380,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
