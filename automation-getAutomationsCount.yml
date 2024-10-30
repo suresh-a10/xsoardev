@@ -1,0 +1,66 @@
+comment: Get the count of OOTB, custom and deprecated automations.
+commonfields:
+  id: getAutomationsCount
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.10.0
+    itemVersion: 2.1.3
+    packID: HealthCheck
+    packName: System Diagnostics and Health Check
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.14.95137
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: getAutomationsCount
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('getAutomationsCount', 'start', __line__())
+  demisto.debug('pack name = System Diagnostics and Health Check, pack version = 2.1.3')
+
+
+
+  payload1 = {'query': 'system:T'}
+  res1 = demisto.executeCommand("core-api-post", {"uri": "automation/search",
+                                "body": json.dumps(payload1)})[0]["Contents"]["response"]
+
+  if not res1['scripts']:
+      res1['scripts'] = []
+
+
+  payload2 = {'query': 'system:F'}
+  res2 = demisto.executeCommand("core-api-post", {"uri": "automation/search",
+                                "body": json.dumps(payload2)})[0]["Contents"]["response"]
+
+  if not res2['scripts']:
+      res2['scripts'] = []
+
+
+  payload3 = {'query': 'deprecated:T'}
+  res3 = demisto.executeCommand("core-api-post", {"uri": "automation/search",
+                                "body": json.dumps(payload3)})[0]["Contents"]["response"]
+
+  if not res3['scripts']:
+      res3['scripts'] = []
+
+  wList = []
+  wList.append({"OOTB": len(res1["scripts"]), "Custom": len(res2["scripts"]), "Deprecated": len(res3["scripts"])})
+
+  return_results({"total": len(wList), "data": wList})
+
+  register_module_line('getAutomationsCount', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- statusreview
+- widget
+type: python
