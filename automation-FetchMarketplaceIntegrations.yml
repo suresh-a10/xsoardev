@@ -1,0 +1,70 @@
+commonfields:
+  id: 88090600-c8be-467f-89bf-e51d8659d3a3
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.49934
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: FetchMarketplaceIntegrations
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  from typing import Dict, Any
+  import traceback
+
+
+
+  ''' MAIN FUNCTION '''
+  def get_integrations():
+      integrations = demisto.executeCommand("demisto-api-post", {
+          "uri":"contentpacks/marketplace/search",
+          "body": {
+              "integrationsQuery": "",
+              "size": 9999
+          }
+
+      })
+      integrations = integrations[0].get("Contents").get("response").get("groups").get("integrations")
+
+      list_of_integrations = []
+
+      for integration in integrations:
+          if "Deprecated" not in integration.get("name"):
+              list_of_integrations.append(integration.get("name"))
+
+      demisto.executeCommand("setList", {"listName":"MarketplaceIntegrations","listData":list_of_integrations})
+
+
+  def main():
+      try:
+          # TODO: replace the invoked command function with yours
+          get_integrations()
+
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
