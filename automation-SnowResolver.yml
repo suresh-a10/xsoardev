@@ -1,0 +1,191 @@
+args:
+- defaultValue: ${Ticket.ID}
+  name: incident_id
+  required: true
+commonfields:
+  id: 4d13d94f-af3f-4dad-8cc3-89d6f35359a5
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SnowResolver
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import requests
+  import json
+
+  client_id = '6f3d686719b34910686e5a1b4f965de8'
+  client_secret = 'p,VVi&?Nfd'
+  snow_username = 'xsoar.user'
+  snow_password = 'Xsoar'
+  servicenow_instance = 'https://idfcfirstbanktest.service-now.com'
+  servicenow_incident_id = demisto.args().get('servicenow_incident_id')
+  token_url = f'https://idfcfirstbanktest.service-now.com/oauth_token.do'
+
+  xsoar_api_key = '3FCD385616C8ECBF6FF1C08D21C2C3DA'
+
+  def update_resoltion_data(resolved_at, resolved_by, resolution_code, resolution_notes):
+
+      demisto.executeCommand(
+
+          "setIncident", {
+
+              "snowresolved": resolved_at,
+              "snowresolvedby": resolved_by,
+              "servicenowresolutioncode": resolution_code,
+              "snowresolutionnotes": resolution_notes
+
+          }
+
+      )
+
+  def get_oauth2_token():
+      payload = {
+          'grant_type': 'password',
+          'client_id': client_id,
+          'client_secret': client_secret,
+          'username': snow_username,
+          'password': snow_password
+
+      }
+      headers = {
+          'Content-Type': "application/x-www-form-urlencoded",
+          'Cache-Control': "no-cache"
+
+      }
+      try:
+          response = requests.post(token_url, data=payload, headers=headers, verify=False)
+          response.raise_for_status()
+          access_token = response.json().get('access_token')
+          if not access_token:
+              raise ValueError('Oauth2 token not found in response')
+      except requests.RequestException as e:
+          demisto.error(f'Failed to retrieve Oauth2 token: {e}')
+          raise
+      except ValueError as e:
+          demisto.error(f'Token retrieval failed: {e}')
+          raise
+      return access_token
+
+
+
+  def get_servicenow_data_resolution(incident_id,token):
+      resolved_at_query_data = ""
+      resolved_by_query_data = ""
+      resolution_code_query_data = ""
+      resolution_notes_query_data = ""
+      status = False
+
+      #status, resolved_at, resolved_by, resolution_code, resolution_notes
+
+
+      headers = {
+          'Authorization': f'Bearer {token}',
+          'Content-Type': 'application/json'
+      }
+      try:
+          response = requests.get(
+              f'https://idfcfirstbanktest.service-now.com/api/now/table/incident/{incident_id}?sysparm_display_value=true&sysparm_fields=resolved_at,resolved_by, close_code, close_notes',
+              #f'https://idfcfirstbanktest.service-now.com/api/now/table/incident/{incident_id}?sysparm_display_value=true',
+              headers=headers,
+              verify=False
+          )
+
+          response.raise_for_status()
+          incident_data = response.json().get('result',{})
+          #print(incident_data)
+
+
+          #if resolved at is empty then the status is false -> incident is not resolved
+
+          if incident_data.get('resolved_at') == "":
+              return status, resolved_at_query_data, resolved_by_query_data, resolution_code_query_data, resolution_notes_query_data
+
+          #resolved at is not empty -> incident is resolved and status is True.
+
+          resolved_at_query_data = incident_data.get('resolved_at')
+          resolved_by_query_data = incident_data.get('resolved_by').get('display_value')
+          resolution_code_query_data = incident_data.get('close_code')
+          resolution_notes_query_data = incident_data.get('close_notes')
+          status = True
+
+
+
+
+
+
+      except requests.RequestException as e:
+          demisto.error(f'Failed to retrieve data from servicenow: {e}')
+          raise
+
+      return status, resolved_at_query_data, resolved_by_query_data, resolution_code_query_data, resolution_notes_query_data
+
+
+
+
+
+  def main():
+
+
+      contents=demisto.executeCommand("getContext", {"id":demisto.investigation()['id']})[0]['Contents']['context']
+
+      ticket = contents.get('Ticket')
+
+      #incident_id = ticket[-1].get('ID')
+
+
+
+
+      #getting incident details for syncing biderectional
+      incident = demisto.incidents()[0]
+      incident_id= demisto.args().get('incident_id')
+
+
+
+      try:
+
+          #get the oath2 token
+          token = get_oauth2_token()
+          status, resolved_at, resolved_by, resolution_code, resolution_notes = get_servicenow_data_resolution(incident_id, token)
+
+
+          if not status:
+              output = [status, resolved_at, resolved_by, resolution_code, resolution_notes]
+
+              return_results(output)
+
+
+          #Resolved
+
+          update_resoltion_data(resolved_at, resolved_by, resolution_code, resolution_notes)
+
+          #print(status, resolved_at, resolved_by, resolution_code, resolution_notes)
+
+
+          #demisto.results('Servicenow and XSOAR fields synchronized successfully.')
+      except Exception as e:
+          return_error(f'Failed to synchronize fields: {str(e)}')
+
+
+
+  if __name__ in ('__main__', '__builtin__','builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags:
+- dynamic-section
+type: python
