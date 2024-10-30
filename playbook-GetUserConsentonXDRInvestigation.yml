@@ -1,0 +1,341 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: ac10d8f7-b4f7-4e92-8173-3a05cef60248
+inputs:
+- description: ""
+  key: incidentid
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: GetUserConsentonXDRInvestigation
+outputs:
+- contextPath: EmailAskUserResponse
+  description: userresponse
+  type: string
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c693473f-96b7-4647-8bcb-7e33b403f721
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: c693473f-96b7-4647-8bcb-7e33b403f721
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      incidentId:
+        simple: ${inputs.incidentid}
+      name:
+        simple: XDRInvestigation
+      type:
+        simple: pdf
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.summaryReport
+      id: a1ebf800-af37-415f-88d2-c548c0be5861
+      iscommand: true
+      name: Generate Report
+      script: Builtin|||generateSummaryReport
+      type: regular
+      version: -1
+    taskid: a1ebf800-af37-415f-88d2-c548c0be5861
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 195
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIds:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: InfoFile.Extension
+              operator: isEqualString
+              right:
+                value:
+                  simple: pdf
+          root: InfoFile
+      message:
+        simple: "Hi User, \n\nPlease go through the report and reply \"yes\" if you
+          want to block IOC and \"no\" If you dont want to block IOC"
+      option1:
+        simple: "yes"
+      option2:
+        simple: "no"
+      subject:
+        simple: Block IOC Yes or No
+      task:
+        simple: response
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Ask a user a question via email and process the reply directly
+        into the investigation.
+      id: 76ef2ca3-24cb-4364-84bd-3e9cf92f68e5
+      iscommand: false
+      name: emailAskUser
+      script: EmailAskUser
+      type: regular
+      version: -1
+    taskid: 76ef2ca3-24cb-4364-84bd-3e9cf92f68e5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 26c3d4fd-eee4-482e-8091-93eef8ee1444
+      iscommand: false
+      name: This is an Automated Task, do not close manually
+      tags:
+      - response
+      type: regular
+      version: -1
+    taskid: 26c3d4fd-eee4-482e-8091-93eef8ee1444
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 545
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "No":
+      - "6"
+      "Yes":
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      responseEntryId:
+        simple: ${lastCompletedTaskEntries}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Extract user's response from EmailAskUser reply. Returns the first
+        textual response line of the provided entry that contains the reply body.
+        Use ${lastCompletedTaskEntries} to analyze the previous playbook task containing
+        the user's reply.
+      id: efe0f376-3c98-4be2-8550-149dc41e87c1
+      iscommand: false
+      name: Validate User Response
+      script: EmailAskUserResponse
+      type: condition
+      version: -1
+    taskid: efe0f376-3c98-4be2-8550-149dc41e87c1
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 720
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "false"
+      key:
+        simple: userresponse
+      value:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 4b110565-dcc6-4ad7-83c0-9bf332aa62c9
+      iscommand: false
+      name: User Response yes
+      script: Set
+      type: regular
+      version: -1
+    taskid: 4b110565-dcc6-4ad7-83c0-9bf332aa62c9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 895
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "false"
+      key:
+        simple: userresponse
+      value:
+        simple: "no"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: cd66ec0a-a567-4792-82b7-90f2c97c811d
+      iscommand: false
+      name: User Response no
+      script: Set
+      type: regular
+      version: -1
+    taskid: cd66ec0a-a567-4792-82b7-90f2c97c811d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 895
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 485d6e8b-f499-4a02-8fe1-ae1d788939f0
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 485d6e8b-f499-4a02-8fe1-ae1d788939f0
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1070
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1085,
+        "width": 810,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
