@@ -1,0 +1,71 @@
+commonfields:
+  id: 0ac74ee0-d1b2-407a-868c-23526c90c12d
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.14.91134
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: FileSizeGreaterThan5MB
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+
+  import os
+
+  def get_attachments_using_instance(labels):
+      message_id = ''
+      instance_name = ''
+      integration_name = ''
+
+      for label in labels:
+          if label.get('type') == 'Email/ID':
+              message_id = label.get('value')
+          elif label.get('type') == 'Instance':
+              instance_name = label.get('value')
+          elif label.get('type') == 'Brand':
+              integration_name = label.get('value')
+
+      if integration_name =='Gmail Single User':
+          res = demisto.executeCommand("gmail-get-attachments", {"message-id":message_id})[0]
+          print(res)
+
+
+  def main():
+
+      args = demisto.args()
+      incident = demisto.incident()
+      attachments = incident.get('attachment', [])
+      get_attachments_using_instance(incident.get('labels'))
+
+      ##file_size = os.path.getsize(attachments[0]['path'])
+      #print("File Size is :", file_size, "bytes")
+
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags:
+- preProcessing
+type: python
