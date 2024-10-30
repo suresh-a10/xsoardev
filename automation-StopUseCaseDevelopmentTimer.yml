@@ -1,0 +1,55 @@
+commonfields:
+  id: StopUseCaseDevelopmentTimer
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.10.0
+    itemVersion: 1.0.7
+    packID: Use_Case_Builder
+    packName: Use Case Builder
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.14.100715
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: StopUseCaseDevelopmentTimer
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('StopUseCaseDevelopmentTimer', 'start', __line__())
+  ### pack version: 1.0.7
+
+
+
+
+  def main(incident):
+      inprod = incident.get('CustomFields', {}).get('usecasedevelopmentstage')
+
+      args = demisto.args()
+      try:
+          if args.get('new') and inprod == 'Production':  # checks if the stage was set to production:
+              demisto.executeCommand("stopTimer", {"timerField": "usecasebuilderdevelopmentdeadline"})
+              demisto.results("The use case development stage has been set to Production!"
+                              " timer has been stopped.")
+      except Exception as e:  # erro handling
+          err_msg = f'Encountered an error while running the script: [{e}]'
+          return_error(err_msg, error=e)
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      incident = demisto.incidents()[0]
+      main(incident)
+
+  register_module_line('StopUseCaseDevelopmentTimer', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- field-change-triggered
+type: python
