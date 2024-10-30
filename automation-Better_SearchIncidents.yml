@@ -1,0 +1,120 @@
+args:
+- description: Filter by incident IDs
+  isArray: true
+  name: id
+- description: Filter by incident name
+  isArray: true
+  name: name
+- description: Filter by the status (e.g. assigned)
+  isArray: true
+  name: status
+- description: Filter by excluding status (e.g. assigned)
+  isArray: true
+  name: notstatus
+- description: Filter by closing reason
+  isArray: true
+  name: reason
+- description: Filter by from date (e.g. 2006-01-02T15:04:05Z07:00)
+  name: fromdate
+- description: Filter by to date (e.g. 2006-01-02T15:04:05Z07:00)
+  name: todate
+- description: Filter by from close date (e.g. 2006-01-02T15:04:05Z07:00)
+  name: fromclosedate
+- description: Filter by to close date (e.g. 2006-01-02T15:04:05Z07:00)
+  name: toclosedate
+- description: Filter by from due date (e.g. 2006-01-02T15:04:05Z07:00)
+  name: fromduedate
+- description: Filter by to due date (e.g. 2006-01-02T15:04:05Z07:00)
+  name: toduedate
+- description: Filter by Severity
+  isArray: true
+  name: level
+- description: Filter by incident owners
+  isArray: true
+  name: owner
+- description: Filter by incident details
+  name: details
+- description: Filter by incident type
+  isArray: true
+  name: type
+- description: Use free form query (use Lucene syntax) as filter. All other filters
+    will be ignored when this filter is used.
+  isArray: true
+  name: query
+- description: Filter by the page number
+  name: page
+- description: Filter by the page size (per fetch)
+  name: size
+- description: Sort in format of field.asc,field.desc,...
+  name: sort
+- name: fields
+- auto: PREDEFINED
+  default: true
+  defaultValue: "False"
+  name: flatternCustomFields
+  predefined:
+  - "True"
+  - "False"
+comment: |-
+  Better search for Demisto incidents.
+   - You can choose the fields to be output
+   - No data saved to context (Use extended context if needed `extend-context="searchdata="`
+commonfields:
+  id: f4a1f963-71ab-4791-836b-f2ffc2150de8
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Better_SearchIncidents
+pswd: ""
+runas: Administrator
+runonce: false
+script: |-
+  arguments = demisto.args()
+  if demisto.get(arguments,'fields'):
+      fields = argToList(arguments['fields'])
+      arguments.pop('fields')
+      arguments.pop('flatternCustomFields')
+  else:
+      fields = ['id', 'name', 'status', 'owner', 'type','severity']
+  try:
+      res = demisto.executeCommand('getIncidents', arguments)
+  except e, Exception:
+      demisto.results("Unable to get incidents " + str(e) )
+  #demisto.results(str(res[0]['Contents']['data']))
+  count = 0
+  newResult  = []
+  if res[0]['Contents']['data']:
+      for items in res[0]['Contents']['data']:
+          if demisto.args()['flatternCustomFields'] and items['CustomFields']:
+              for x in items['CustomFields']:
+                  items[x] = items['CustomFields'][x]
+
+
+      ec = {}
+      md = tableToMarkdown("Incidents found", res[0]['Contents']['data'],fields)
+      ec['SearchIncidents'] = res[0]['Contents']['data']
+      demisto.results({
+          'Type': entryTypes['note'],
+          'Contents': res[0]['Contents']['data'],
+          'ContentsFormat': formats['json'],
+          'HumanReadable': md,
+          'ReadableContentsFormat' : formats['markdown']
+      })
+  else:
+      demisto.results("No incidents found")
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
