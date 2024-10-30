@@ -1,0 +1,1336 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: e49d3bb4-3fe5-47f8-8cbe-ef91f42126d1
+inputs:
+- description: Mitretactics in ID - Name format for example - TA0043 - Reconnaissance
+  key: mitretactics
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The Incident ID of Main incident when dedup is found
+  key: incidentid
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: ""
+  key: assetcii
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Taking Main incident severity for Final severity calculation
+  key: severity
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: ""
+  key: parentincidentname
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: ""
+  key: previousSla
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: ""
+  key: Whitelist
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: ""
+  key: severityscore
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: ""
+  key: parentmitre
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: Set Final Severity - Child
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 133c7e69-101d-4531-89aa-e138e3a778ef
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 133c7e69-101d-4531-89aa-e138e3a778ef
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 1042.5,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      header:
+        simple: mitreid
+      list_name:
+        simple: mitretacticsscore
+      value:
+        simple: ${inputs.mitretactics}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Parses a list by header and value.
+      id: b102b28a-d2e1-44bf-8e24-978163c7f83e
+      iscommand: false
+      name: Get Mitre Score based on Tactics
+      script: GetListRow
+      type: regular
+      version: -1
+    taskid: b102b28a-d2e1-44bf-8e24-978163c7f83e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 612.5,
+          "y": 895
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      id:
+        simple: ${inputs.incidentid}
+      incidentpage:
+        simple: "Yes"
+      mitretacticname:
+        simple: ${inputs.mitretactics}
+      severityscore:
+        complex:
+          accessor: score
+          root: GetListRow.Results
+          transformers:
+          - operator: SumList
+          - args:
+              by:
+                iscontext: true
+                value:
+                  simple: inputs.severity
+            operator: addition
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: This task will add all Mitre score and existing severityscore
+      id: 3262739f-8d48-4f97-89c9-aecb5d901a5e
+      iscommand: true
+      name: Update Parent's severity score & Mitre tactics
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 3262739f-8d48-4f97-89c9-aecb5d901a5e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 612.5,
+          "y": 1070
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: foundIncidents.severityscore
+          operator: InRange
+          right:
+            value:
+              simple: 50,69
+      label: Medium
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: foundIncidents.severityscore
+          operator: InRange
+          right:
+            value:
+              simple: 70,89
+      label: High
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: foundIncidents.severityscore
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "90"
+      label: Critical
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: foundIncidents.severityscore
+          operator: InRange
+          right:
+            value:
+              simple: 1,49
+      label: Low
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      Critical:
+      - "14"
+      High:
+      - "15"
+      Low:
+      - "10"
+      Medium:
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      retry-count:
+        simple: "3"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: commands.local.cmd.set.incident
+      id: 6ff401d7-35e5-453e-8cc8-a839ee809e63
+      iscommand: false
+      name: Update Parent Severity
+      type: condition
+      version: -1
+    taskid: 6ff401d7-35e5-453e-8cc8-a839ee809e63
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 827.5,
+          "y": 1420
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Jira Insights Asset Mgmt
+      description: Get asset details using Hostname or IP address
+      id: 5178400b-bd1b-427f-86ca-53a2ac338cbf
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 5178400b-bd1b-427f-86ca-53a2ac338cbf
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 735,
+          "y": 2820
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      id:
+        simple: ${inputs.incidentid}
+      retry-count:
+        simple: "3"
+      severity:
+        simple: "2"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: ba7a85e5-5da8-4761-8c33-de5d9ee8d4bf
+      iscommand: true
+      name: Set Incident
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: ba7a85e5-5da8-4761-8c33-de5d9ee8d4bf
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1615,
+          "y": 1595
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      id:
+        simple: ${inputs.incidentid}
+      retry-count:
+        simple: "3"
+      severity:
+        simple: "1"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 7cf4712e-8681-4ec1-8652-91d7db9f58a8
+      iscommand: true
+      name: Set Incident
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 7cf4712e-8681-4ec1-8652-91d7db9f58a8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1267.5,
+          "y": 2470
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "38"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      id:
+        simple: ${inputs.incidentid}
+      retry-count:
+        simple: "3"
+      severity:
+        simple: "4"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 053c222a-caa5-4b20-892d-89fa7cfbc86d
+      iscommand: true
+      name: Set Incident
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 053c222a-caa5-4b20-892d-89fa7cfbc86d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1595
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "27"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      id:
+        simple: ${inputs.incidentid}
+      retry-count:
+        simple: "3"
+      severity:
+        simple: "3"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 06645f73-2e43-49f9-8822-29658e07c2dc
+      iscommand: true
+      name: Set Incident
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 06645f73-2e43-49f9-8822-29658e07c2dc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 622.5,
+          "y": 1595
+        }
+      }
+  "17":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      name:
+        simple: ChildLock
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "7"
+      timeout:
+        simple: "100"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Demisto Lock
+      description: Gets a specific lock. If the lock doesn't exist, it creates one.
+        If the lock is already in use, the command waits until the lock is released
+        or until timeout is reached. If timeout is reached and the lock hasn't been
+        released, the command fails to get the lock.
+      id: f3619dbf-49e4-4850-829f-6ac4269a9edf
+      iscommand: true
+      name: XSOAR Lock
+      script: Demisto Lock|||demisto-lock-get
+      type: regular
+      version: -1
+    taskid: f3619dbf-49e4-4850-829f-6ac4269a9edf
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1042.5,
+          "y": 195
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      name:
+        simple: ChildLock
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Demisto Lock
+      description: Release a lock
+      id: 4ceee1d2-d344-492a-8f6c-a2f1856e40c4
+      iscommand: true
+      name: XSOAR Lock Release
+      script: Demisto Lock|||demisto-lock-release
+      type: regular
+      version: -1
+    taskid: 4ceee1d2-d344-492a-8f6c-a2f1856e40c4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 735,
+          "y": 2645
+        }
+      }
+  "19":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.parentincidentname
+          operator: isEqualString
+          right:
+            iscontext: true
+            value:
+              simple: incident.name
+      label: Same Name
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "43"
+      Same Name:
+      - "20"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5f7be043-230c-41a2-8d3a-25dca29bbbd1
+      iscommand: false
+      name: CompareIncidentName
+      type: condition
+      version: -1
+    taskid: 5f7be043-230c-41a2-8d3a-25dca29bbbd1
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1042.5,
+          "y": 545
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      id:
+        simple: ${inputs.incidentid}
+      severityscore:
+        complex:
+          root: inputs.severityscore
+          transformers:
+          - args:
+              by:
+                value:
+                  simple: "1"
+            operator: addition
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 9d6d96b2-0dcb-4f53-8ccf-f1584ce9b013
+      iscommand: true
+      name: Add Parent Score by 1
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 9d6d96b2-0dcb-4f53-8ccf-f1584ce9b013
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1042.5,
+          "y": 895
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      add_fields_to_context:
+        simple: severityscore, severity
+      id:
+        simple: ${inputs.incidentid}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: "Searches Cortex XSOAR Incidents and returnrs the most relevant
+        fields. Default search range is the last 30 days, if you want to change this,
+        use the fromDate argument. \n\nReturns the id, name, type, severity, status,
+        owner, and created/closed times to context.  You can add additional fields
+        using the add_field_to_context argument.\n\nThis automation runs using the
+        default Limited User role, unless you explicitly change the permissions.  Based
+        on the SearchIncidentsV2 from the Common Scripts pack, but more efficient."
+      id: c9772c55-ed9b-4dc0-85b0-a48c3fc096bb
+      iscommand: false
+      name: Search For Parent Severity Score
+      script: SearchIncidentsSummary
+      type: regular
+      version: -1
+    taskid: c9772c55-ed9b-4dc0-85b0-a48c3fc096bb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 827.5,
+          "y": 1245
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      parentseverityscore:
+        simple: ${inputs.severityscore}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 231079ae-7662-44ed-87e9-e5c199e6e5f5
+      iscommand: true
+      name: Set Parent Severity Score
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 231079ae-7662-44ed-87e9-e5c199e6e5f5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1042.5,
+          "y": 370
+        }
+      }
+  "23":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.parentseverityscore
+          operator: lessThan
+          right:
+            iscontext: true
+            value:
+              simple: inputs.severityscore
+      label: "yes"
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "29"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6467eb90-3a74-436c-8e36-43930b2fab36
+      iscommand: false
+      name: Check Low to Medium incident
+      type: condition
+      version: -1
+    taskid: 6467eb90-3a74-436c-8e36-43930b2fab36
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1615,
+          "y": 1770
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      sla:
+        simple: "360"
+      slaField:
+        simple: inputs.analystpickuptimesla.sla
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 739b4038-1058-4f7e-8609-65495da9b90e
+      iscommand: true
+      name: Set Parent Analyst Sla
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 739b4038-1058-4f7e-8609-65495da9b90e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1840,
+          "y": 2470
+        }
+      }
+  "27":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.parentseverityscore
+          operator: lessThan
+          right:
+            iscontext: true
+            value:
+              simple: inputs.severityscore
+      label: "yes"
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "35"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5cab164a-e6fd-456c-8bf5-8100870abf1e
+      iscommand: false
+      name: Check Any to High incident
+      type: condition
+      version: -1
+    taskid: 5cab164a-e6fd-456c-8bf5-8100870abf1e
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 622.5,
+          "y": 1770
+        }
+      }
+  "28":
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      sla:
+        simple: "240"
+      slaField:
+        simple: inputs.analystpickuptimesla.sla
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: d0e76fdf-a35c-4650-857e-564b98a3e5d8
+      iscommand: true
+      name: Set Parent Analyst Sla
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: d0e76fdf-a35c-4650-857e-564b98a3e5d8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 837.5,
+          "y": 2470
+        }
+      }
+  "29":
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      fieldName:
+        simple: ${incident.currenttime}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Fill the current time in a custom incident field
+      id: 5441bbee-5e86-4aba-8ace-cfefe1b52254
+      iscommand: false
+      name: Set Current TIme
+      script: SetTime
+      type: regular
+      version: -1
+    taskid: 5441bbee-5e86-4aba-8ace-cfefe1b52254
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1727.5,
+          "y": 1945
+        }
+      }
+  "30":
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "31"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      end_time:
+        simple: ${inputs.analystpickuptimesla.endDate}
+      start_time:
+        simple: ${incident.currenttime}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Calculate the time difference, in minutes
+      id: 733885f6-cdb4-4174-8dd1-b7051ff82c67
+      iscommand: false
+      name: Calculate Time Difference
+      script: CalculateTimeDifference
+      type: regular
+      version: -1
+    taskid: 733885f6-cdb4-4174-8dd1-b7051ff82c67
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1727.5,
+          "y": 2120
+        }
+      }
+  "31":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Time.Difference
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "360"
+      label: "yes"
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "24"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ff5b1b05-5540-47ab-8e24-e54ece38f190
+      iscommand: false
+      name: SLA comparison
+      type: condition
+      version: -1
+    taskid: ff5b1b05-5540-47ab-8e24-e54ece38f190
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1727.5,
+          "y": 2295
+        }
+      }
+  "35":
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      fieldName:
+        simple: ${incident.currenttime}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Fill the current time in a custom incident field
+      id: 6a776eab-29fc-4bf3-8ba0-a41190225c80
+      iscommand: false
+      name: Set Current TIme
+      script: SetTime
+      type: regular
+      version: -1
+    taskid: 6a776eab-29fc-4bf3-8ba0-a41190225c80
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 725,
+          "y": 1945
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "37"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      end_time:
+        simple: ${inputs.analystpickuptimesla.endDate}
+      start_time:
+        simple: ${incident.currenttime}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Calculate the time difference, in minutes
+      id: 3923de85-4085-4468-82ac-7ab40dc85913
+      iscommand: false
+      name: Calculate Time Difference
+      script: CalculateTimeDifference
+      type: regular
+      version: -1
+    taskid: 3923de85-4085-4468-82ac-7ab40dc85913
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 725,
+          "y": 2120
+        }
+      }
+  "37":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Time.Difference
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "240"
+      label: "yes"
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "28"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c0eab8d1-4003-49b1-865d-b77a3cd9e6e7
+      iscommand: false
+      name: SLA comparison
+      type: condition
+      version: -1
+    taskid: c0eab8d1-4003-49b1-865d-b77a3cd9e6e7
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 725,
+          "y": 2295
+        }
+      }
+  "38":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.parentseverityscore
+          operator: lessThan
+          right:
+            iscontext: true
+            value:
+              simple: inputs.severityscore
+      label: "yes"
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "39"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4bd5fa0e-4eba-4807-8c02-4fce6c96d437
+      iscommand: false
+      name: Check Any to Critical incident
+      type: condition
+      version: -1
+    taskid: 4bd5fa0e-4eba-4807-8c02-4fce6c96d437
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1770
+        }
+      }
+  "39":
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "40"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      fieldName:
+        simple: ${incident.currenttime}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Fill the current time in a custom incident field
+      id: 1e9d9c06-b1ba-4c47-826e-7bff5f08142b
+      iscommand: false
+      name: Set Current TIme
+      script: SetTime
+      type: regular
+      version: -1
+    taskid: 1e9d9c06-b1ba-4c47-826e-7bff5f08142b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1945
+        }
+      }
+  "40":
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "41"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      end_time:
+        simple: ${inputs.analystpickuptimesla.endDate}
+      start_time:
+        simple: ${incident.currenttime}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Calculate the time difference, in minutes
+      id: 984fbb0a-9370-45a3-89e3-362c82bf1f9a
+      iscommand: false
+      name: Calculate Time Difference
+      script: CalculateTimeDifference
+      type: regular
+      version: -1
+    taskid: 984fbb0a-9370-45a3-89e3-362c82bf1f9a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 2120
+        }
+      }
+  "41":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Time.Difference
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "120"
+      label: "yes"
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "42"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 86eb65fa-5606-4c53-8f36-4e489ec65a00
+      iscommand: false
+      name: SLA comparison
+      type: condition
+      version: -1
+    taskid: 86eb65fa-5606-4c53-8f36-4e489ec65a00
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 2295
+        }
+      }
+  "42":
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      sla:
+        simple: "120"
+      slaField:
+        simple: inputs.analystpickuptimesla.sla
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 559bbf3e-577e-4722-8024-1e35e2fa969d
+      iscommand: true
+      name: Set Parent Analyst Sla
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 559bbf3e-577e-4722-8024-1e35e2fa969d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 2470
+        }
+      }
+  "43":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.parentmitre
+          operator: isEqualString
+          right:
+            value:
+              simple: incident.mitretacticname
+      label: Same Mitre
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "1"
+      Same Mitre:
+      - "20"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 994a7bb7-20c3-48a2-86de-b38411adb3bd
+      iscommand: false
+      name: Compare Mitretactic
+      type: condition
+      version: -1
+    taskid: 994a7bb7-20c3-48a2-86de-b38411adb3bd
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 827.5,
+          "y": 720
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 2835,
+        "width": 2170,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
