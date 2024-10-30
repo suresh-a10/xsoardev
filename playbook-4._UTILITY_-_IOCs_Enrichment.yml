@@ -1,0 +1,559 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.0.0
+    itemVersion: ""
+    packID: ""
+    packName: 4. UTILITY - IOCs Enrichment Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: This playbook executes when no other playbook is associated with an incident.
+  It enriches indicators in an incident using one or more integrations.
+id: 540d21cb-0678-4f6c-8f83-133d7fea8a0f
+inputs:
+- description: Determines whether to enrich all indicators in the incident.
+  key: Enrich
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "True"
+- description: Set to true to assign only user that is currently on shift. Requires
+    Cortex XSOAR v5.5 or later.
+  key: OnCall
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "false"
+name: 4. UTILITY - IOCs Enrichment
+outputs: []
+quiet: true
+sourceplaybookid: playbook0
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5196d970-5b8d-43d8-82e3-3adb0a37e4f7
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 5196d970-5b8d-43d8-82e3-3adb0a37e4f7
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 65
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 25504909-69a6-4b1b-8f6e-1b341aac4e8f
+      iscommand: false
+      name: Enrich indicators
+      type: title
+      version: -1
+    taskid: 25504909-69a6-4b1b-8f6e-1b341aac4e8f
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 225
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7a62a16f-2d53-4e5e-8b4b-f84e49e48a99
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 7a62a16f-2d53-4e5e-8b4b-f84e49e48a99
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 190,
+          "y": 1570
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      CVE:
+        complex:
+          accessor: ID
+          root: CVE
+      Domain:
+        simple: ${ExtractedIndicators.Domain}
+      Email:
+        complex:
+          accessor: Email.Address
+          root: Account
+          transformers:
+          - operator: uniq
+      Hostname:
+        complex:
+          accessor: Hostname
+          root: Endpoint
+          transformers:
+          - operator: uniq
+      IP:
+        simple: ${ExtractedIndicators.IP}
+      MD5:
+        simple: ${ExtractedIndicators.File}
+      ResolveIP:
+        simple: "False"
+      SHA1:
+        simple: ${ExtractedIndicators.File}
+      SHA256:
+        simple: ${ExtractedIndicators.File}
+      URL:
+        simple: ${ExtractedIndicators.URL}
+      Username:
+        complex:
+          accessor: Username
+          root: Account
+          transformers:
+          - operator: uniq
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Enrich entities using one or more integrations.
+      id: 5110bab9-b137-4aaa-8d51-e4a757578df0
+      iscommand: false
+      name: Entity Enrichment - Generic v3_ENSOC TI
+      playbookId: 0694357e-a998-4d9b-881b-25e2513e2e8a
+      type: playbook
+      version: -1
+    taskid: 5110bab9-b137-4aaa-8d51-e4a757578df0
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 895
+        }
+      }
+  "14":
+    continueonerror: true
+    continueonerrortype: errorPath
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#error#':
+      - "21"
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 1
+    scriptarguments:
+      DbotscoreData:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore
+              operator: isNotEmpty
+          root: DBotScore
+      VTURLData:
+        simple: ${VirusTotal.URL}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e5f78fdd-1519-463f-8a1d-c08333d2fb9e
+      iscommand: false
+      name: Include Suspicious&Malicious Indicator to HTML Table
+      script: 88c2afcf-352a-4270-8194-901d1e02d91b
+      type: regular
+      version: -1
+    taskid: e5f78fdd-1519-463f-8a1d-c08333d2fb9e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1070
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      id: afc39882-f779-447e-834b-18b844c7a7db
+      iscommand: false
+      name: 4. UTILITY - Enrich Indicators
+      playbookId: 68fb26cc-811a-4a47-8e98-96abc6e1f0b0
+      type: playbook
+      version: -1
+    taskid: afc39882-f779-447e-834b-18b844c7a7db
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 50
+        }
+      }
+  "16":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      text:
+        simple: ${incident}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 955dd08c-b6e7-47f8-85b5-951d1665667a
+      iscommand: true
+      name: Extract Indicator
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 955dd08c-b6e7-47f8-85b5-951d1665667a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "17":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      value:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+          - args:
+              item:
+                value:
+                  simple: ExtractedIndicators.IP
+            operator: append
+          - args:
+              item:
+                value:
+                  simple: ExtractedIndicators.URL
+            operator: append
+          - args:
+              item:
+                value:
+                  simple: ExtractedIndicators.Domain
+            operator: append
+          - args:
+              item:
+                value:
+                  simple: ExtractedIndicators.File
+            operator: append
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Get the overall score for the indicator as calculated by DBot.
+      id: 23e863aa-c95c-4f35-88eb-99bbe17a14ca
+      iscommand: false
+      name: Fetch existing DBot Score information
+      script: GetIndicatorDBotScoreFromCache
+      type: regular
+      version: -1
+    taskid: 23e863aa-c95c-4f35-88eb-99bbe17a14ca
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 545
+        }
+      }
+  "18":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: indicatorignorelist
+      value:
+        complex:
+          accessor: Indicator
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScoreCache.Expired
+              operator: isNotEqualString
+              right:
+                value:
+                  simple: "true"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScoreCache.Score
+              operator: isNotEqualString
+              right:
+                value:
+                  simple: "0"
+          root: DBotScoreCache
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: db556a7d-2ba7-442d-89fe-3946f47e0ce8
+      iscommand: false
+      name: Generate indicator whitelist
+      script: Set
+      type: regular
+      version: -1
+    taskid: db556a7d-2ba7-442d-89fe-3946f47e0ce8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 895
+        }
+      }
+  "19":
+    continueonerror: true
+    continueonerrortype: errorPath
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#error#':
+      - "21"
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 1
+    scriptarguments:
+      DbotscoreData:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScoreCache
+              operator: isNotEmpty
+          root: DBotScoreCache
+      VTURLData:
+        simple: ${VirusTotal.URL}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1621afc2-ecbd-429e-84f8-4f866aa7855a
+      iscommand: false
+      name: Include Suspicious&Malicious Indicator to HTML Table
+      script: 88c2afcf-352a-4270-8194-901d1e02d91b
+      type: regular
+      version: -1
+    taskid: 1621afc2-ecbd-429e-84f8-4f866aa7855a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1070
+        }
+      }
+  "20":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: DBotScoreCache.Indicator
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: Cache
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "13"
+      Cache:
+      - "18"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bc7f7ecc-d219-49fb-86c5-61d05aea7037
+      iscommand: false
+      name: Check Cache or New Enrichment
+      type: condition
+      version: -1
+    taskid: bc7f7ecc-d219-49fb-86c5-61d05aea7037
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 720
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ctihtml:
+        simple: No Malicious/Suspicious Indicator to Include
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: c3cf6cc3-b60d-4c54-86e4-39c62bff05d9
+      iscommand: true
+      name: No Malicious Indicator
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: c3cf6cc3-b60d-4c54-86e4-39c62bff05d9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 970,
+          "y": 1290
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1585,
+        "width": 1300,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
