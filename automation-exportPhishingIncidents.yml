@@ -1,0 +1,37 @@
+commonfields:
+  id: 46189fca-fdf8-4f15-886d-bcfa772a2e11
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.6.33415
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: exportPhishingIncidents
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  incidents = demisto.executeCommand("SearchIncidentsV2", {"query":"-status:closed -category:job type:Access", "fromdate":"6 Months ago"})[0]["Contents"][0]['Contents']['data']
+
+  table = []
+  for incident in incidents:
+      inc = {}
+      inc['name'] = incident['name']
+      inc['details'] = incident['details']
+      inc["emailheaders"] = incident["CustomFields"]['emailheaders']
+      table.append(inc)
+  demisto.results(demisto.executeCommand("ExportToCSV",{"csvArray": table, "fileName":"sampleCSV"}))
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
