@@ -1,0 +1,337 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Automating Threat Intel Reports - Demo Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: |-
+  This playbook does the actual work of creating the report and other templates \ requirements for publishing it.
+  - The task named "Fetch vulnerability details and style with OpenAI" is a light demonstration of report data creation - this is the place for you to get creative and add your own data for creating the report. You can take inputs from end users, add more indicator field details, and add any other procedure done in your organization related to threat intel reports.
+  - Remember to change the needed arguments in "Create New Threat Intel Report" per your report layout and fields.
+  - The report URL will be used for sending to internal users.
+  - The email template will be sent to external users. Change it as much as you need, or even better - use your own method of sharing the report, like creating a file that will be sent to any relevant stakeholders.
+id: 49005dd2-b752-48f2-8c62-50a22105c3f7
+inputs:
+- description: ""
+  key: Indicator To Report
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: Create Campaign Threat Intel Report
+outputs:
+- contextPath: ThreatIntelReport.Object
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f7464a03-adbf-431b-8935-b2b8e5f396ef
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: f7464a03-adbf-431b-8935-b2b8e5f396ef
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      execution-timeout:
+        simple: "300"
+      max_tokens:
+        simple: "2048"
+      prompt:
+        simple: 'Write a report using the text "Indicator: ${inputs.Indicator To Report.value}
+          Description: ${inputs.Indicator To Report.description}". Style the report
+          as HTML paragraphs (only the tags that are inside the body), with an executive
+          summary at the beginning, and an ending conclusion.'
+      retry-count:
+        simple: "1"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: OpenAI
+      description: Enter an instruction and watch the API respond with a completion
+        that attempts to match the context or pattern you provided.
+      id: 186e011c-a2e5-4e7f-8d99-d0786f241d01
+      iscommand: true
+      name: Fetch vulnerability details and style with OpenAI
+      script: OpenAI|||openai-completions
+      type: regular
+      version: -1
+    taskid: 186e011c-a2e5-4e7f-8d99-d0786f241d01
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      aliases:
+        complex:
+          accessor: aliases
+          root: inputs.Indicator To Report
+          transformers:
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      bodyexecutivebrief:
+        simple: ${inputs.Indicator To Report.description}
+      campaignbody:
+        simple: ${OpenAI.Completions.text}
+      name:
+        simple: Report on ${inputs.Indicator To Report.value}
+      type:
+        simple: Campaign
+      value:
+        simple: ${inputs.Indicator To Report.value}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: f5062066-a4c6-4408-8f26-d7325619f79f
+      iscommand: true
+      name: Create New Threat Intel Report
+      script: Builtin|||createThreatIntelReport
+      type: regular
+      version: -1
+    taskid: f5062066-a4c6-4408-8f26-d7325619f79f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 545
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: fd012aaa-ba6a-4a7a-8863-3a3f49339976
+      iscommand: false
+      name: End
+      type: title
+      version: -1
+    taskid: fd012aaa-ba6a-4a7a-8863-3a3f49339976
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 895
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: ThreatIntelReport.Object.url
+      value:
+        complex:
+          accessor: server
+          root: demistoUrls
+          transformers:
+          - args:
+              prefix: {}
+              suffix:
+                value:
+                  simple: /#/instance/ThreatIntelReport/
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                iscontext: true
+                value:
+                  simple: ThreatIntelReport.Object.id
+            operator: concat
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 066ea76b-6f92-49da-805f-c27d982dfdec
+      iscommand: false
+      name: Set report URL
+      script: Set
+      type: regular
+      version: -1
+    taskid: 066ea76b-6f92-49da-805f-c27d982dfdec
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 720
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: ThreatIntelReport.Object.EmailReportTemplate
+      listTemplate:
+        simple: EmailReportTemplate
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        This script allows sending an HTML email, using a template stored as a list item under Lists (Settings -> Advanced -> Lists).
+        Placeholders are marked in DT format (i.e. ${incident.id} for incident ID).
+        Available placeholders for example:
+        - ${incident.labels.Email/from}
+        - ${incident.name}
+        - ${object.value}
+        See incident Context Data menu for available placeholders
+
+        Note: Sending emails require an active  Mail Sender integration instance.
+      id: 4dc869ff-14bb-44e3-8bf8-6a3626a8e798
+      iscommand: false
+      name: Set report fields in template
+      script: CreateEmailHtmlBody
+      type: regular
+      version: -1
+    taskid: 4dc869ff-14bb-44e3-8bf8-6a3626a8e798
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 720
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+      subplaybook:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.10/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 2ffac767-2a25-487a-83ee-71a984ac64e0
+      iscommand: false
+      name: Delete context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 2ffac767-2a25-487a-83ee-71a984ac64e0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 195
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 910,
+        "width": 810,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
