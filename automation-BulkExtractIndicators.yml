@@ -1,0 +1,86 @@
+args:
+- description: Provide the file entry ID
+  name: EntryID
+  required: true
+commonfields:
+  id: 481f2156-8954-4701-8549-0e554eee6a07
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.11.55362
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: BulkExtractIndicators
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+  import json
+
+
+  def read_file(file_path):
+      encoding_types = ['utf-8', 'ISO-8859-9']
+      for encoding in encoding_types:
+          try:
+              with open(file_path, encoding=encoding) as file:
+                  return file.read()
+          except Exception:
+              continue
+      raise ValueError(f'Can\'t read file with {filePath}')
+
+  def extract_indicators(data):
+      indicators_data= demisto.executeCommand("extractIndicators", {'text': data})[0][u'Contents']
+
+      indicators = json.loads(indicators_data)
+
+      if type(indicators) == dict:
+          print(indicators)
+          for key,value in indicators.items():
+              if key == 'Domain':
+                  if len(value)>0:
+                      demisto.results(demisto.executeCommand("setList", {"listName":"BulkDomains","listData":value}))
+              if key == 'IP':
+                  if len(value)>0:
+                      demisto.results(demisto.executeCommand("setList", {"listName":"BulkIPs","listData":value}))
+              if key == 'URL':
+                  if len(value)>0:
+                      demisto.results(demisto.executeCommand("setList", {"listName":"BulkURLs","listData":value}))
+
+  ''' MAIN FUNCTION '''
+
+  def main():
+      try:
+          args= demisto.args()
+          entry_id = args.get('EntryID')
+          file_path = demisto.executeCommand("getFilePath", {"id":entry_id})[0]['Contents']['path']
+          data = read_file(file_path)
+          extract_indicators(data)
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
