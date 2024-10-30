@@ -1,0 +1,75 @@
+commonfields:
+  id: f632a4a4-50e4-452f-88c9-cc64cfb9eaec
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.6.33415
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: prepareContext
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  import datetime
+
+  res = demisto.context()
+  VirusTotalContext = res['VirusTotal']['File']
+
+  md5Table = []
+  sha1Table = []
+  sha256Table = []
+
+  for item in VirusTotalContext:
+      inc = {}
+      date = {}
+      if 'md5' in item['attributes']:
+          date = datetime.datetime.fromtimestamp(item ['attributes']['last_modification_date'])
+          inc['last_modification_date'] = str(date)
+          inc['reputation'] = item['attributes']['reputation']
+          inc['malicious'] = item['attributes']['last_analysis_stats']['malicious']
+          inc['sha1'] = item['attributes']['sha1']
+          inc['sha256'] = item['attributes']['sha256']
+          inc['md5'] = item['attributes']['md5']
+          md5Table.append(inc)
+          date = {}
+          inc = {}
+      if 'sha1' in item['attributes']:
+          date = datetime.datetime.fromtimestamp(item ['attributes']['last_modification_date'])
+          inc['last_modification_date'] = str(date)
+          inc['reputation'] = item['attributes']['reputation']
+          inc['malicious'] = item['attributes']['last_analysis_stats']['malicious']
+          inc['sha1'] = item['attributes']['sha1']
+          inc['sha256'] = item['attributes']['sha256']
+          inc['md5'] = item['attributes']['md5']
+          sha1Table.append(inc)
+          inc = {}
+          date = {}
+      if 'sha256' in item['attributes']:
+          date = datetime.datetime.fromtimestamp(item ['attributes']['last_modification_date'])
+          inc['last_modification_date'] = str(date)
+          inc['reputation'] = item['attributes']['reputation']
+          inc['malicious'] = item['attributes']['last_analysis_stats']['malicious']
+          inc['sha1'] = item['attributes']['sha1']
+          inc['sha256'] = item['attributes']['sha256']
+          inc['md5'] = item['attributes']['md5']
+          sha256Table.append(inc)
+
+
+  demisto.results(demisto.executeCommand("Set",{"key":"md5Sheet", "value":md5Table}))
+  demisto.results(demisto.executeCommand("Set",{"key":"sha1Sheet", "value":sha1Table}))
+  demisto.results(demisto.executeCommand("Set",{"key":"sha256Sheet", "value":sha256Table}))
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
