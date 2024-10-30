@@ -1,0 +1,57 @@
+commonfields:
+  id: 6f6b0131-5c20-48e9-86e2-c113c20b3ff3
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.5.21272
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: getCommandsRunPerIncident
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  res = demisto.executeCommand("getEntries", {"filter": {"categories": ["commandAndResults"]}})
+  commands_run_manually = []
+  count = {}
+
+  if res:
+      for command in res:
+          if isinstance(command['Contents'],str):
+              name = command['Contents'].replace('!','')
+              user = command['Metadata']['user']
+              cmd_meta = name + "||" + user
+
+              if user and cmd_meta not in count:
+                  count[cmd_meta] = 1
+              elif user and cmd_meta in count:
+                  count[cmd_meta] += 1
+
+  if len(count) > 0:
+      for cmd in count:
+          commands_run_manually.append({"command":cmd.split("||")[0], "run_by":cmd.split("||")[1], "count":str(count[cmd])})
+
+      md = tableToMarkdown(name="Manual Command Details", headers=["command","run_by","count"],t=commands_run_manually)
+
+      demisto.results({
+          "Contents":commands_run_manually,
+          "ContentsFormat":formats['markdown'],
+          "Type":entryTypes["note"],
+          "HumanReadable":md,
+          "ReadableContentsFormat":formats['markdown']
+      })
+scripttarget: 0
+subtype: python3
+tags:
+- dynamic-section
+type: python
