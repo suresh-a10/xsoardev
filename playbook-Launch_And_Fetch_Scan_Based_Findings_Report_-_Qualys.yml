@@ -1,0 +1,396 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.5.0
+    itemVersion: 3.0.2
+    packID: qualys
+    packName: Qualys
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: Launches a scan based report and fetcesh the report when it's ready.
+id: Launch And Fetch Scan Based Findings Report - Qualys
+inputs:
+- description: The template ID of the report you want to launch. Can be found by running
+    qualys-report-template-list.
+  key: template_id
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: One output format may be specified. When output_format=pdf is specified,
+    the Secure PDF Distribution may be used.
+  key: output_format
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: This parameter specifies the scan references to include. A scan reference
+    starts with the string "scan/" followed by a reference ID number. Multiple scan
+    references are comma separated. Reference can be found by running the command
+    qualys-vm-scan-list.
+  key: report_refs
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: A user-defined report title. The title may have a maximum of 128 characters.
+    For a PCI compliance report, the report title is provided by Qualys and cannot
+    be changed.
+  key: report_title
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: (Valid for CSV format report only). Specify hide_header=1 to omit the
+    header information from the report. By default this information is included.
+  key: hide_header
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Specify users who will receive the email notification when the report
+    is complete (i.e. supply a distribution group ID). Where do I find this ID? Log
+    in to your Qualys account, go to Users > Distribution Groups and select Info for
+    a group in the list.
+  key: recipient_group_id
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: '''(Optional; Required for secure PDF distribution) The password to
+    be used for encryption. Requirements: - the password must have a minimum of 8
+    characters (ascii), and a maximum of 32 characters - the password must contain
+    alpha and numeric characters - the password cannot match the password for the
+    user’s Qualys account. - the password must follow the password security guidelines
+    defined for your subscription (log in and go to Subscription Setup—>Security Options).'''
+  key: pdf_password
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Optional; Optional for secure PDF distribution) The report recipients
+    in the form of one or more distribution groups, as defined using the Qualys UI.
+    Multiple distribution groups are comma separated. A maximum of 50 distribution
+    groups may be entered. Chapter 4 — Report API Launch Report  recipient_group={value}
+  key: recipient_group
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: For a scan report, the report content will be restricted to the specified
+    IPs/ranges. Multiple IPs and/or ranges are comma separated.
+  key: ip_restriction
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: Launch And Fetch Scan Based Findings Report - Qualys
+outputs:
+- contextPath: InfoFile.Name
+  description: The file name.
+- contextPath: InfoFile.EntryID
+  description: The ID for locating the file in the War Room.
+- contextPath: InfoFile.Size
+  description: The size of the file (in bytes).
+- contextPath: InfoFile.Type
+  description: The file type, as determined by libmagic (same as displayed in file
+    entries).
+- contextPath: InfoFile.Extension
+  description: The file extension.
+- contextPath: InfoFile.Info
+  description: Basic information about the file.
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: feaf59d2-f107-4395-862c-895cd5406872
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: feaf59d2-f107-4395-862c-895cd5406872
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hide_header:
+        simple: ${inputs.hide_header}
+      ip_restriction:
+        simple: ${inputs.ip_restriction}
+      output_format:
+        simple: ${inputs.output_format}
+      pdf_password:
+        simple: ${inputs.pdf_password}
+      recipient_group:
+        simple: ${inputs.recipient_group}
+      recipient_group_id:
+        simple: ${inputs.recipient_group_id}
+      report_refs:
+        simple: ${inputs.report_refs}
+      report_title:
+        simple: ${inputs.report_title}
+      template_id:
+        simple: ${inputs.template_id}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QualysV2
+      description: Launches a scan report including scan based findings
+      id: db1e0be1-8c7f-4074-8a7c-777ef8a21bf7
+      iscommand: true
+      name: qualys-report-launch-scan-based-findings
+      script: QualysV2|||qualys-report-launch-scan-based-findings
+      type: regular
+      version: -1
+    taskid: db1e0be1-8c7f-4074-8a7c-777ef8a21bf7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 195
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      execution-timeout:
+        simple: "180"
+      file_format:
+        simple: ${inputs.output_format}
+      id:
+        simple: ${Qualys.Report.ID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QualysV2
+      description: Download report
+      id: c66554da-ca95-4394-88cb-21ea8ccdbab8
+      iscommand: true
+      name: qualys-report-fetch
+      script: QualysV2|||qualys-report-fetch
+      type: regular
+      version: -1
+    taskid: c66554da-ca95-4394-88cb-21ea8ccdbab8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 895
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 0
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Ids:
+        simple: ${Qualys.Report.ID}
+      Interval:
+        simple: "1"
+      PollingCommandArgName:
+        simple: id
+      PollingCommandName:
+        simple: qualys-report-list
+      Timeout:
+        simple: "30"
+      dt:
+        simple: Qualys.Report(val.STATUS.STATE != 'Finished').ID.
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Use this playbook as a sub-playbook to block execution of the master playbook until a remote action is complete.
+        This playbook implements polling by continuously running the command in Step \#2 until the operation completes.
+        The remote action should have the following structure:
+
+        1. Initiate the operation.
+        2. Poll to check if the operation completed.
+        3. (optional) Get the results of the operation.
+      id: 41604736-edc1-4f39-81c5-0d7711b91261
+      iscommand: false
+      name: GenericPolling
+      playbookId: GenericPolling
+      type: playbook
+      version: -1
+    taskid: 41604736-edc1-4f39-81c5-0d7711b91261
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 720
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      id:
+        simple: ${Qualys.Report.ID}
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "5"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QualysV2
+      description: Get a list of generated reports in the system
+      id: 86f0e348-c8e9-4d57-845b-e77ccabb919d
+      iscommand: true
+      name: Get the created scan metadata
+      script: QualysV2|||qualys-report-list
+      type: regular
+      version: -1
+    taskid: 86f0e348-c8e9-4d57-845b-e77ccabb919d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Qualys.Report.ID
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "8"
+      "yes":
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if scan metadata returned
+      id: 4c31fd84-2f09-4efb-845a-b1a74ef33ef5
+      iscommand: false
+      name: Check if scan metadata returned
+      type: condition
+      version: -1
+    taskid: 4c31fd84-2f09-4efb-845a-b1a74ef33ef5
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 545
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      message:
+        simple: Can't get the scan metadata
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints an error entry with a given message
+      id: 0747c49b-ff29-4367-807f-3323feb3874a
+      iscommand: false
+      name: Print Error
+      script: PrintErrorEntry
+      type: regular
+      version: -1
+    taskid: 0747c49b-ff29-4367-807f-3323feb3874a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 720
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 940,
+        "width": 810,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
