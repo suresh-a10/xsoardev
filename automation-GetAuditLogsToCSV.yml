@@ -1,0 +1,95 @@
+args:
+- auto: PREDEFINED
+  description: 'How many days back to fetch for, between 1 and 3, no more. '
+  name: days_back
+  predefined:
+  - "1"
+  - "2"
+  - "3"
+  required: true
+comment: Uses the Demisto REST API integration to query the server audit trail, and
+  return back a CSV of the logs.
+commonfields:
+  id: 94b5f55d-3262-4e34-8ccb-27dac7d4d280
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dependson:
+  must:
+  - Demisto REST API|||demisto-api-post
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetAuditLogsToCSV
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  from datetime import date, timedelta
+  import io
+  import csv
+
+  # set time back for fetching
+  fetch_back_date = date.today() - timedelta(days=int(demisto.args().get("days_back")))
+  fetch_from = fetch_back_date.strftime("%Y-%m-%dT00:00:00Z")
+  file_date = fetch_back_date.strftime("%Y-%m-%d")
+
+  # body of the request
+  body = {
+      'fromDate': fetch_from,
+      'query': "",
+      'page': 0,
+      'size': 100
+  }
+
+  # get the logs
+  res = demisto.executeCommand("demisto-api-post", {"uri":"/settings/audits","body":body})[0]["Contents"]["response"]
+
+  # set the initial counts
+  total = res.get('total', 0)
+  audits = res.get('audits', [])
+  count = 1
+
+  # if there are more events than the default size, page through and get them all
+  while len(audits) < total:
+      body['page'] = count
+      res = demisto.executeCommand("demisto-api-post", {"uri":"/settings/audits","body":body})[0]["Contents"]["response"]
+      audits.extend(res.get('audits', []))
+      count += 1
+      # break if this goes crazy, if there are more than 20 pages (4000 events)
+      if count == 20:
+          break
+
+  # write the results to a CSV
+  si = io.StringIO()
+  cw = csv.writer(si)
+
+  # write header row
+  cw.writerow(["Log"])
+
+  # write the rows for each asset
+  for audit in audits:
+      cw.writerow([audit,])
+
+  # return the file
+  data = si.getvalue().strip('\r\n')
+  demisto.results(fileResult(f"xsoar-audit-logs-{file_date}.csv", data.encode('utf-8')))
+
+  # return the results
+  demisto.results(f"Fetched {len(audits)} audit log events since {fetch_from}")
+scripttarget: 0
+subtype: python3
+tags:
+- training
+- Utility
+type: python
