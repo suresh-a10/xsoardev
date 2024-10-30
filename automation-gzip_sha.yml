@@ -1,0 +1,67 @@
+args:
+- name: entryID
+commonfields:
+  id: 70ebf7d8-802a-4ed2-8af5-77e21b24a545
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/py3-tools:0.0.1.30715
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: gzip_sha
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  def main():
+
+      args = demisto.args()
+      fileEntryID = args.get('entryID')
+
+      res = demisto.executeCommand('getFilePath', {'id': fileEntryID})
+      filePath = res[0]['Contents']['path']
+      fileCurrentName = res[0]['Contents']['name']
+      zipName = fileCurrentName + '.gz'
+
+      with open(filePath, 'rb') as f_in:
+          with gzip.open(zipName, 'wb') as f_out:
+              shutil.copyfileobj(f_in, f_out)
+
+      with open(zipName, 'rb') as f:
+              file_data = f.read()
+      demisto.results(fileResult(zipName, file_data))
+
+      human_readable = tableToMarkdown(
+              'GZipped Files',
+              [{'original name': file_names, 'gzipped file': zipName}])
+          context: Dict[str, Any] = {
+              'GZippedFiles': zipName,
+              'GZipFile.GZippedFile': zipName
+          }
+          for entry_id in entry_ids:
+              context[f'File(val.EntryID == {entry_id}).zipped'] = True
+          raw_response = {'ZippedFiles': zipName}
+
+          return_outputs(human_readable, context, raw_response)
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
