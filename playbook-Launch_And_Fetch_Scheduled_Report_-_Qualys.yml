@@ -1,0 +1,230 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.5.0
+    itemVersion: 3.0.2
+    packID: qualys
+    packName: Qualys
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: Launches a scheduled report and fetches the report when it's ready.
+id: Launch And Fetch Scheduled Report - Qualys
+inputs:
+- description: Scheduled report ID. Can be found by running the command qualys-scheduled-report-list.
+  key: id
+  playbookInputQuery: null
+  required: true
+  value: {}
+name: Launch And Fetch Scheduled Report - Qualys
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: feaf59d2-f107-4395-862c-895cd5406872
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: feaf59d2-f107-4395-862c-895cd5406872
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      id:
+        simple: ${inputs.id}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QualysV2
+      description: Launch a scheduled report now
+      id: 973095b4-5ada-4b4c-8d3d-9a4ade0e736d
+      iscommand: true
+      name: qualys-scheduled-report-launch
+      script: QualysV2|||qualys-scheduled-report-launch
+      type: regular
+      version: -1
+    taskid: 973095b4-5ada-4b4c-8d3d-9a4ade0e736d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 195
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 0
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Ids:
+        simple: ${Qualys.Report.ID}
+      Interval:
+        simple: "1"
+      PollingCommandArgName:
+        simple: id
+      PollingCommandName:
+        simple: qualys-report-list
+      Timeout:
+        simple: "30"
+      dt:
+        simple: Qualys.Report(val.STATUS.STATE != 'Finished').ID.
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Use this playbook as a sub-playbook to block execution of the master playbook until a remote action is complete.
+        This playbook implements polling by continuously running the command in Step \#2 until the operation completes.
+        The remote action should have the following structure:
+
+        1. Initiate the operation.
+        2. Poll to check if the operation completed.
+        3. (optional) Get the results of the operation.
+      id: 00fbd7ff-c902-46ba-8259-8115230cbc4e
+      iscommand: false
+      name: GenericPolling
+      playbookId: GenericPolling
+      type: playbook
+      version: -1
+    taskid: 00fbd7ff-c902-46ba-8259-8115230cbc4e
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 370
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      id:
+        simple: ${inputs.id}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QualysV2
+      description: Get list of scheduled reports
+      id: 005407e7-1333-4460-8c23-82f45ff8e848
+      iscommand: true
+      name: qualys-scheduled-report-list
+      script: QualysV2|||qualys-scheduled-report-list
+      type: regular
+      version: -1
+    taskid: 005407e7-1333-4460-8c23-82f45ff8e848
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 545
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      execution-timeout:
+        simple: "180"
+      file_format:
+        simple: ${Qualys.Report.OUTPUT_FORMAT}
+      id:
+        simple: ${Qualys.Report.[0].ID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QualysV2
+      description: Download report
+      id: 7434f860-b89a-4354-89bb-369abf34e1ae
+      iscommand: true
+      name: qualys-report-fetch
+      script: QualysV2|||qualys-report-fetch
+      type: regular
+      version: -1
+    taskid: 7434f860-b89a-4354-89bb-369abf34e1ae
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 725
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 770,
+        "width": 380,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
