@@ -1,0 +1,63 @@
+commonfields:
+  id: 77563ee8-7149-4356-8d9d-f58eb6c503c2
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.6.33415
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ScheduledCommandCustom
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  incident  = demisto.incidents()[0]
+  # Lookup the jira ticket status, use one of the 2 methods below. Please test, not sure about the output since I don't have a working Jira instance.
+
+  # Method 1:
+  ## Uses the XSOAR's Jira status field, relies on the incident mirroring function to be working.
+  ## Does not rely on the mirroring function
+  statusValue = incident['CustomFields']['jirastatus']
+
+  # Method 2:
+  ## Uses status field value inside Jira. Makes an additional API call to Jira platform.
+  ## Incident mirroring for Jira - https://xsoar.pan.dev/docs/reference/integrations/jira-v2#mirror-in-and-out-custom-fields
+  statusValue = demisto.executeCommand('jira-get-specific-field', { 'issueId' : incident['CustomFields']['jiraid'], 'field' : 'status' })[0]['Contents']
+
+  # verify if the status is completed
+  if statusValue == 'Completed':
+      # Action to perform if the Jira ticket is marked as completed.
+
+      # Option 1
+      ## Closes the incident. Trailing playbook are NOT executed.
+      ## This should trigger the post-processing script. Not sure.
+      ## demisto.executeCommand("closeInvestigation", { 'closeNotes' : 'Resolved', 'closeReason' : 'Ticket closed in Jira'})
+
+      # Option 2
+      ## Completes the tagged task following the 'Execute check for Jira Status' task
+      ## Playbook processing is resumed
+
+      # Set the Email Classification for the conditional check to work
+      ## Step 29 and 12 can be replace for the 'jira-get-issue' command to get both fields at once. Single API call.
+      classification = demisto.executeCommand('jira-get-specific-field', { 'issueId' : incident['CustomFields']['jiraid'], 'field' : 'classification' })[0]['Contents']
+      demisto.executeCommand("setIncident", {'emailclassification' : classification})
+      demisto.executeCommand("taskComplete", {"id":"jiraWait"})
+
+  else: # if the Jira status is NOT 'Completed' re-run the schedule command once more.
+      # Schedule another run
+      cron = "*/10 * * * *" # Define the cron run schedule, run every 10 minutes.
+      demisto.executeCommand('ScheduleCommand', { 'command' : '!ScheduledCommandCustom', 'cron' : cron, 'times' : 1} )
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
