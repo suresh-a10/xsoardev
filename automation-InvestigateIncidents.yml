@@ -1,0 +1,71 @@
+args:
+- description: Lucene query for searching incidents
+  name: query
+  required: true
+comment: Switches incidents from Pending status into Active by starting the investigation.
+commonfields:
+  id: ac025d6d-a278-4fda-8c04-b45ad19f63c2
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.4.977
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: InvestigateIncidents
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  import json
+
+  query = demisto.args()['query']
+
+  try:
+      ids = [inc['id'] for inc in demisto.executeCommand("getIncidents",
+                                                         {'query': query,
+                                                          'size': '50'})[0]['Contents']['data'] if inc['status'] == 0]
+  except:
+      demisto.results('No incidents found matching query.')
+      sys.exit(0)
+
+  if not ids:
+      demisto.results('No pending incidents found matching query.')
+      sys.exit(0)
+
+  res = []
+  for inc_id in ids:
+      data = {
+          "id":inc_id,
+          "version":1
+      }
+
+      data = json.dumps(data)
+
+      try:
+          command_res = demisto.executeCommand("demisto-api-post", {"uri":"/incident/investigate","body":data})[0]['Contents']
+          if "Script failed" not in command_res:
+              res.append({'Incident ID': inc_id, 'Status': "Success"})
+          else:
+              res.append({'Incident ID': inc_id, 'Status': "Failure"})
+      except Exception as e:
+          demisto.results(e)
+          sys.exit(0)
+
+  demisto.results({'Type': entryTypes['note'],
+      'ContentsFormat': formats['markdown'],
+      'Contents': tableToMarkdown(name='Incidents from Pending to Active', t=res)
+  })
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
