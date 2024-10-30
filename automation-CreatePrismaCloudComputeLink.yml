@@ -1,0 +1,60 @@
+args:
+- description: The type of WaaS alert.
+  name: type
+  required: true
+- description: The image name to investigate alerts for.
+  name: imageName
+  required: true
+- description: The base URL of the Prisma Cloud Compute Instance (https://<prisma-ip>:<prisma-port>).
+  name: baseUrl
+comment: This script creates a link back to the Prisma Cloud Compute instance.
+commonfields:
+  id: CreatePrismaCloudComputeLink
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 1.7.4
+    packID: PrismaCloudCompute
+    packName: Prisma Cloud Compute by Palo Alto Networks
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.89009
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CreatePrismaCloudComputeLink
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('CreatePrismaCloudComputeLink', 'start', __line__())
+  demisto.debug('pack name = Prisma Cloud Compute by Palo Alto Networks, pack version = 1.7.4')
+
+
+  import urllib.parse
+
+
+  def main():
+      args = demisto.args()
+      encoded_filters = urllib.parse.quote(f"imageName={args.get('imageName')}&type={args.get('type')}", safe='')
+      baseUrl = demisto.args().get("baseUrl")
+
+      url = f"{baseUrl}/#!/monitor/events/firewall/app/container?filters={encoded_filters}"
+
+      return_results(CommandResults(outputs={"link": url}))
+
+
+  if __name__ in ['__main__', '__builtin__', 'builtins']:
+      main()
+
+  register_module_line('CreatePrismaCloudComputeLink', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags: []
+type: python
