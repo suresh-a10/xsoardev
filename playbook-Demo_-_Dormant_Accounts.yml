@@ -1,0 +1,249 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 761f5876-98c7-4bd9-8fa6-1e2d6887d56e
+inputs:
+- description: ""
+  key: SponserEmail
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: SEmail
+      root: ParseCSV.ParsedCSV
+      transformers:
+      - operator: uniq
+name: Demo - Dormant Accounts
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c9028886-a775-4cff-8bdf-03f93939e753
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: c9028886-a775-4cff-8bdf-03f93939e753
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: TableData
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ParseCSV.ParsedCSV.SEmail
+              operator: isEqualString
+              right:
+                iscontext: true
+                value:
+                  simple: inputs.SponserEmail
+          root: ParseCSV.ParsedCSV
+          transformers:
+          - args:
+              headers:
+                value:
+                  simple: ID,CSPID,Email,SponserID, SEmail
+              is_auto_json_transform: {}
+              json_transform_properties: {}
+              title: {}
+            operator: JsonToTable
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: bb8b6ad2-0008-4b60-8e40-99a5c72ca623
+      iscommand: false
+      name: Get the Accounts Details based on Sponsor
+      script: Set
+      type: regular
+      version: -1
+    taskid: bb8b6ad2-0008-4b60-8e40-99a5c72ca623
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 210
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      contextKey:
+        simple: HTMLTable
+      text:
+        complex:
+          root: TableData
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.mdToHTML
+      id: 76e50d5c-cac4-4b2d-8b62-5c682cdb44dd
+      iscommand: true
+      name: HTML Table
+      script: Builtin|||mdToHtml
+      type: regular
+      version: -1
+    taskid: 76e50d5c-cac4-4b2d-8b62-5c682cdb44dd
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 410
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      bodyType:
+        simple: HTML
+      htmlBody:
+        simple: |-
+          <!DOCTYPE html><html>
+          <head><style>table, th, td { border:1px solid black;}</style></head>
+          <body> Hi,
+          <p>Below are the Dormant Accounts.</p>
+          ${HTMLTable}
+          </body>
+          </html>
+      subject:
+        simple: ${incident.name}
+      to:
+        simple: ${inputs.SponserEmail}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Gmail Single User
+      description: Sends an email using Gmail.
+      id: 96fc76a2-eae1-4368-82c9-d826966de3c8
+      iscommand: true
+      name: Send Email
+      script: Gmail Single User|||send-mail
+      type: regular
+      version: -1
+    taskid: 96fc76a2-eae1-4368-82c9-d826966de3c8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 590
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: HTMLTable
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.10/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 626e559f-c4be-45ed-848e-bb0a33da02f5
+      iscommand: false
+      name: Delete Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 626e559f-c4be-45ed-848e-bb0a33da02f5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 790
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 835,
+        "width": 380,
+        "x": 450,
+        "y": 50
+      }
+    }
+  }
