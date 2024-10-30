@@ -1,0 +1,408 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 1.3.20
+    packID: IntegrationsAndIncidentsHealthCheck
+    packName: Integrations & Incidents Health Check
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: This playbook is triggered by a 'JOB - Integrations and Playbooks Health'
+  playbook and is responsible for running failed integrations and failed incidents
+  scripts. The playbook may run separately from the main playbook to run health tests
+  on enabled integrations and open incidents.
+id: Integrations and Playbooks Health Check - Running Scripts
+inputs: []
+name: Integrations and Incidents Health Check - Running Scripts
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 814f2f15-e8a9-4162-8b7a-75842231adde
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 814f2f15-e8a9-4162-8b7a-75842231adde
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 140,
+          "y": -80
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Integrations Failed Categories
+      output:
+        simple: ${FailedInstances.category}
+    - incidentfield: Integrations Categories
+      output:
+        simple: ${FailedInstances.category}
+    - incidentfield: Integrations Categories
+      output:
+        simple: ${SuccessInstances.category}
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+      - "3"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Executes a test for all integration instances available and returns
+        detailed information about succeeded and failed integration instances.
+      id: 6b5ad945-d3e5-4bad-8157-ab13ac785c28
+      iscommand: false
+      name: Search for currently failing integrations
+      script: FailedInstances
+      type: regular
+      version: -1
+    taskid: 6b5ad945-d3e5-4bad-8157-ab13ac785c28
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 580,
+          "y": 210
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      columns:
+        simple: Brand,Category,Information,Instance
+      context_path:
+        simple: FailedInstances
+      grid_id:
+        simple: integrationstestgrid
+      keys:
+        simple: brand,category,information,instance
+      overwrite:
+        simple: "true"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Creates a Grid table for failed instance information.
+      id: 7a426f07-5f3b-418d-813d-27bb69b17967
+      iscommand: false
+      name: Creates failed Integrations grid
+      script: SetGridField
+      type: regular
+      version: -1
+    taskid: 7a426f07-5f3b-418d-813d-27bb69b17967
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 580,
+          "y": 690
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      numberofentriesiderrors:
+        complex:
+          accessor: Error Entry ID
+          root: GetFailedTasks
+          transformers:
+          - operator: count
+      numberoffailedincidents:
+        complex:
+          accessor: Incident ID
+          root: GetFailedTasks
+          transformers:
+          - operator: uniq
+          - operator: count
+      totalfailedinstances:
+        complex:
+          accessor: FailedCount
+          root: InstancesCount
+      totalgoodinstances:
+        complex:
+          accessor: SuccessCount
+          root: InstancesCount
+      totalinstances:
+        complex:
+          accessor: TotalCount
+          root: InstancesCount
+      unassignedincidents:
+        complex:
+          accessor: Incident ID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: GetFailedTasks.Incident Owner
+              operator: isEmpty
+          root: GetFailedTasks
+          transformers:
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Adds the scripts result from previous tasks to the incident data.
+      id: 13b2a514-f431-41a4-8545-c25216f1b308
+      iscommand: true
+      name: Set scripts result
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 13b2a514-f431-41a4-8545-c25216f1b308
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 150,
+          "y": 380
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Playbook Names With Failed Tasks
+      output:
+        complex:
+          accessor: Playbook Name
+          root: GetFailedTasks
+    - incidentfield: Playbooks Failed Commands
+      output:
+        complex:
+          accessor: Command Name
+          root: GetFailedTasks
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query:
+        simple: -status:closed and runStatus:error
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Uses a query to get failed task details for incidents.
+      id: 83bb5b2d-495d-4bf2-83df-0a92153102c8
+      iscommand: false
+      name: Search for incidents with errors
+      script: GetFailedTasks
+      type: regular
+      version: -1
+    taskid: 83bb5b2d-495d-4bf2-83df-0a92153102c8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -280,
+          "y": 210
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      columns:
+        simple: Command Name,Creation Date,Incident ID,Number of Errors,Owner,Task
+          Name,Task ID,Playbook Name
+      context_path:
+        simple: GetFailedTasks
+      grid_id:
+        simple: playbooktaskserrors
+      keys:
+        simple: Command Name,Incident Created Date,Incident ID,Number of Errors,Incident
+          Owner,Task Name,Task ID,Playbook Name
+      overwrite:
+        simple: "true"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Creates a Grid table for failed incident information.
+      id: 72d1d45b-65d4-431a-8e2b-73dd00d4f661
+      iscommand: false
+      name: Create failed playbook tasks grid
+      script: SetGridField
+      type: regular
+      version: -1
+    taskid: 72d1d45b-65d4-431a-8e2b-73dd00d4f661
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -280,
+          "y": 690
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b58016a6-9341-4abb-807d-1e78fa07ec68
+      iscommand: false
+      name: Run Health Check Scripts
+      type: title
+      version: -1
+    taskid: b58016a6-9341-4abb-807d-1e78fa07ec68
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 140,
+          "y": 70
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 678d7224-fd38-4e5c-8e0f-3ba7b0f4fcff
+      iscommand: false
+      name: Create Grid for Health Check
+      type: title
+      version: -1
+    taskid: 678d7224-fd38-4e5c-8e0f-3ba7b0f4fcff
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 150,
+          "y": 550
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6d219137-020a-4fcd-8df7-13a80e08b13e
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 6d219137-020a-4fcd-8df7-13a80e08b13e
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 150,
+          "y": 860
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1005,
+        "width": 1240,
+        "x": -280,
+        "y": -80
+      }
+    }
+  }
