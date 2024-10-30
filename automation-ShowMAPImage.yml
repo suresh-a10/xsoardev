@@ -1,0 +1,65 @@
+commonfields:
+  id: 06fa6621-f5cd-4035-84ef-30efd4641583
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.11.56082
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ShowMAPImage
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  from typing import Dict, Any
+  import traceback
+  from io import BytesIO
+  import requests
+  from urllib3.exceptions import InsecureRequestWarning
+
+  def GetGeoLocationImg(latitude, longitude):
+      requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+      y = requests.get(f'https://www.openstreetmap.org/#map=4/{latitude}/{longitude}',verify=False)
+      cookie = {'Set-Cookie':y.headers['Set-Cookie']}
+      img_data = requests.get(f'https://render.openstreetmap.org/cgi-bin/export?bbox={longitude-0.4},{latitude-0.4},{longitude+0.4},{latitude+0.4}&scale=500000&format=png', verify=False, cookies=cookie)
+      # Export the image file to demisto.results
+      file_name = 'image.png'
+      file_data = BytesIO(img_data.content)
+
+  ''' MAIN FUNCTION '''
+
+
+  def main():
+      lat = 12.9716
+      lon = 77.5946
+      GetGeoLocationImg(latitude, longitude)
+
+      # try:
+      #     # TODO: replace the invoked command function with yours
+      #     return_results(basescript_dummy_command(demisto.args()))
+      # except Exception as ex:
+      #     demisto.error(traceback.format_exc())  # print the traceback
+      #     return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
