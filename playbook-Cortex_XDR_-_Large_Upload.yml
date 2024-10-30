@@ -1,0 +1,4111 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.10.0
+    itemVersion: 6.1.65
+    packID: CortexXDR
+    packName: Cortex XDR by Palo Alto Networks
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: "The playbook investigates Cortex XDR incidents involving large upload
+  alerts. The playbook is designed to run as a sub-playbook of ‘Cortex XDR Alerts
+  Handling v2’. \n\nThe playbook consists of the following procedures:\n- Searches
+  for similar previous incidents that were closed as false positives.\n- Enrichment
+  and investigation of the initiator and destination hostname and IP address.\n- Enrichment
+  and investigation of the initiator user, process, file, or command if it exists.\n-
+  Detection of related indicators and analysis of the relationship between the detected
+  indicators.\n- Utilize the detected indicators to conduct threat hunting.\n- Blocks
+  detected malicious indicators.\n- Endpoint isolation.\n\nThis playbook supports
+  the following Cortex XDR alert names:\n- Large Upload (Generic)\n- Large Upload
+  (SMTP)\n- Large Upload (FTP)\n- Large Upload (HTTPS)"
+id: Cortex XDR - Large Upload
+inputs:
+- description: 'A list of IP ranges to check the IP against. The list should be provided
+    in CIDR notation, separated by commas. An example of a list of ranges would be:
+    "172.16.0.0/12,10.0.0.0/8,192.168.0.0/16" (without quotes). If a list is not provided,
+    will use default list provided in the IsIPInRanges script (the known IPv4 private
+    address ranges).'
+  key: InternalIPRanges
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: PrivateIPs
+      root: lists
+      transformers:
+      - args:
+          action_dt: {}
+          ignore_case: {}
+          multi_line: {}
+          output_format: {}
+          period_matches_newline: {}
+          regex:
+            value:
+              simple: IANA_Private_Address
+        operator: RegexReplace
+- description: |-
+    Determines whether an incident should be further investigated if similar previous false positive incidents were found.
+    Possible values:True/False. Default: False.
+  key: FurtherInvestigation
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: "False"
+- description: |-
+    Determine whether the given indicators be automatically blocked, or if the user should be given the option to choose.
+    Possible values:True/False. Default: True.
+    If set to False - no prompt will appear, and all provided indicators will be blocked automatically.
+    If set to True - the user will be prompted to select which indicators to block.
+  key: AutoBlockIndicators
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: "True"
+- description: |-
+    Determine whether the blocking of any indicator requires the verification of the user.
+    Possible values:True/False. Default: False.
+  key: BlockIndicators_UserVerification
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "False"
+- description: |-
+    Whether early containment should be allowed when the IP address is known to be malicious.
+    Possible values:True/False. Default: True.
+  key: EarlyContainment
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: "True"
+- description: |-
+    Whether to isolate the initiating endpoint automatically if the investigation verdict is malicious.
+    Possible values:True/False. Default: False.
+  key: AutoIsolateEndpoint
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: "False"
+- description: The Cortex XDR alert ID.
+  key: Alert_ID
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: alert_id
+      filters:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              simple: PaloAltoNetworksXDR.Incident.alerts.name
+          operator: containsGeneral
+          right:
+            value:
+              simple: Large Upload
+      root: PaloAltoNetworksXDR.Incident.alerts
+      transformers:
+      - operator: uniq
+- description: |-
+    Specify the uploaded data threshold volume (in MB) from which large upload alerts should be investigated.
+    By setting a threshold, you will be able to determine which large upload alerts require investigation.
+    Default value: 150 (MB).
+  key: Transferred_Data _Threshold
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: "150"
+- description: A list of known and authorized FW application IDs and processes used
+    in the organization.
+  key: FWApps_Processes_Whitlist
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: ip,tcp,udp,ssl,syslog,quic,Chrome.exe,Firefox.exe,Opera.exe,Safari.exe,iexplore.exe,msedge.exe,brave.exe
+name: Cortex XDR - Large Upload
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b5bf1dbd-3948-4df9-81a7-71ae2fc80581
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: b5bf1dbd-3948-4df9-81a7-71ae2fc80581
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 2410,
+          "y": -30
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6581026b-5e6e-46cb-836a-1d850269f0ed
+      iscommand: false
+      name: Check Previous Similar Incidents
+      type: title
+      version: -1
+    taskid: 6581026b-5e6e-46cb-836a-1d850269f0ed
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 2410,
+          "y": 100
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: isSimilarIncidentFound
+                root: DBotFindSimilarIncidents
+          operator: isTrue
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: closeReason
+                root: DBotFindSimilarIncidents.similarIncident
+                transformers:
+                - operator: uniq
+          operator: containsGeneral
+          right:
+            value:
+              simple: Fale Positive
+      label: "yes"
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "113"
+      "yes":
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine if previous false positive incidents have been detected
+        with similar characteristics.
+      id: f8019971-848d-42ea-8092-41468c83a05c
+      iscommand: false
+      name: Found Results?
+      type: condition
+      version: -1
+    taskid: f8019971-848d-42ea-8092-41468c83a05c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2410,
+          "y": 390
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      fieldExactMatch:
+        simple: incident.type
+      fieldsToDisplay:
+        simple: closeReason,closeNotes
+      fromDate:
+        simple: 2 months ago
+      minimunIncidentSimilarity:
+        simple: "0.8"
+      query:
+        simple: incident.closeReason:"False Positive"
+      similarCategoricalField:
+        simple: incident.xdrfileartifacts.filesha256,incident.xdralerts.hostip
+      similarTextField:
+        simple: incident.xdralerts.osactorprocesscommandline,incident.xdralerts.actorprocesscommandline,incident.xdralerts.actionprocessimagecommandline,incident.xdralerts.causalityactorprocesscommandline,incident.xdralerts.host_name,incident.xdralerts.user_name
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Find past similar incidents based on incident fields' similarity.
+        Includes an option to also display indicators similarity.
+      id: d44093f6-2027-42d7-8815-ffe1ca89dbce
+      iscommand: false
+      name: Get Similar False-Positives Closed Incidents
+      script: DBotFindSimilarIncidents
+      type: regular
+      version: -1
+    taskid: d44093f6-2027-42d7-8815-ffe1ca89dbce
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2410,
+          "y": 230
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.FurtherInvestigation
+          operator: isEqualString
+          right:
+            value:
+              simple: "True"
+      label: "yes"
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "58"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determines whether an alert requires further investigation if similar
+        previous false positive incidents were found.
+      id: 18898ae5-33f6-44cf-8618-e93112dcb2b3
+      iscommand: false
+      name: Investigation Should be Continued?
+      type: condition
+      version: -1
+    taskid: 18898ae5-33f6-44cf-8618-e93112dcb2b3
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 3040,
+          "y": 560
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "58"
+      "Yes":
+      - "113"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        The playbook detected similar incidents that were closed as false positives previously.
+
+        Review the incident details and similar closed false positive incidents to determine whether this Cortex XDR alert should be further investigated.
+      id: fa5be6a6-a64a-4e1e-8a29-02ffbf4a3920
+      iscommand: false
+      name: Alert Investigation Should Continue?
+      type: condition
+      version: -1
+    taskid: fa5be6a6-a64a-4e1e-8a29-02ffbf4a3920
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2830,
+          "y": 730
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "84"
+      - "85"
+      - "107"
+      - "82"
+      - "88"
+      - "109"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7dd46caa-5159-4e41-8c8c-2bbd79f540ab
+      iscommand: false
+      name: Analysis
+      type: title
+      version: -1
+    taskid: 7dd46caa-5159-4e41-8c8c-2bbd79f540ab
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 1515
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: db25c15f-7de2-4500-8a6f-0e6059d52255
+      iscommand: false
+      name: Containment
+      type: title
+      version: -1
+    taskid: db25c15f-7de2-4500-8a6f-0e6059d52255
+    timertriggers:
+    - action: start
+      fieldname: containmentsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 2010
+        }
+      }
+  "14":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.EarlyContainment
+          operator: isEqualString
+          right:
+            value:
+              simple: "True"
+      label: "yes"
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "17"
+      "yes":
+      - "16"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether early containment is enabled for this playbook before
+        executing containment.
+      id: 54decb4b-024a-43f6-81de-8e9ffc1da41f
+      iscommand: false
+      name: Early containment enabled?
+      type: condition
+      version: -1
+    taskid: 54decb4b-024a-43f6-81de-8e9ffc1da41f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1360,
+          "y": 2310
+        }
+      }
+  "15":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Score
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Type
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Domain
+                root: DBotScore
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "3"
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Score
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Type
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: File
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Type
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Hash
+                root: DBotScore
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "3"
+      label: "yes"
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "17"
+      "yes":
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether there are any malicious indicators to block.
+      id: a9ae6eb8-74ee-4c68-8126-f911e37bd370
+      iscommand: false
+      name: Malicious Indicators Found?
+      type: condition
+      version: -1
+    taskid: a9ae6eb8-74ee-4c68-8126-f911e37bd370
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 2140
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      AutoBlockIndicators:
+        complex:
+          root: inputs.AutoBlockIndicators
+      AutoCommit:
+        simple: "No"
+      CustomBlockRule:
+        simple: "True"
+      CustomURLCategory:
+        simple: XSOAR Remediation - Malicious URLs
+      DomainToBlock:
+        complex:
+          accessor: Indicator
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: domain
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "3"
+          root: DBotScore
+          transformers:
+          - operator: uniq
+      InputEnrichment:
+        simple: "False"
+      RuleDirection:
+        simple: outbound
+      RuleName:
+        simple: XSOAR - Block Indicators playbook - ${incident.id}
+      SHA256:
+        complex:
+          accessor: Indicator
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Indicator
+              operator: stringHasLength
+              right:
+                value:
+                  simple: "64"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "3"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: file
+            - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: hash
+          root: DBotScore
+          transformers:
+          - operator: uniq
+      UserVerification:
+        complex:
+          root: inputs.BlockIndicators_UserVerification
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        This playbook blocks malicious indicators using all integrations that are enabled, using the following sub-playbooks:
+
+        - Block URL - Generic v2
+        - Block Account - Generic v2
+        - Block IP - Generic v3
+        - Block File - Generic v2
+        - Block Email - Generic v2
+        - Block Domain - Generic v2.
+      id: aadafb00-7daa-4149-82de-c0b89edd8faf
+      iscommand: false
+      name: Block Indicators - Generic v3
+      playbookId: Block Indicators - Generic v3
+      type: playbook
+      version: -1
+    taskid: aadafb00-7daa-4149-82de-c0b89edd8faf
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1360,
+          "y": 2480
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "22"
+      - "24"
+      - "18"
+      - "19"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 47ae1efd-7b1b-4044-885e-172be32b8fab
+      iscommand: false
+      name: Investigation
+      type: title
+      version: -1
+    taskid: 47ae1efd-7b1b-4044-885e-172be32b8fab
+    timertriggers:
+    - action: stop
+      fieldname: containmentsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 2655
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "32"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      FileSHA256:
+        complex:
+          accessor: os_actor_process_image_sha256
+          root: PaloAltoNetworksXDR.OriginalAlert._all_events
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.actor_process_image_sha256
+            operator: append
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.causality_actor_process_image_sha256
+            operator: append
+          - operator: uniq
+      HuntAttacker:
+        simple: "True"
+      HuntByFile:
+        simple: "True"
+      HuntByHost:
+        simple: "True"
+      HuntCnCTechniques:
+        simple: "True"
+      HuntCollectionTechniques:
+        simple: "True"
+      HuntDefenseEvasionTechniques:
+        simple: "True"
+      HuntDiscoveryTechniques:
+        simple: "True"
+      HuntExecutionTechniques:
+        simple: "True"
+      HuntImpactTechniques:
+        simple: "True"
+      HuntInitialAccessTechniques:
+        simple: "True"
+      HuntLateralMovementTechniques:
+        simple: "True"
+      HuntPersistenceTechniques:
+        simple: "True"
+      HuntPrivilegeEscalationTechniques:
+        simple: "True"
+      HuntReconnaissanceTechniques:
+        simple: "True"
+      RunAll:
+        simple: "True"
+      agentID:
+        complex:
+          accessor: agent_id
+          root: PaloAltoNetworksXDR.OriginalAlert._all_events
+          transformers:
+          - operator: uniq
+      attackerExternalHost:
+        complex:
+          accessor: Indicator
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: Domain
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "2"
+          root: DBotScore
+          transformers:
+          - operator: uniq
+      attackerRemoteIP:
+        complex:
+          accessor: Indicator
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: IP
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "3"
+          root: DBotScore
+          transformers:
+          - operator: uniq
+      timeRange:
+        simple: 2 hours ago
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: "This playbook is part of the 'Malware Investigation And Response'
+        pack. For more information, refer to https://xsoar.pan.dev/docs/reference/packs/malware-investigation-and-response.
+        This playbook handles all the endpoint investigation actions available with
+        Cortex XSOAR, including the following tasks:\n * Pre-defined MITRE Tactics\n
+        * Host fields (Host ID)\n * Attacker fields (Attacker IP, External host)\n
+        * MITRE techniques\n * File hash (currently, the playbook supports only SHA256)
+        \ \n\n Note: The playbook inputs enable manipulating the execution flow; read
+        the input descriptions for details."
+      id: fb72c0dc-c54b-4097-8a82-608e23e1eb46
+      iscommand: false
+      name: Cortex XDR - Endpoint Investigation
+      playbookId: Cortex XDR - Endpoint Investigation
+      type: playbook
+      version: -1
+    taskid: fb72c0dc-c54b-4097-8a82-608e23e1eb46
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1820,
+          "y": 2800
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "115"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Indicator:
+        complex:
+          accessor: Indicator
+          root: DBotScore
+          transformers:
+          - operator: uniq
+      LimitResults:
+        simple: "200"
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        This playbook is designed to assist with a security investigation by providing an analysis of indicator relationships. The following information is included:
+        - Indicators of compromise (IOCs) related to the investigation.
+        - Attack patterns related to the investigation.
+        - Campaigns related to the investigation.
+        - IOCs associated with the identified campaigns.
+        - Reports containing details on the identified campaigns.
+      id: 98db4730-e7e9-4d8e-8722-1b2fe9704f3d
+      iscommand: false
+      name: TIM - Indicator Relationships Analysis
+      playbookId: TIM - Indicator Relationships Analysis
+      type: playbook
+      version: -1
+    taskid: 98db4730-e7e9-4d8e-8722-1b2fe9704f3d
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 980,
+          "y": 2800
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "32"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      AzureSearchTime:
+        simple: ago(1d)
+      OktaSearch:
+        simple: "True"
+      QRadarSearchTime:
+        simple: Last 1 days
+      SIEMFailedLogonSearch:
+        simple: "True"
+      SplunkEarliestTime:
+        simple: -1d
+      SplunkIndex:
+        simple: '*'
+      SplunkLatestTime:
+        simple: now
+      ThreatLogSearch:
+        simple: "True"
+      Username:
+        complex:
+          accessor: identity
+          root: PaloAltoNetworksXDR.OriginalAlert._all_events.actor_primary_normalized_user
+          transformers:
+          - operator: uniq
+      XDRAlertSearch:
+        simple: "True"
+      XDRUsernameField:
+        simple: actor_effective_username
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        This playbook performs an investigation on a specific user, using queries and logs from SIEM, Identity management systems, XDR, and firewalls.
+
+        Supported Integrations:
+        -Okta
+        -Splunk
+        -QRadar
+        -Azure Log Analytics
+        -PAN-OS
+        -XDR / Core By Palo Alto Networks.
+      id: 09d0928b-9634-43c9-8b72-377241818a67
+      iscommand: false
+      name: User Investigation - Generic
+      playbookId: User Investigation - Generic
+      type: playbook
+      version: -1
+    taskid: 09d0928b-9634-43c9-8b72-377241818a67
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1390,
+          "y": 2975
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "25"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Commandline:
+        complex:
+          accessor: os_actor_process_command_line
+          root: PaloAltoNetworksXDR.OriginalAlert._all_events
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.actor_process_command_line
+            operator: append
+          - operator: uniq
+      StringSimilarityThreshold:
+        simple: "0.5"
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: "This playbook takes a command line from the alert and performs
+        the following actions:\n- Checks for base64 string and decodes if exists\n-
+        Extracts and enriches indicators from the command line\n- Checks specific
+        arguments for malicious usage \n\nAt the end of the playbook, it sets a possible
+        verdict for the command line, based on the finding:\n1. Indicators found in
+        the command line\n2. Found AMSI techniques\n3. Found suspicious parameters\n4.
+        Usage of malicious tools\n5. Indication of network activity\n6. Indication
+        of suspicious LOLBIN execution\n\nNote: In case you are wishing to run this
+        playbook with a list of command lines, set this playbook to be running in
+        a loop. To do so, navigate to the 'Loop'  and check \"For Each Input\"."
+      id: 020df797-a905-4c06-8b81-7cd6479666cf
+      iscommand: false
+      name: Command-Line Analysis
+      playbookId: Command-Line Analysis
+      type: playbook
+      version: -1
+    taskid: 020df797-a905-4c06-8b81-7cd6479666cf
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 2640,
+          "y": 2975
+        }
+      }
+  "22":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: identity
+                root: PaloAltoNetworksXDR.OriginalAlert._all_events.actor_primary_normalized_user
+                transformers:
+                - operator: uniq
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "32"
+      "yes":
+      - "20"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        Checks whether an initiator username is available for investigation.
+      id: ea9acbd4-6456-49e2-895f-a2622b8bdcd2
+      iscommand: false
+      name: Has User to Investigate?
+      type: condition
+      version: -1
+    taskid: ea9acbd4-6456-49e2-895f-a2622b8bdcd2
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1390,
+          "y": 2800
+        }
+      }
+  "24":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: actor_process_command_line
+                root: PaloAltoNetworksXDR.OriginalAlert._all_events
+                transformers:
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.os_actor_process_command_line
+                  operator: append
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "32"
+      "yes":
+      - "21"
+      - "70"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        Checks whether an initiator command-line is available for investigation.
+      id: ca264388-0ba3-4fa7-8595-11b0997bb461
+      iscommand: false
+      name: Has Command-Line to Investigate?
+      type: condition
+      version: -1
+    taskid: ca264388-0ba3-4fa7-8595-11b0997bb461
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2230,
+          "y": 2800
+        }
+      }
+  "25":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Findings
+          operator: isNotEmpty
+          right:
+            value: {}
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: suspiciousParameters
+                root: CommandlineVerdict
+          operator: isEqualString
+          right:
+            value:
+              simple: "True"
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: AMSI
+                root: CommandlineVerdict
+          operator: isEqualString
+          right:
+            value:
+              simple: "True"
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: foundIndicators
+                root: CommandlineVerdict
+          operator: isEqualString
+          right:
+            value:
+              simple: "True"
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: maliciousTools
+                root: CommandlineVerdict
+          operator: isEqualString
+          right:
+            value:
+              simple: "True"
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: networkActivity
+                root: CommandlineVerdict
+          operator: isEqualString
+          right:
+            value:
+              simple: "True"
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: SuspiciousLolbinExecution
+                root: CommandlineVerdict
+          operator: isEqualString
+          right:
+            value:
+              simple: "True"
+      label: "yes"
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "32"
+      "yes":
+      - "27"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether the command-line investigation produced any results.
+      id: 9e426f5e-e46a-4d43-8ce9-ae2db84c200f
+      iscommand: false
+      name: Has Command-Line Investigation Results?
+      type: condition
+      version: -1
+    taskid: 9e426f5e-e46a-4d43-8ce9-ae2db84c200f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2440,
+          "y": 3150
+        }
+      }
+  "26":
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "28"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 356a8af0-8b4b-4621-8ad8-3879d083cc0c
+      iscommand: false
+      name: Investigation - Related Indicators Hunt
+      type: title
+      version: -1
+    taskid: 356a8af0-8b4b-4621-8ad8-3879d083cc0c
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1190,
+          "y": 4100
+        }
+      }
+  "27":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Command Line
+      output:
+        simple: ${commandline.original}
+    - incidentfield: Command Line Verdict
+      output:
+        simple: Malicious
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "32"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Investigation.CMDReputation
+      value:
+        simple: Malicious
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 8b072891-87d4-4174-850f-885bc502da8e
+      iscommand: false
+      name: Set Malicious Command-Line
+      script: Set
+      type: regular
+      version: -1
+    taskid: 8b072891-87d4-4174-850f-885bc502da8e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2440,
+          "y": 3330
+        }
+      }
+  "28":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: RelatedFiles
+          operator: isNotEmpty
+          right:
+            value: {}
+        - left:
+            iscontext: true
+            value:
+              complex:
+                root: RelatedDomains
+          operator: isNotEmpty
+        - left:
+            iscontext: true
+            value:
+              complex:
+                root: RelatedIPs
+          operator: isNotEmpty
+        - left:
+            iscontext: true
+            value:
+              complex:
+                root: RelatedURLs
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "54"
+      "yes":
+      - "29"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether there are any indicators to hunt for.
+      id: 1f86ac51-6b86-4e74-8906-17a8b741d724
+      iscommand: false
+      name: Found Related Indicators to Hunt?
+      type: condition
+      version: -1
+    taskid: 1f86ac51-6b86-4e74-8906-17a8b741d724
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1190,
+          "y": 4230
+        }
+      }
+  "29":
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "30"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      IPAddress:
+        complex:
+          accessor: Indicator
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: IP
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "3"
+          root: DBotScore
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: RelatedIPs
+            operator: append
+          - operator: uniq
+      InternalRange:
+        complex:
+          root: inputs.InternalIPRanges
+      MD5:
+        complex:
+          accessor: Indicator
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: file
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: hash
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Indicator
+              operator: stringHasLength
+              right:
+                value:
+                  simple: "32"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "3"
+          root: DBotScore
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: RelatedFiles
+            operator: append
+          - operator: uniq
+      QRadarTimeFrame:
+        simple: LAST 7 DAYS
+      SHA1:
+        complex:
+          accessor: Indicator
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: file
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: hash
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Indicator
+              operator: stringHasLength
+              right:
+                value:
+                  simple: "40"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "3"
+          root: DBotScore
+          transformers:
+          - operator: uniq
+      SHA256:
+        complex:
+          accessor: Indicator
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: file
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: hash
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Indicator
+              operator: stringHasLength
+              right:
+                value:
+                  simple: "64"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "3"
+          root: DBotScore
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: RelatedFiles
+            operator: append
+          - operator: uniq
+      SplunkEarliestTime:
+        simple: -7d@d
+      SplunkLatestTime:
+        simple: now
+      URLDomain:
+        complex:
+          accessor: Indicator
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: domain
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "3"
+          root: DBotScore
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: RelatedDomains
+            operator: append
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: RelatedURLs
+            operator: append
+          - operator: uniq
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: "This playbook enables threat hunting for IOCs in your enterprise.
+        It currently supports the following integrations: \n- Splunk\n- Qradar\n-
+        Pan-os \n- Cortex data lake \n- Autofocus\n- Microsoft 365 Defender"
+      id: db9478b5-07bc-4c3a-81ba-8dbcabdd41a3
+      iscommand: false
+      name: Threat Hunting - Generic
+      playbookId: Threat Hunting - Generic
+      type: playbook
+      version: -1
+    taskid: db9478b5-07bc-4c3a-81ba-8dbcabdd41a3
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 980,
+          "y": 4400
+        }
+      }
+  "30":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Splunk
+          operator: isNotEmpty
+        - left:
+            iscontext: true
+            value:
+              complex:
+                root: PANWHunting
+          operator: isNotEmpty
+        - left:
+            iscontext: true
+            value:
+              complex:
+                root: QRadar
+          operator: isNotEmpty
+        - left:
+            iscontext: true
+            value:
+              complex:
+                root: Microsoft365Defender
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "54"
+      "yes":
+      - "31"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Verifies whether there are any threat hunting results.
+      id: 9175d975-efa8-4e09-81db-71841a30971d
+      iscommand: false
+      name: Has Hunt Results?
+      type: condition
+      version: -1
+    taskid: 9175d975-efa8-4e09-81db-71841a30971d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 980,
+          "y": 4560
+        }
+      }
+  "31":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Threat Hunting Detected IP
+      output:
+        complex:
+          accessor: DetectedExternalIPs
+          root: PANWHunting
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: QRadar.DetectedExternalIPs
+            operator: append
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: Splunk.DetectedExternalIPs
+            operator: append
+          - operator: uniq
+    - incidentfield: Threat Hunting Detected Hostnames
+      output:
+        complex:
+          accessor: DetectedExternalHosts
+          root: Splunk
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PANWHunting.DetectedExternalHosts
+            operator: append
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: QRadar.DetectedExternalHosts
+            operator: append
+          - operator: uniq
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "54"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Investigation.HasHuntResults
+      value:
+        simple: "True"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 2e63f433-ae84-44b4-8841-d88df9f0cc34
+      iscommand: false
+      name: Set Hunt Results True
+      script: Set
+      type: regular
+      version: -1
+    taskid: 2e63f433-ae84-44b4-8841-d88df9f0cc34
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 980,
+          "y": 4720
+        }
+      }
+  "32":
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 71311a37-ae3f-4522-8429-e68eec247c05
+      iscommand: false
+      name: Set Verdict
+      type: title
+      version: -1
+    taskid: 71311a37-ae3f-4522-8429-e68eec247c05
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 3500
+        }
+      }
+  "47":
+    continueonerrortype: ""
+    id: "47"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      verdict:
+        simple: Malicious
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 502ceed3-151e-4d5b-8087-cc7c2be1e586
+      iscommand: true
+      name: Set Incident Verdict - Malicious
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 502ceed3-151e-4d5b-8087-cc7c2be1e586
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1190,
+          "y": 3940
+        }
+      }
+  "54":
+    continueonerrortype: ""
+    id: "54"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "57"
+      - "55"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d03b3054-01fb-4e5f-852c-a9629b377f21
+      iscommand: false
+      name: Remediation
+      type: title
+      version: -1
+    taskid: d03b3054-01fb-4e5f-852c-a9629b377f21
+    timertriggers:
+    - action: start
+      fieldname: remediationsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1190,
+          "y": 4890
+        }
+      }
+  "55":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.AutoIsolateEndpoint
+          operator: isEqualString
+          right:
+            value:
+              simple: "true"
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: agent_id
+                root: PaloAltoNetworksXDR.OriginalAlert._all_events
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "55"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "58"
+      "yes":
+      - "56"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the endpoint should be isolated automatically.
+      id: 58c8104c-b6a6-43bc-86aa-bc717bac9e3f
+      iscommand: false
+      name: Endpoint auto-isolation enabled?
+      type: condition
+      version: -1
+    taskid: 58c8104c-b6a6-43bc-86aa-bc717bac9e3f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1390,
+          "y": 5035
+        }
+      }
+  "56":
+    continueonerrortype: ""
+    id: "56"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "58"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      endpoint_id:
+        complex:
+          accessor: agent_id
+          root: PaloAltoNetworksXDR.OriginalAlert._all_events
+          transformers:
+          - operator: uniq
+      hostname:
+        complex:
+          accessor: host_name
+          root: PaloAltoNetworksXDR.Incident.alerts
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.agent_hostname
+            operator: append
+          - operator: uniq
+      ip_list:
+        complex:
+          accessor: action_local_ip
+          root: PaloAltoNetworksXDR.OriginalAlert._all_events
+          transformers:
+          - operator: uniq
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This playbook accepts an XDR endpoint ID and isolates it using
+        the 'Palo Alto Networks Cortex XDR - Investigation and Response' integration.
+      id: f48d9fbb-df56-480b-81a9-83d55cc474a5
+      iscommand: false
+      name: Cortex XDR - Isolate Endpoint
+      playbookId: Cortex XDR - Isolate Endpoint
+      type: playbook
+      version: -1
+    taskid: f48d9fbb-df56-480b-81a9-83d55cc474a5
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1390,
+          "y": 5210
+        }
+      }
+  "57":
+    continueonerrortype: ""
+    id: "57"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "58"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      AutoBlockIndicators:
+        complex:
+          root: inputs.AutoBlockIndicators
+      AutoCommit:
+        simple: "No"
+      CustomBlockRule:
+        simple: "True"
+      CustomURLCategory:
+        simple: XSOAR Remediation - Malicious URLs
+      DomainToBlock:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: domain
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "3"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Indicator
+              operator: notIn
+              right:
+                iscontext: true
+                value:
+                  simple: IndicatorsToBlock
+          root: DBotScore.Indicator
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: RelatedDomains
+            operator: append
+          - operator: uniq
+      FilesToBlock:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: file
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "3"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Indicator
+              operator: notIn
+              right:
+                iscontext: true
+                value:
+                  simple: IndicatorsToBlock
+          root: DBotScore.Indicator
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: RelatedFiles
+            operator: append
+          - operator: uniq
+      InputEnrichment:
+        simple: "False"
+      MD5:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Indicator
+              operator: stringHasLength
+              right:
+                value:
+                  simple: "32"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "3"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: file
+            - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: hash
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Indicator
+              operator: notIn
+              right:
+                iscontext: true
+                value:
+                  simple: IndicatorsToBlock
+          root: DBotScore.Indicator
+          transformers:
+          - operator: uniq
+      RuleDirection:
+        simple: outbound
+      RuleName:
+        simple: XSOAR - Block Indicators playbook - ${incident.id}
+      SHA256:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Indicator
+              operator: stringHasLength
+              right:
+                value:
+                  simple: "64"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "3"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: file
+            - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: hash
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Indicator
+              operator: notIn
+              right:
+                iscontext: true
+                value:
+                  simple: IndicatorsToBlock
+          root: DBotScore.Indicator
+          transformers:
+          - operator: uniq
+      URL:
+        complex:
+          accessor: Indicator
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Type
+              operator: isEqualString
+              right:
+                value:
+                  simple: url
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "3"
+          root: DBotScore
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: RelatedURLs
+            operator: append
+          - operator: uniq
+      UserVerification:
+        complex:
+          root: inputs.BlockIndicators_UserVerification
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        This playbook blocks malicious indicators using all integrations that are enabled, using the following sub-playbooks:
+
+        - Block URL - Generic v2
+        - Block Account - Generic v2
+        - Block IP - Generic v3
+        - Block File - Generic v2
+        - Block Email - Generic v2
+        - Block Domain - Generic v2.
+      id: 79d0e021-14ff-46d0-8b86-7cbec40eedcb
+      iscommand: false
+      name: Block Indicators - Generic v3
+      playbookId: Block Indicators - Generic v3
+      type: playbook
+      version: -1
+    taskid: 79d0e021-14ff-46d0-8b86-7cbec40eedcb
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 990,
+          "y": 5035
+        }
+      }
+  "58":
+    continueonerrortype: ""
+    id: "58"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4b5714fa-0f03-4f05-8365-26ce106482cd
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 4b5714fa-0f03-4f05-8365-26ce106482cd
+    timertriggers:
+    - action: stop
+      fieldname: remediationsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 3040,
+          "y": 5390
+        }
+      }
+  "67":
+    continueonerrortype: ""
+    id: "67"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "76"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7b676cac-c8f7-4624-85d1-947158cbb4c8
+      iscommand: false
+      name: Suspicious
+      type: title
+      version: -1
+    taskid: 7b676cac-c8f7-4624-85d1-947158cbb4c8
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 3810
+        }
+      }
+  "68":
+    continueonerrortype: ""
+    id: "68"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "47"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6ec36124-7137-4ad0-8235-3ca3e923c8b0
+      iscommand: false
+      name: Malicious
+      type: title
+      version: -1
+    taskid: 6ec36124-7137-4ad0-8235-3ca3e923c8b0
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1190,
+          "y": 3810
+        }
+      }
+  "69":
+    continueonerrortype: ""
+    id: "69"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "114"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alert_ids:
+        complex:
+          root: inputs.Alert_ID
+          transformers:
+          - operator: uniq
+      filter_alert_fields:
+        simple: "false"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns information about each alert ID.
+      id: d0ce00b0-ef5e-4e11-810e-616da8500cd8
+      iscommand: true
+      name: Get Alert Extra Data
+      script: '|||xdr-get-cloud-original-alerts'
+      type: regular
+      version: -1
+    taskid: d0ce00b0-ef5e-4e11-810e-616da8500cd8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 1190
+        }
+      }
+  "70":
+    continueonerrortype: ""
+    id: "70"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "25"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      HuntingTimeFrame:
+        simple: 7 Days
+      Processes:
+        simple: |-
+          - value: ${PaloAltoNetworksXDR.OriginalAlert._all_events.causality_actor_process_image_name},${PaloAltoNetworksXDR.OriginalAlert._all_events.os_actor_process_image_name},${PaloAltoNetworksXDR.OriginalAlert._all_events.actor_process_image_name}
+          - commands: ${PaloAltoNetworksXDR.OriginalAlert._all_events.os_actor_process_command_line},${PaloAltoNetworksXDR.OriginalAlert._all_events.actor_process_command_line}
+      SearchXDRAlerts:
+        simple: "True"
+      StringSimilarityThreshold:
+        simple: "0.5"
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        This playbook is a generic playbook that receives a process name and command-line argument. It uses the "Cortex XDR IR" integration to search for the given process executions inside XDR alerts and compares the command-line argument from the results to the command-line argument received from the playbook input.
+
+        Note: Under the "Processes" input, the playbook should receive an array that contains the following keys:
+        - value: *process name*
+        - commands: *command-line arguments*.
+      id: f5330d0d-0165-4d04-814c-241a7cc190fd
+      iscommand: false
+      name: Cortex XDR - Search and Compare Process Executions - XDR Alerts
+      playbookId: Cortex XDR - Search and Compare Process Executions - XDR Alerts
+      type: playbook
+      version: -1
+    taskid: f5330d0d-0165-4d04-814c-241a7cc190fd
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 2230,
+          "y": 2975
+        }
+      }
+  "76":
+    continueonerrortype: ""
+    id: "76"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "58"
+      Remediation:
+      - "54"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: "Upon review, the playbook did not identify any obvious malicious
+        indicators associated with the alert. However, there are some noteworthy observations
+        that require manual investigation. \n\n**Review the following alert details
+        and determine whether remediation is necessary:**\n1. Verify if previous false
+        positive incidents with similar characteristics have been detected.\n2. Review
+        the additional alerts within the incident, if any exist.\n3. Examine the additional
+        alerts retrieved by the sub-playbooks associated with the initiator account,
+        similar command line, or initiator host.\n4. Check the FW application ID to
+        ensure it is a known and authorized application within the organization (if
+        the activity and application are valid, add the ID to the 'FWApps_Processes_Whitlist'
+        playbook input to avoid false positives).\n5. Check the initiator process
+        to ensure it is a known and authorized process within the organization (if
+        the activity and process are valid, add the process name to the 'FWApps_Processes_Whitlist'
+        playbook input to avoid false positives).\n6. Analyze the command line analysis
+        results and any additional alerts with similar initiator command lines retrieved
+        from the 'Cortex XDR - Search and Compare Process Executions - XDR Alerts'
+        sub-playbook.\n7. Determine whether the user is aware of the upload activity
+        and what caused the massive upload that triggered the alert.\n8. Verify whether
+        the uploaded files contain sensitive information."
+      id: afadc78f-a5bb-4f1c-83e5-fdd043431cca
+      iscommand: false
+      name: Manual Investigation
+      type: condition
+      version: -1
+    taskid: afadc78f-a5bb-4f1c-83e5-fdd043431cca
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 3940
+        }
+      }
+  "78":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: description
+                root: PaloAltoNetworksXDR.Incident.alerts
+                transformers:
+                - args:
+                    flags: {}
+                    groups:
+                      value:
+                        simple: "1"
+                    keys: {}
+                    regex:
+                      value:
+                        simple: uploaded\s(.*(MB|GB|TB))
+                  operator: RegexGroups
+          operator: isEqualString
+          right:
+            value:
+              simple: GB
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: description
+                root: PaloAltoNetworksXDR.Incident.alerts
+                transformers:
+                - args:
+                    flags: {}
+                    groups:
+                      value:
+                        simple: "1"
+                    keys: {}
+                    regex:
+                      value:
+                        simple: uploaded\s(.*(MB|GB|TB))
+                  operator: RegexGroups
+          operator: isEqualString
+          right:
+            value:
+              simple: TB
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: description
+                root: PaloAltoNetworksXDR.Incident.alerts
+                transformers:
+                - args:
+                    flags: {}
+                    groups:
+                      value:
+                        simple: "0"
+                    keys: {}
+                    regex:
+                      value:
+                        simple: uploaded\s(.*(MB|GB|TB))
+                  operator: RegexGroups
+                - args:
+                    chars:
+                      value:
+                        simple: MB
+                  operator: StripChars
+                - args:
+                    flags: {}
+                    groups:
+                      value:
+                        simple: "0"
+                    keys: {}
+                    regex:
+                      value:
+                        simple: (\d+)\.
+                  operator: RegexGroups
+          operator: greaterThanOrEqual
+          right:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.Transferred_Data _Threshold
+      label: More Than Threshold
+    continueonerrortype: ""
+    id: "78"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "58"
+      More Than Threshold:
+      - "69"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determines if the amount of data uploaded to an external host exceeds
+        the defined threshold amount.
+      id: f70c3820-f3f8-47d0-89c4-12976b23af85
+      iscommand: false
+      name: Check Uploaded Data Volume
+      type: condition
+      version: -1
+    taskid: f70c3820-f3f8-47d0-89c4-12976b23af85
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 1030
+        }
+      }
+  "82":
+    continueonerrortype: ""
+    id: "82"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Analysis.AdditionalAlerts
+      value:
+        complex:
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.product
+              operator: containsGeneral
+              right:
+                value:
+                  simple: XDR Agent
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert.alert_name
+              operator: notContainsGeneral
+              right:
+                value:
+                  simple: Large Upload
+          root: PaloAltoNetworksXDR.OriginalAlert.alert_name
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 3e44628e-0e46-4b23-8d7a-a71a8d1f10ae
+      iscommand: false
+      name: Set Additional Alerts to Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 3e44628e-0e46-4b23-8d7a-a71a8d1f10ae
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 810,
+          "y": 1660
+        }
+      }
+  "84":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: fw_app_id
+                root: PaloAltoNetworksXDR.OriginalAlert._all_events
+                transformers:
+                - args:
+                    delimiter:
+                      value:
+                        simple: ','
+                  operator: split
+                - operator: uniq
+          operator: notIn
+          right:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.FWApps_Processes_Whitlist
+                transformers:
+                - args:
+                    delimiter:
+                      value:
+                        simple: ','
+                  operator: split
+      label: "yes"
+    continueonerrortype: ""
+    id: "84"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "13"
+      "yes":
+      - "86"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        Checks whether an unusual FW App ID was used.
+      id: 92baac59-9fa0-4f3e-8cd4-66c2a8888c5a
+      iscommand: false
+      name: An Unusual FW App ID was used?
+      type: condition
+      version: -1
+    taskid: 92baac59-9fa0-4f3e-8cd4-66c2a8888c5a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2010,
+          "y": 1660
+        }
+      }
+  "85":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: causality_actor_process_image_name
+                root: PaloAltoNetworksXDR.OriginalAlert._all_events
+                transformers:
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.os_actor_process_image_name
+                  operator: append
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.actor_process_image_name
+                  operator: append
+                - args:
+                    delimiter:
+                      value:
+                        simple: ','
+                  operator: split
+                - operator: uniq
+          operator: notIn
+          right:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.FWApps_Processes_Whitlist
+                transformers:
+                - args:
+                    delimiter:
+                      value:
+                        simple: ','
+                  operator: split
+      label: "yes"
+    continueonerrortype: ""
+    id: "85"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "13"
+      "yes":
+      - "87"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        Checks whether an unusual process was used.
+      id: b90f9ff3-e42c-46d5-8a6b-e1821aef60ea
+      iscommand: false
+      name: An Unusual Process was used?
+      type: condition
+      version: -1
+    taskid: b90f9ff3-e42c-46d5-8a6b-e1821aef60ea
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2410,
+          "y": 1660
+        }
+      }
+  "86":
+    continueonerrortype: ""
+    id: "86"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Analysis.Unusual_FW_App_ID
+      value:
+        simple: "True"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 33eb43af-a049-47ff-8e56-1889a4989955
+      iscommand: false
+      name: Set Unusual FW App ID
+      script: Set
+      type: regular
+      version: -1
+    taskid: 33eb43af-a049-47ff-8e56-1889a4989955
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2010,
+          "y": 1835
+        }
+      }
+  "87":
+    continueonerrortype: ""
+    id: "87"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Analysis.Unusual_Process
+      value:
+        simple: "True"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: d77a3b93-6f7d-4846-8bf0-f6573602a4e1
+      iscommand: false
+      name: Set Unusual Process
+      script: Set
+      type: regular
+      version: -1
+    taskid: d77a3b93-6f7d-4846-8bf0-f6573602a4e1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2410,
+          "y": 1835
+        }
+      }
+  "88":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: causality_actor_process_signature_status
+                root: PaloAltoNetworksXDR.OriginalAlert._all_events
+                transformers:
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.os_actor_process_signature_status
+                  operator: append
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.actor_process_signature_status
+                  operator: append
+                - operator: uniq
+          operator: isNotEqualString
+          right:
+            value:
+              simple: SIGNATURE_SIGNED
+      label: "yes"
+    continueonerrortype: ""
+    id: "88"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "13"
+      "yes":
+      - "89"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether the initiator process is unsigned.
+      id: e7cb2076-4c50-44e7-81d5-51cc712011e6
+      iscommand: false
+      name: Unsigned Initiator Process?
+      type: condition
+      version: -1
+    taskid: e7cb2076-4c50-44e7-81d5-51cc712011e6
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2810,
+          "y": 1660
+        }
+      }
+  "89":
+    continueonerrortype: ""
+    id: "89"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Analysis.Unsigned_Process
+      value:
+        simple: "True"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 0a482c04-e216-4e2f-8ed5-311b81f56264
+      iscommand: false
+      name: Set Unsigned Process
+      script: Set
+      type: regular
+      version: -1
+    taskid: 0a482c04-e216-4e2f-8ed5-311b81f56264
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2810,
+          "y": 1835
+        }
+      }
+  "103":
+    continueonerrortype: ""
+    id: "103"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "58"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b6812984-343e-4a30-8382-b711218f9a6b
+      iscommand: false
+      name: Benign
+      type: title
+      version: -1
+    taskid: b6812984-343e-4a30-8382-b711218f9a6b
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 2040,
+          "y": 3810
+        }
+      }
+  "107":
+    continueonerrortype: ""
+    id: "107"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Analysis.FTP_Server
+      stringify:
+        simple: "true"
+      value:
+        complex:
+          accessor: name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ActiveDirectory.Computers.memberOf
+              operator: match
+              right:
+                value:
+                  simple: (?i)CN=.*(?:FTP|File).*,
+          root: ActiveDirectory.Computers
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 2bc52b3e-5e56-44c6-8f9e-b32015f195ab
+      iscommand: false
+      name: Check Whether The Source Host Is an FTP Server
+      script: Set
+      type: regular
+      version: -1
+    taskid: 2bc52b3e-5e56-44c6-8f9e-b32015f195ab
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1210,
+          "y": 1660
+        }
+      }
+  "109":
+    continueonerrortype: ""
+    id: "109"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Analysis.SMTP_Server
+      stringify:
+        simple: "true"
+      value:
+        complex:
+          accessor: name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ActiveDirectory.Computers.memberOf
+              operator: match
+              right:
+                value:
+                  simple: (?i)CN=.*(?:SMTP|Mail).*,
+          root: ActiveDirectory.Computers
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 96de7dc0-b937-4303-8c9d-9ce3ef043a53
+      iscommand: false
+      name: Check Whether The Source Host Is an SMTP Server
+      script: Set
+      type: regular
+      version: -1
+    taskid: 96de7dc0-b937-4303-8c9d-9ce3ef043a53
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 1660
+        }
+      }
+  "112":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: CMDReputation
+                root: Investigation
+          operator: isEqualString
+          right:
+            value:
+              simple: Malicious
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Score
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.dst_action_external_hostname
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.ssl_req_chello_sni_sample
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.target_address
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.domain
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.action_external_hostname
+                root: DBotScore
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "3"
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Score
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.os_actor_process_image_sha256
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.actor_process_image_sha256
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.causality_actor_process_image_sha256
+                root: DBotScore
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "3"
+        - left:
+            iscontext: true
+            value:
+              complex:
+                root: RelatedAttackPatterns
+                transformers:
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: RelatedCampaign
+                  operator: append
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: RelatedFiles
+                  operator: append
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: RelatedDomains
+                  operator: append
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: RelatedIPs
+                  operator: append
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: RelatedURLs
+                  operator: append
+          operator: isNotEmpty
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: risk_level
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.RiskyUser.id
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.causality_actor_primary_normalized_user.username
+                root: PaloAltoNetworksXDR.RiskyUser
+          operator: isEqualString
+          right:
+            value:
+              simple: High
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: 'risk_level '
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.RiskyHost.id
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.Incident.alerts.host_name
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.RiskyHost.id
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.agent_hostname
+                root: PaloAltoNetworksXDR.RiskyHost
+          operator: isEqualString
+          right:
+            value:
+              simple: High
+        - left:
+            iscontext: true
+            value:
+              complex:
+                root: NumOfSiemFailedLogon
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "3"
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Alert
+                root: PaloAltoNetworksXDR
+                transformers:
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: Splunk.Result
+                  operator: append
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: QRadar.Search.Result
+                  operator: append
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: SuspiciousUserAgent
+                  operator: append
+          operator: isNotEmpty
+        - left:
+            iscontext: true
+            value:
+              complex:
+                root: NumOfThreatLogs
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "3"
+        - left:
+            iscontext: true
+            value:
+              complex:
+                root: NumOfOktaSuspiciousActivities
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "3"
+      label: Malicious
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: raw_abioc.event.is_src_host_dns_server
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert.alert_name
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Large Upload (HTTPS)
+                root: PaloAltoNetworksXDR.OriginalAlert
+                transformers:
+                - operator: uniq
+          operator: isEqualString
+          right:
+            value:
+              simple: "True"
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: raw_abioc.event.is_src_host_internet_facing_server
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert.alert_name
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Large Upload (HTTPS)
+                root: PaloAltoNetworksXDR.OriginalAlert
+          operator: isEqualString
+          right:
+            value:
+              simple: "true"
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: raw_abioc.event.is_src_host_http_server
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert.alert_name
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Large Upload (HTTPS)
+                root: PaloAltoNetworksXDR.OriginalAlert
+          operator: isEqualString
+          right:
+            value:
+              simple: "true"
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: _all_events.target_ip
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.target_port
+                    operator: isEqualNumber
+                    right:
+                      value:
+                        simple: "22"
+                  - left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.action_remote_port
+                    operator: isEqualNumber
+                    right:
+                      value:
+                        simple: "22"
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert.alert_name
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Large Upload (Generic)
+                root: PaloAltoNetworksXDR.OriginalAlert
+                transformers:
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.action_remote_ip
+                  operator: append
+                - operator: uniq
+          operator: IsInCidrRanges
+          right:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.InternalIPRanges
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: host_name
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.Incident.alerts.host_name
+                    operator: inList
+                    right:
+                      iscontext: true
+                      value:
+                        simple: Analysis.FTP_Server
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.Incident.alerts.name
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Large Upload (FTP)
+                root: PaloAltoNetworksXDR.Incident.alerts
+                transformers:
+                - operator: uniq
+          operator: isEqualString
+          right:
+            iscontext: true
+            value:
+              complex:
+                accessor: endpoint_name
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.Endpoint.endpoint_type
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: AGENT_TYPE_SERVER
+                root: PaloAltoNetworksXDR.Endpoint
+                transformers:
+                - operator: uniq
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: host_name
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.Incident.alerts.host_name
+                    operator: inList
+                    right:
+                      iscontext: true
+                      value:
+                        simple: Analysis.SMTP_Server
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.Incident.alerts.name
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Large Upload (SMTP)
+                root: PaloAltoNetworksXDR.Incident.alerts
+                transformers:
+                - operator: uniq
+          operator: isEqualString
+          right:
+            iscontext: true
+            value:
+              complex:
+                accessor: endpoint_name
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.Endpoint.endpoint_type
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: AGENT_TYPE_SERVER
+                root: PaloAltoNetworksXDR.Endpoint
+                transformers:
+                - operator: uniq
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Score
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.dst_action_external_hostname
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.ssl_req_chello_sni_sample
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.target_address
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.domain
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.action_external_hostname
+                root: DBotScore
+          operator: lessThanOrEqual
+          right:
+            value:
+              simple: "1"
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: dst_action_external_hostname
+                root: PaloAltoNetworksXDR.OriginalAlert._all_events
+                transformers:
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.ssl_req_chello_sni_sample
+                  operator: append
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.target_address
+                  operator: append
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.domain
+                  operator: append
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.action_external_hostname
+                  operator: append
+          operator: isEmpty
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Score
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.os_actor_process_image_sha256
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.actor_process_image_sha256
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.causality_actor_process_image_sha256
+                root: DBotScore
+          operator: lessThanOrEqual
+          right:
+            value:
+              simple: "1"
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: os_actor_process_image_sha256
+                root: PaloAltoNetworksXDR.OriginalAlert._all_events
+                transformers:
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.actor_process_image_sha256
+                  operator: append
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.OriginalAlert._all_events.causality_actor_process_image_sha256
+                  operator: append
+          operator: isEmpty
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: CMDReputation
+                root: Investigation
+          operator: isNotEqualString
+          right:
+            value:
+              simple: Malicious
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: AdditionalAlerts
+                root: Analysis
+          operator: isNotExists
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Unusual_FW_App_ID
+                root: Analysis
+          operator: isNotExists
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Unusual_Process
+                root: Analysis
+          operator: isNotExists
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Unsigned_Process
+                root: Analysis
+          operator: isNotExists
+      label: Benign
+    continueonerrortype: ""
+    id: "112"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "67"
+      Benign:
+      - "103"
+      Malicious:
+      - "68"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Estimate the verdict for the 'large upload HTTPS' Cortex XDR alerts.
+      id: 95e865d5-ec80-49d2-8982-b1db90c547a6
+      iscommand: false
+      name: Calculate Verdict
+      type: condition
+      version: -1
+    taskid: 95e865d5-ec80-49d2-8982-b1db90c547a6
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 3630
+        }
+      }
+  "113":
+    continueonerrortype: ""
+    id: "113"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "78"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 35fcb41b-ade3-48c0-83b2-6192904cb323
+      iscommand: false
+      name: Enrichment
+      type: title
+      version: -1
+    taskid: 35fcb41b-ade3-48c0-83b2-6192904cb323
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 900
+        }
+      }
+  "114":
+    continueonerrortype: ""
+    id: "114"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 0
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      AccountDomain:
+        complex:
+          accessor: domain
+          root: PaloAltoNetworksXDR.OriginalAlert._all_events.causality_actor_primary_normalized_user
+          transformers:
+          - operator: uniq
+      CVE:
+        complex:
+          accessor: ID
+          root: CVE
+      Domain:
+        complex:
+          accessor: dst_action_external_hostname
+          root: PaloAltoNetworksXDR.OriginalAlert._all_events
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.ssl_req_chello_sni_sample
+            operator: append
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.target_address
+            operator: append
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.domain
+            operator: append
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.action_external_hostname
+            operator: append
+          - operator: uniq
+      Email:
+        complex:
+          accessor: Email.Address
+          root: Account
+          transformers:
+          - operator: uniq
+      Hostname:
+        complex:
+          accessor: host_name
+          root: PaloAltoNetworksXDR.Incident.alerts
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.agent_hostname
+            operator: append
+          - operator: uniq
+      IP:
+        complex:
+          accessor: action_local_ip
+          root: PaloAltoNetworksXDR.OriginalAlert._all_events
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.target_ip
+            operator: append
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.action_remote_ip
+            operator: append
+          - operator: uniq
+      InternalRange:
+        complex:
+          root: inputs.InternalIPRanges
+      MD5:
+        complex:
+          accessor: MD5
+          root: File
+          transformers:
+          - operator: uniq
+      ResolveIP:
+        simple: "True"
+      SHA1:
+        complex:
+          accessor: SHA1
+          root: File
+          transformers:
+          - operator: uniq
+      SHA256:
+        complex:
+          accessor: os_actor_process_image_sha256
+          root: PaloAltoNetworksXDR.OriginalAlert._all_events
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.actor_process_image_sha256
+            operator: append
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.OriginalAlert._all_events.causality_actor_process_image_sha256
+            operator: append
+          - operator: uniq
+      URL:
+        complex:
+          accessor: Data
+          root: URL
+          transformers:
+          - operator: uniq
+      URLSSLVerification:
+        simple: "False"
+      UseReputationCommand:
+        simple: "True"
+      Username:
+        complex:
+          accessor: username
+          root: PaloAltoNetworksXDR.OriginalAlert._all_events.causality_actor_primary_normalized_user
+          transformers:
+          - operator: uniq
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Enrich entities using one or more integrations.
+      id: 422ddc12-44eb-4b4b-8508-cd59c892834f
+      iscommand: false
+      name: Entity Enrichment - Generic v3
+      playbookId: Entity Enrichment - Generic v3
+      type: playbook
+      version: -1
+    taskid: 422ddc12-44eb-4b4b-8508-cd59c892834f
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 1350
+        }
+      }
+  "115":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Command Line
+      output:
+        simple: ${commandline.original}
+    - incidentfield: Command Line Verdict
+      output:
+        simple: Malicious
+    id: "115"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "32"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      partofcampaign:
+        complex:
+          root: RelatedCampaign
+          transformers:
+          - operator: uniq
+      relatedreport:
+        complex:
+          root: RelatedReport
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 4c79791f-f37d-4426-8ad4-92be82ab9ae0
+      iscommand: true
+      name: Set Indicator Relationships Analysis Results
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 4c79791f-f37d-4426-8ad4-92be82ab9ae0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 980,
+          "y": 2975
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "14_16_yes": 0.7,
+      "14_17_#default#": 0.52,
+      "15_17_#default#": 0.17,
+      "22_32_#default#": 0.23,
+      "24_32_#default#": 0.23,
+      "25_32_#default#": 0.17,
+      "28_54_#default#": 0.33,
+      "30_54_#default#": 0.47,
+      "3_113_#default#": 0.11,
+      "55_58_#default#": 0.14,
+      "76_54_Remediation": 0.11,
+      "76_58_#default#": 0.1,
+      "78_58_#default#": 0.1,
+      "7_113_Yes": 0.1,
+      "7_58_#default#": 0.1,
+      "84_13_#default#": 0.41,
+      "85_13_#default#": 0.11,
+      "88_13_#default#": 0.1
+    },
+    "paper": {
+      "dimensions": {
+        "height": 5485,
+        "width": 2610,
+        "x": 810,
+        "y": -30
+      }
+    }
+  }
