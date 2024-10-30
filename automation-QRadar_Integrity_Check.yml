@@ -1,0 +1,63 @@
+args:
+- default: true
+  description: provide the entryID
+  name: entryID
+  required: true
+commonfields:
+  id: 74d125f9-0621-4354-8df1-3563f9db9637
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: QRadar_Integrity_Check
+outputs:
+- contextPath: Qradar_CSV
+  type: unknown
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  import csv
+  #import pandas as pd
+  #import openpyxl
+
+  entryID=demisto.args()['entryID']
+  res=demisto.executeCommand('getFilePath',{'id': entryID})
+  filepath=res[0]['Contents']['path']
+
+  with open(filepath,'w+') as output_file:
+      with open(filepath) as input_file:
+          reader = csv.reader(input_file, delimiter = '\n')
+
+          line_index = 0
+
+          for row in reader:
+              line_index += 1
+              line = row(0)
+              if line_index >= 5 :
+                  output_file.write(line)
+                  output_file.write('\n')
+              else:
+                  print('Abnormal data at line %s', srt(line_index))
+
+
+
+scripttarget: 0
+subtype: python3
+tags:
+- file
+- csv
+- Utilities
+type: python
