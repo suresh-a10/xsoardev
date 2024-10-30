@@ -1,0 +1,58 @@
+args:
+- description: The Incident IDs to reassign, can be a comma separated list (e.g. 1,2,3,4)
+  name: incident_id
+  required: true
+comment: |-
+  Randomly assigns the incidents to users on call (requires shift management) and users on call.
+  https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.10/Cortex-XSOAR-Administrator-Guide/Shift-Management#idf554fd0f-f93b-40cd-9111-1393bf25ac6e
+  Incident Ids should be passed in as a comma separated list.
+
+  This automation runs using the default Limited User role, unless you explicitly change the permissions.
+  For more information, see the section about permissions here:
+  https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.10/Cortex-XSOAR-Administrator-Guide/Automations
+commonfields:
+  id: AssignToNextShift
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 1.1.4
+    packID: ShiftManagement-AssignToNextShift
+    packName: Shift Management - Assign to Next Shift
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.12.63474
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: AssignToNextShift
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('AssignToNextShift', 'start', __line__())
+  ### pack version: 1.1.4
+
+
+
+  # check if we have any users on call to assign to
+  users_on_call = demisto.executeCommand("getUsers", {"onCall": "true"})[0]['Contents']
+
+  # if we don't have on shift users, return error, else reassign the provided incident id's to the on-call analysts
+  if not users_on_call:
+      return_error("No users on shift")
+  else:
+      incident_id = demisto.args().get('incident_id')
+      demisto.results(demisto.executeCommand("executeCommandAt", {
+                      "command": "AssignAnalystToIncident", "arguments": {"onCall": "true"}, "incidents": incident_id}))
+
+  register_module_line('AssignToNextShift', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags: []
+type: python
