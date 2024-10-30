@@ -1,0 +1,115 @@
+commonfields:
+  id: ee02451b-484a-45be-888e-020cfbf5cf62
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CD_DemistoIncidentStateChange_WorkflowChange_Closing_PROD_Ver2
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  from datetime import datetime
+  import pytz
+  import time
+
+  new_time = demisto.args()['new']
+  print(new_time)
+  inc_data = demisto.incidents()[0]
+  custom_fields = inc_data.get("CustomFields",{})
+  #custom_fields = inc_data.get("CustomFields",{})
+  magnitude = custom_fields.get("cdsmagnitude")
+  #resolution_code = "Solved (Work Around)"
+  resolution_code = custom_fields.get("snowresolutioncode")
+  resolution_notes = custom_fields.get('cdclosenotes')
+
+  sys_id = custom_fields.get("snowincidentsysid")
+  onhold_reason = custom_fields.get("snowonholdreason")
+
+  def convert_datetime_timezone(dt, tz1, tz2):
+      tz1 = pytz.timezone(tz1)
+      #print(tz1)
+      tz2 = pytz.timezone(tz2)
+      #print(tz2)
+      dt = datetime.strptime(dt,"%Y-%m-%d %H:%M:%S")
+      #print(dt)
+      dt = tz1.localize(dt)
+      dt = dt.astimezone(tz2)
+      dt = dt.strftime("%Y-%m-%d %H:%M:%S")
+      dt = datetime.strptime(dt,"%Y-%m-%d %H:%M:%S")
+
+      return dt
+
+  if new_time == 'Yes':
+      demisto.executeCommand('stopTimer',{ 'timerField':'cdresolutionsla' })
+      snow_ticket_number = custom_fields.get("cdsnowincidentnumber")
+      snow_subcategory = custom_fields.get("snowsubcategory") # default = "Hacking"
+      snow_impact = custom_fields.get("snowimpact") #default = "2")
+      snow_urgency = custom_fields.get("snowurgency")
+      snow_description = custom_fields.get("snowdescription")
+      cd_close_reason = custom_fields.get("cdclosereason")
+      cd_close_notes = custom_fields.get("cdclosednotes")
+      source_brand = inc_data.get("sourceBrand")
+      cd_investigation_remark = custom_fields.get("cdinvestigationremark")
+
+      #print(snow_ticket_number)
+      current_time = datetime.now()
+
+      if source_brand == "ServiceNow v2" or source_brand == "ServiceNow COSTA v2":
+          snow_id = custom_fields.get("cdsnowincidentnumber")
+          query = "number="+str(snow_id)
+          #print(query)
+
+          if sys_id is not None and sys_id != "":
+              resolution_code = custom_fields.get('snowresolutioncode')
+              resolution_notes = custom_fields.get('cdclosednotes')
+              if resolution_code == "" or resolution_code == None or resolution_notes == "" or resolution_notes == None:
+                  #print(resolution_code, resolution_notes)
+                  demisto.results("Kindly check if resolution code or resolution notes are provided!!")
+              else:
+                  #current_time = datetime.datetime.now()
+                  newsla = current_time.strftime('%Y-%m-%dT%H:%M:%S+00:00')
+                  demisto.executeCommand("setIncident",{"snowstate":"Resolved","snowresolutionnotes":resolution_notes,"snowincidentresolutiontime":newsla,"snowresolutioncode":resolution_code,"snowonholdreason":"","cdincidentstate":"Closed"})
+
+
+                  res = demisto.executeCommand("servicenow-update-ticket", {"id":sys_id,"close_code":resolution_code,
+                                                                          "close_notes":resolution_notes,
+                                                                          "incident_state":6,"work_notes":resolution_notes,
+                                                                          "using":"COSTA_ServiceNow _v2_Instance"})
+                  demisto.results(res)
+                  resa = demisto.executeCommand('servicenow-query-tickets',{'query':query, "system_params":"sysparm_display_value=true", "using":"COSTA_ServiceNow _v2_Instance"})
+                  content = resa[0]["Contents"]["result"][0]
+
+                  if content["incident_state"] == "Resolved":
+                      pass
+
+                  else:
+                      demisto.executeCommand("servicenow-update-ticket", {"id":sys_id,"close_code":resolution_code,
+                                                                          "close_notes":resolution_notes,
+                                                                          "incident_state":6,"work_notes":resolution_notes,
+                                                                          "using":"COSTA_ServiceNow _v2_Instance"})
+
+          else:
+              demisto.results("ServiceNow Ticket is not yet created !!")
+  else:
+      pass
+
+  demisto.executeCommand("setIncident",{"cdincidentstate":"Closed"})
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+timeout: 2µs
+type: python
