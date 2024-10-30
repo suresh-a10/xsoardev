@@ -1,0 +1,121 @@
+args:
+- name: servicenow_incident_id
+  required: true
+commonfields:
+  id: 015ee4b3-6bc9-460d-8e93-e83eb0d5932d
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: MapFieldstoSNOW
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  from typing import Dict, Any
+  import traceback
+  import json
+  import requests
+
+
+  incident = demisto.incidents()[0]
+
+  # incident_name = incident.get('name')
+  incident_incidentanalysis = incident.get('CustomFields', {}).get('incidentanalysis', '')
+  #incident_servicenowpriority = incident.get('CustomFields', {}).get('servicenowpriority', '')
+         # Retrieve context data
+  context_data = demisto.context().get('IncidentFieldsMapped', {})
+         # Access context fields
+  snowtier2 = incident.get('CustomFields', {}).get('snowcategorytier2', '')
+  snowtier3 = incident.get('CustomFields', {}).get('snowcategorytier3', '')
+  snowimpact = incident.get('CustomFields', {}).get('servicenowimpact', '')
+  snowurgency = incident.get('CustomFields', {}).get('servicenowurgency', '')
+  snowpriority = incident.get('CustomFields', {}).get('servicenowpriority', '')
+         # Prepare mapped data
+  mapped_data = {
+      "caller_id": "Xsoar",
+      "u_type": "Infrastructure/Datacenter",
+      "business_service": "Infrastructure/Datacenter",
+      "u_tier_1":"Security",
+      "contact_type":"Event",
+      "u_resource":"Splunk@dcadmtappprw1",
+      'description': incident_incidentanalysis,
+      'u_tier_2': snowtier2,
+      'u_tier_3': snowtier3,
+      'impact': snowimpact,
+      'urgency': snowurgency,
+      'priority': snowpriority
+
+  }
+
+
+  client_id = '6f3d686719b34910686e5a1b4f965de8'
+  client_secret = 'p,VVi&?Nfd'
+  snow_username = 'xsoar.user'
+  snow_password = 'Xsoar'
+  servicenow_instance = demisto.args().get('https://idfcfirstbanktest.service-now.com')
+  servicenow_incident_id = demisto.args().get('servicenow_incident_id')
+  token_url = f'https://idfcfirstbanktest.service-now.com/oauth_token.do'
+
+
+
+  payload = {
+      'grant_type': 'password',
+      'client_id': client_id,
+      'client_secret': client_secret,
+      'username': snow_username,
+      'password': snow_password
+  }
+
+  headers = {
+      'Content-Type': "application/x-www-form-urlencoded",
+      'Cache-Control': "no-cache"
+  }
+
+  response = requests.post(token_url, data=payload, headers=headers, verify=False)
+
+
+  if response.status_code == 200:
+      access_token = response.json().get('access_token')
+
+      url = f'https://idfcfirstbanktest.service-now.com/api/now/table/incident/{servicenow_incident_id}'
+
+      headers = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': f'Bearer {access_token}'
+      }
+
+      update_response = requests.patch(url,headers=headers,data=json.dumps(mapped_data),verify=False)
+
+      if update_response.status_code == 200:
+          demisto.results({
+              'Type': entryTypes['note'],
+              'ContentsFormat': formats['json'],
+              'Contents': {
+                  'Mapped Data': mapped_data,
+                  'ServiceNow Incident ID': servicenow_incident_id
+              },
+              'ReadableContentsFormat': formats['markdown'],
+              'HumanReadable': f'### Mapped Fields to ServiceNow Incident \n{tableToMarkdown("",mapped_data)}\n\n### ServiceNow Incident ID\n{servicenow_incident_id}'
+          })
+      else:
+          demisto.results(f'Failed to update incident in Servicenow. Status code: {update_response.status_code}, Response: {update_response.text}')
+  else:
+         demisto.results(f'Failed to obtain access token. Status code: {response.status_code}, Response: {response.text}')
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
