@@ -1,0 +1,429 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: d6fef135-7e94-42eb-8230-58628f2364a7
+inputs: []
+name: Phishing test
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e6bb524a-a213-420d-884c-e834669183ef
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: e6bb524a-a213-420d-884c-e834669183ef
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 50
+        }
+      }
+  "1":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: File.Info
+          operator: isEqualString
+          right:
+            value:
+              simple: eml
+        - left:
+            iscontext: true
+            value:
+              simple: File.Info
+          operator: isEqualString
+          right:
+            value:
+              simple: msg
+      label: "yes"
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 69bf818a-a920-4a44-8df0-e67bce0fd585
+      iscommand: false
+      name: If there a .eml or .msg file in the incident
+      type: condition
+      version: -1
+    taskid: 69bf818a-a920-4a44-8df0-e67bce0fd585
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 195
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      entryid:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Info
+              operator: isEqualString
+              right:
+                value:
+                  simple: eml
+            - left:
+                iscontext: true
+                value:
+                  simple: File.Info
+              operator: isEqualString
+              right:
+                value:
+                  simple: msg
+          root: File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Parse an email from an eml or msg file and populate all relevant
+        context data to investigate the email. Also extracts inner attachments and
+        returns them to the war room. The incident labels themselves are preserved
+        and not modified - only the "Label/x" context items that originated from the
+        labels, and the best practice is to rely on these for the remainder of the
+        playbook.
+      id: d74f820e-b4ec-403c-86c2-c33913e5dc56
+      iscommand: false
+      name: ParseEmailFiles
+      script: ParseEmailFiles
+      type: regular
+      version: -1
+    taskid: d74f820e-b4ec-403c-86c2-c33913e5dc56
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeReason:
+        simple: Insufficient data
+      emailclassification:
+        simple: In Conclusive
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: ccb1aabb-0749-4f57-8c11-b85cacfa6058
+      iscommand: true
+      name: Close Investigation as Insufficient Data
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: ccb1aabb-0749-4f57-8c11-b85cacfa6058
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 370
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "8"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if the investigation found any malicious indicators (file,
+        URL, IP address, domain, or email). Returns "yes" if at least one malicious
+        indicator is found.
+      id: 137e39f8-83e7-4d36-8561-0e1bb3aabd28
+      iscommand: false
+      name: Malicious Indicators found
+      script: IsMaliciousIndicatorFound
+      type: condition
+      version: -1
+    taskid: 137e39f8-83e7-4d36-8561-0e1bb3aabd28
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 895
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: mailstatus
+      value:
+        simple: Malicious
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: f8c9edff-59a5-4bc0-816c-eaf4124c0028
+      iscommand: false
+      name: Update Mail Status as Malicious
+      script: Set
+      type: regular
+      version: -1
+    taskid: f8c9edff-59a5-4bc0-816c-eaf4124c0028
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1070
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: mailstatus
+      value:
+        simple: No Malicious Indicator found
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 515524a3-3e2d-462a-83c5-94825286a634
+      iscommand: false
+      name: No Malicious Indicator Found
+      script: Set
+      type: regular
+      version: -1
+    taskid: 515524a3-3e2d-462a-83c5-94825286a634
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1070
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeReason:
+        simple: False Positive since no malicious Indicator found
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: e2742f81-260f-49b6-806b-a7daffcd0b08
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: e2742f81-260f-49b6-806b-a7daffcd0b08
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1245
+        }
+      }
+  "10":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      format:
+        simple: xml
+      polling:
+        simple: "true"
+      upload:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Info
+              operator: isEqualString
+              right:
+                value:
+                  simple: xlsx
+          root: File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: WildFire-v2
+      description: Uploads a file to WildFire for analysis.
+      id: 51dcbfd1-f4d4-4b2f-8c25-36af260a62df
+      iscommand: true
+      name: Send Attachment to Wildfire
+      script: WildFire-v2|||wildfire-upload
+      type: regular
+      version: -1
+    taskid: 51dcbfd1-f4d4-4b2f-8c25-36af260a62df
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 545
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hash:
+        simple: ${File.SHA256}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: WildFire-v2
+      description: Returns a verdict for a hash.
+      id: 6d1018fd-e996-425a-8302-ab8e79080ade
+      iscommand: true
+      name: Wildfiregetverdict
+      script: WildFire-v2|||wildfire-get-verdict
+      type: regular
+      version: -1
+    taskid: 6d1018fd-e996-425a-8302-ab8e79080ade
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 720
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1290,
+        "width": 1025,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
