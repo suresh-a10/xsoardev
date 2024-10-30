@@ -1,0 +1,51 @@
+comment: Alert email send on changing of role.
+commonfields:
+  id: d65a5547-41ac-4e07-8d78-fa38037f4254
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Send_Mail
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import time
+  investigationId=demisto.incidents()[0]["investigationId"]
+  name=demisto.incidents()[0]["name"]
+  sendmail=demisto.get(demisto.incidents()[0],'CustomFields.sendmail')
+
+  role=demisto.get(demisto.incidents()[0],'roles')
+  res=str(role)
+  file=demisto.get(demisto.context(), 'InfoFile.Name')
+  #Send_Mail=demisto.args()['sendmail']
+
+  if sendmail=='Yes':
+      demisto.executeCommand("setIncident", {"sendmail": "No"})
+      #return_error(sendmail)
+      if role == "Analyst":
+          demisto.results(demisto.executeCommand("send-mail", { "to" :"irp.support@axisbank.com", "cc":"", "subject" : "Vulnerability Manual Incident #"+ investigationId+'\t'+name, "body" : "Hi Team,"+'\n'+'\n'+"This automated mail is sent to you to inform that incident id #"+ investigationId+ "is assigned to your Team."} ))
+      # elif role=='Analyst':
+      #     demisto.results(demisto.executeCommand("send-mail", { "to" :"@axisbank.com", "cc":"", "subject" : "Vulnerability Manual Incident #"+ investigationId+'\t'+name, "body" : "Hi Team,"+'\n'+'\n'+"This automated mail is sent to you to inform that incident id #"+ investigationId+ "is assigned to your Team."} ))
+  else:
+      return_error(role)
+  #+' ' + file
+  #demisto.executeCommand("GenerateSummaryReports", {"ids":"<ids>"})
+  #demisto.executeCommand("GenerateInvestigationSummaryReport", {})
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
