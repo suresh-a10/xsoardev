@@ -1,0 +1,638 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.5.0
+    itemVersion: 4.8.7
+    packID: ""
+    packName: Palo Alto Networks Cortex XDR - Investigation and Response
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: |
+  A Job to periodically query disconnected Cortex XDR endpoints with a provided last seen time range playbook input.
+  The Collected data, if found will be generated to a CSV report, including a detailed list of the disconnected endpoints.
+  The report will be sent to the recipient's provided email addresses in the playbook input.
+  The playbook includes an incident type with a dedicated layout to visualize the collected data.
+  To set the job correctly, you will need to.
+  1. Create a new recurring job.
+  2. Set the recurring schedule.
+  3. Add a name.
+  4. Set type to Cortex XDR disconnected endpoints.
+  5. Set this playbook as the job playbook.
+
+  https://xsoar.pan.dev/docs/incidents/incident-jobs
+
+  The scheduled run time and the timestamp relative date should be identical,
+  If the job is recurring every 7 days, the time range should be 7 days as well.
+id: 75b96a6d-79b5-461f-8c05-f42774609361
+inputs:
+- description: 'Last seen start date, in relative timestamp - "1 Day" or  "7 days" '
+  key: LastSeenStartDate
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: "Last seen end date, in relative timestamp - \"1 Day\" or  \"7 days\"
+    \nFor the current day use \"0 days\""
+  key: LastSeenEndDate
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Email addresses to send the disconnected endpoints report.
+  key: Email
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: shapatil@paloaltonetworks.com
+- description: 'Body for the report email message. '
+  key: MessageBody
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: |-
+      This message contains an automatically generated report by Cortex XSOAR, including a list of  disconnected Cortex XDR endpoints.
+      Please investigate and remediate according to the organization's policy.
+name: Cortex XDR disconnected endpoints_copy
+outputs: []
+sourceplaybookid: Cortex XDR disconnected endpoints
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 87980f8a-4367-4675-84ec-730d79a1cae9
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 87980f8a-4367-4675-84ec-730d79a1cae9
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      last_seen_gte:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: inputs.LastSeenStartDate
+              operator: isNotEmpty
+          root: inputs.LastSeenStartDate
+      last_seen_lte:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: inputs.LastSeenEndDate
+              operator: isNotEmpty
+          root: inputs.LastSeenEndDate
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Gets a list of endpoints, according to the passed filters. If there
+        are no filters, all endpoints are returned. Filtering by multiple fields will
+        be concatenated using the AND condition (OR is not supported). The maximum
+        result set size is 100. Offset is the zero-based number of the endpoint from
+        the start of the result set (start by counting from 0).
+      id: f34af505-93ca-41d5-8646-f5475d1ece73
+      iscommand: true
+      name: 'Get XDR disconnected endpoints '
+      script: '|||xdr-get-endpoints'
+      type: regular
+      version: -1
+    taskid: f34af505-93ca-41d5-8646-f5475d1ece73
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 370
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      csvArray:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.Endpoint.endpoint_status
+              operator: isEqualString
+              right:
+                value:
+                  simple: LOST
+            - left:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.Endpoint.endpoint_status
+              operator: isEqualString
+              right:
+                value:
+                  simple: DISCONNECTED
+          root: PaloAltoNetworksXDR.Endpoint
+      fileName:
+        simple: Disconnected XDR endpoints - ${incident.created}.csv
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Export the given array to a CSV file.
+      id: 7bb2c388-aad0-4d5c-851f-d421754b6db0
+      iscommand: false
+      name: Generate a CSV report for disconnected XDR endpoints
+      script: ExportToCSV
+      tags:
+      - Endpoint report
+      type: regular
+      version: -1
+    taskid: 7bb2c388-aad0-4d5c-851f-d421754b6db0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 720
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        complex:
+          accessor: EntryID
+          root: File
+      htmlBody:
+        complex:
+          root: inputs.MessageBody
+      subject:
+        simple: Cortex XDR Discconcted endpoints
+      to:
+        complex:
+          root: inputs.Email
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sends an mail using Gmail/EWS.
+      id: c5503bd6-f79c-4b63-8e44-e044bf33ffff
+      iscommand: true
+      name: Mail disconnected endpoints report
+      script: '|||send-mail'
+      type: regular
+      version: -1
+    taskid: c5503bd6-f79c-4b63-8e44-e044bf33ffff
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1070
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1bbe42a2-cb8c-4c04-807d-c4e14fc44c58
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 1bbe42a2-cb8c-4c04-807d-c4e14fc44c58
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1945
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: PaloAltoNetworksXDR.Endpoint
+          operator: isNotEmpty
+      - - left:
+            iscontext: true
+            value:
+              simple: PaloAltoNetworksXDR.Endpoint.endpoint_status
+          operator: isEqualString
+          right:
+            value:
+              simple: LOST
+        - left:
+            iscontext: true
+            value:
+              simple: PaloAltoNetworksXDR.Endpoint.endpoint_status
+          operator: isEqualString
+          right:
+            value:
+              simple: DISCONNECTED
+      label: "yes"
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "10"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: ''''''
+      id: db2f90f5-8532-436c-8526-ab2902471741
+      iscommand: false
+      name: Disconnected endpoints found?
+      type: condition
+      version: -1
+    taskid: db2f90f5-8532-436c-8526-ab2902471741
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 545
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      xdrhostcount:
+        complex:
+          accessor: host_name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.Endpoint.endpoint_status
+              operator: isEqualString
+              right:
+                value:
+                  simple: LOST
+            - left:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.Endpoint.endpoint_status
+              operator: isEqualString
+              right:
+                value:
+                  simple: DISCONNECTED
+          root: PaloAltoNetworksXDR.Endpoint
+          transformers:
+          - operator: count
+      xdrusercount:
+        complex:
+          accessor: users
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.Endpoint.endpoint_status
+              operator: isEqualString
+              right:
+                value:
+                  simple: LOST
+            - left:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.Endpoint.endpoint_status
+              operator: isEqualString
+              right:
+                value:
+                  simple: DISCONNECTED
+          root: PaloAltoNetworksXDR.Endpoint
+          transformers:
+          - operator: count
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Count the users and hosts involved in the incidents and insert
+        the amount in the incident field,
+      id: c8682f3f-1a1b-404f-8fa8-20f114a2a9ae
+      iscommand: true
+      name: Count involved users and hosts
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: c8682f3f-1a1b-404f-8fa8-20f114a2a9ae
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1245
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      columns:
+        simple: Endpoint Name,Endpoint Status,Endpoint OS,Endpoint ID,Endpoint Last
+          Seen
+      context_path:
+        simple: XDR.DisconnectedEndpoints
+      grid_id:
+        simple: disconnectedendpoints
+      keys:
+        simple: endpoint_name,endpoint_status,endpoint_type,endpoint_id,last_seen
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Creates a grid table from items or key-value pairs.
+      id: cde4094f-c8f8-4b82-88a3-495bd2dd2498
+      iscommand: false
+      name: Set endpoints grid
+      script: SetGridField
+      type: regular
+      version: -1
+    taskid: cde4094f-c8f8-4b82-88a3-495bd2dd2498
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1595
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: XDR.DisconnectedEndpoints
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.Endpoint.endpoint_status
+              operator: isEqualString
+              right:
+                value:
+                  simple: LOST
+            - left:
+                iscontext: true
+                value:
+                  simple: PaloAltoNetworksXDR.Endpoint.endpoint_status
+              operator: isEqualString
+              right:
+                value:
+                  simple: DISCONNECTED
+          root: PaloAltoNetworksXDR.Endpoint
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: d78eb837-b56b-44c9-8118-6e26275ae531
+      iscommand: false
+      name: |2-
+
+        Set disconnected endpoints
+      script: Set
+      type: regular
+      version: -1
+    taskid: d78eb837-b56b-44c9-8118-6e26275ae531
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1420
+        }
+      }
+  "9":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.Email
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      "yes":
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: ''''''
+      id: cc612047-1763-4bc9-8733-e341ba51dc02
+      iscommand: false
+      name: Email report?
+      type: condition
+      version: -1
+    taskid: cc612047-1763-4bc9-8733-e341ba51dc02
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 895
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 8f57041e-db4b-4748-8a82-8da1f7452663
+      iscommand: true
+      name: Close job
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 8f57041e-db4b-4748-8a82-8da1f7452663
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1770
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-2/cortex-xsoar-admin/playbooks/automations.html
+      id: feefe7dc-59e8-421c-83f9-181016ee3dbf
+      iscommand: false
+      name: delete context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: feefe7dc-59e8-421c-83f9-181016ee3dbf
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 195
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "5_10_#default#": 0.1,
+      "9_6_#default#": 0.21
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1960,
+        "width": 492.5,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
