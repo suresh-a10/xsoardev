@@ -1,0 +1,275 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.5.0
+    itemVersion: 2.2.6
+    packID: Mimecast
+    packName: Mimecast
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: A playbook to block sender email address using Mimecast integration.
+id: Mimecast - Block Sender Email
+inputs:
+- description: The sender email block group.
+  key: BlockGroup
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: The sender email to block.
+  key: SenderEmail
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: The query source, please input cloud or ldap in the value input.
+  key: QuerySource
+  playbookInputQuery: null
+  required: true
+  value: {}
+name: Mimecast - Block Sender Email
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6020a1a1-57ef-48ab-8fd4-e5f71711e7f6
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 6020a1a1-57ef-48ab-8fd4-e5f71711e7f6
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "3"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      brandname:
+        simple: MimecastV2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns 'yes' if integration brand is available. Otherwise returns
+        'no'
+      id: 54122410-237c-4672-806d-0cc403f403eb
+      iscommand: false
+      name: Mimecast integration available?
+      script: IsIntegrationAvailable
+      type: condition
+      version: -1
+    taskid: 54122410-237c-4672-806d-0cc403f403eb
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 370
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query_source:
+        complex:
+          root: inputs.QuerySource
+      query_string:
+        complex:
+          root: inputs.BlockGroup
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns the list of groups according to the specified query.
+      id: ae4cec49-f03e-4671-8f12-9f9f8823ba0a
+      iscommand: true
+      name: Get block group id
+      script: '|||mimecast-find-groups'
+      type: regular
+      version: -1
+    taskid: ae4cec49-f03e-4671-8f12-9f9f8823ba0a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 545
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3482ee8f-4495-49cb-8707-45b2071aca3b
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 3482ee8f-4495-49cb-8707-45b2071aca3b
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 895
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      email_address:
+        complex:
+          root: inputs.SenderEmail
+      group_id:
+        complex:
+          accessor: ID
+          root: Mimecast.Group
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Adds a user to a group. The email_address and domain_adddress arguments
+        are optional, but one of them must be supplied.
+      id: e5bbaf5f-1ec7-403b-898b-4dbf975e3b7d
+      iscommand: true
+      name: Add senders to the block group
+      script: '|||mimecast-add-group-member'
+      type: regular
+      version: -1
+    taskid: e5bbaf5f-1ec7-403b-898b-4dbf975e3b7d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 720
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.BlockGroup
+          operator: isNotEmpty
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.SenderEmail
+          operator: isNotEmpty
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.QuerySource
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ef20587d-db16-4f2c-8944-5754784502db
+      iscommand: false
+      name: All mandatory inputs provided?
+      type: condition
+      version: -1
+    taskid: ef20587d-db16-4f2c-8944-5754784502db
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 195
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 910,
+        "width": 492.5,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
