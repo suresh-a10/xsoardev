@@ -1,0 +1,278 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.5.0
+    itemVersion: 1.1.20
+    packID: AWS-Enrichment-Remediation
+    packName: AWS Enrichment and Remediation
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: The playbook will create the unclaimed S3 bucket.
+id: AWS - Unclaimed S3 Bucket Remediation
+inputs:
+- description: Unclaimed S3 bucket name.
+  key: S3BucketName
+  playbookInputQuery: null
+  required: true
+  value: {}
+name: AWS - Unclaimed S3 Bucket Remediation
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9fe5d2f0-2790-439f-8efc-9769afc163c8
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 9fe5d2f0-2790-439f-8efc-9769afc163c8
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 50
+        }
+      }
+  "1":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: AWS - S3
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+          right:
+            value: {}
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.S3BucketName
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determines if theAWS integration instance is configured and Input
+        values are defined.
+      id: 9bb1b5e7-a934-4113-8962-20c1ce84fe8a
+      iscommand: false
+      name: Is AWS S3 enabled and is Input value defined?
+      type: condition
+      version: -1
+    taskid: 9bb1b5e7-a934-4113-8962-20c1ce84fe8a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 190
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      bucket:
+        complex:
+          root: inputs.S3BucketName
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: AWS - S3
+      description: Create AWS S3 bucket.
+      id: 63a38757-861c-4ac9-8e49-66cc0912c946
+      iscommand: true
+      name: Create S3 Bucket
+      script: AWS - S3|||aws-s3-create-bucket
+      type: regular
+      version: -1
+    taskid: 63a38757-861c-4ac9-8e49-66cc0912c946
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 955
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2c690e57-90d8-4c62-8ef4-6a3987672f52
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 2c690e57-90d8-4c62-8ef4-6a3987672f52
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 440,
+          "y": 1170
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: AWS - S3
+      description: List all S3 buckets in AWS account
+      id: 4f0282e5-cc9a-4c12-847e-8274ebcf9480
+      iscommand: true
+      name: List all S3 buckets
+      script: AWS - S3|||aws-s3-list-buckets
+      type: regular
+      version: -1
+    taskid: 4f0282e5-cc9a-4c12-847e-8274ebcf9480
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 440
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: BucketName
+                root: AWS.S3.Buckets
+          operator: inList
+          right:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.S3BucketName
+      label: "yes"
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "2"
+      "yes":
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if the unclaimed s3 bucket already exists.
+      id: 6f694871-6cf4-4f94-8508-11edc54b322c
+      iscommand: false
+      name: Does the unclaimed S3 bucket already exists?
+      type: condition
+      version: -1
+    taskid: 6f694871-6cf4-4f94-8508-11edc54b322c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 680
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1185,
+        "width": 390,
+        "x": 440,
+        "y": 50
+      }
+    }
+  }
