@@ -1,0 +1,1099 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.5.0
+    itemVersion: 1.6.38
+    packID: MajorBreachesInvestigationandResponse
+    packName: Rapid Breach Response
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: |-
+  This playbook includes the following tasks:
+  - Search for the Security Notice email sent from Codecov.
+  - Collect indicators to be used in your threat hunting process.
+  - Query network logs to detect related activity.
+  - Search for the use of Codecov bash uploader in GitHub repositories
+  - Query Panorama to search for logs with related anti-spyware signatures
+      - Data Exfiltration Traffic Detection
+      - Malicious Modified Shell Script Detection
+  Note: This is a beta playbook, which lets you implement and test pre-release software. Since the playbook is beta, it might contain bugs. Updates to the pack during the beta phase might include non-backward compatible features. We appreciate your feedback on the quality and usability of the pack to help us identify issues, fix them, and continually improve.
+
+  More information:
+  [Codecov Security Notice](https://about.codecov.io/security-update/)
+id: Codecov Breach - Bash Uploader
+inputs:
+- description: Known related IOCs to the Codecov Bash Uploader breach to hunt.
+  key: KnownRelatedIOCs
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: 104.248.94.23
+- description: Add your own custom Codecov Bash Uploader breach IOCs to hunt.
+  key: CustomIOCs
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The EWS query to find the Codecov security notice email
+  key: EWSSearchQuery
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: From:security@codecov.io AND Subject:Bash Uploader Security Notice AND
+      Received:three months
+- description: The limit of results to return from the search
+  key: EWSSearchQuery_Limit
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "50"
+- description: Github query to search for Codecov bash uploader use.
+  key: Github_Code_Search_query
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: https://codecov.io/bash+in:file
+- description: 'A list of internal IP ranges to check IP addresses against. The comma-separated
+    list should be provided in CIDR notation. For example, a list of ranges would
+    be: "172.16.0.0/12,10.0.0.0/8,192.168.0.0/16" (without quotes).'
+  key: InternalRange
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: PrivateIPs
+      root: lists
+      transformers:
+      - args:
+          error_if_no_match: {}
+          ignore_case: {}
+          multi_line: {}
+          period_matches_newline: {}
+          regex:
+            value:
+              simple: (\b(?:\d{1,3}\.){3}\d{1,3}\b/\d{1,2})
+          unpack_matches: {}
+        operator: RegexExtractAll
+      - args:
+          separator:
+            value:
+              simple: ','
+        operator: join
+name: Codecov Breach - Bash Uploader
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1d029b7d-0fcf-4717-8cc6-0e174deed3af
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 1d029b7d-0fcf-4717-8cc6-0e174deed3af
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": -870
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 448e1a26-0530-4faf-8166-e154230e59cb
+      iscommand: false
+      name: Extract IOCs
+      type: title
+      version: -1
+    taskid: 448e1a26-0530-4faf-8166-e154230e59cb
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -710,
+          "y": 325
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+      - "20"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: efe56337-4796-472c-8539-49f568f07e6b
+      iscommand: false
+      name: Hunt IOCs
+      type: title
+      version: -1
+    taskid: efe56337-4796-472c-8539-49f568f07e6b
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -710,
+          "y": 680
+        }
+      }
+  "6":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: state
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: EWS v2
+                root: modules
+          operator: isEqualString
+          right:
+            value:
+              simple: active
+      label: "yes"
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "13"
+      "yes":
+      - "11"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if EWS integration enabled
+      id: 05d283a2-28d2-4112-8cb6-d8ba3e67e80c
+      iscommand: false
+      name: Is EWS enabled?
+      type: condition
+      version: -1
+    taskid: 05d283a2-28d2-4112-8cb6-d8ba3e67e80c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": -420
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bc99d94d-90fb-4d69-8062-f1e4e54dd719
+      iscommand: false
+      name: Check if compromised
+      type: title
+      version: -1
+    taskid: bc99d94d-90fb-4d69-8062-f1e4e54dd719
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": -700
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9aebf153-14d8-4efa-8cbf-3241f0080615
+      iscommand: false
+      name: Codecov security notice email check
+      type: title
+      version: -1
+    taskid: 9aebf153-14d8-4efa-8cbf-3241f0080615
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": -560
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      limit:
+        complex:
+          root: inputs.EWSSearchQuery_Limit
+      query:
+        complex:
+          root: inputs.EWSSearchQuery
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Searches for items in the specified mailbox. Specific permissions
+        are needed for this operation to search in a target mailbox other than the
+        default.
+      id: 3b9af3e0-4fe9-4452-8f84-3e67ff7defd8
+      iscommand: true
+      name: 'Search for Codecov security notice email '
+      script: '|||ews-search-mailbox'
+      type: regular
+      version: -1
+    taskid: 3b9af3e0-4fe9-4452-8f84-3e67ff7defd8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -710,
+          "y": -245
+        }
+      }
+  "12":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Items
+                root: EWS
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "13"
+      "yes":
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Searches for the Codecov Security Notice email
+      id: f03d42f1-189a-47d9-8c7b-7a67827fd24f
+      iscommand: false
+      name: Found Codecov security notice emails?
+      type: condition
+      version: -1
+    taskid: f03d42f1-189a-47d9-8c7b-7a67827fd24f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -710,
+          "y": -55
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "27"
+      "Yes":
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        If you used the following between January 31, 2021 and April 1, 2021, and did not conduct a checksum validation:
+        Codecov-bash (bash uploader)
+        Codecov-action (Github)
+        Codecov-circleci-orb
+        Codecov-bitrise-step
+      id: 1ea37a97-35d8-49fa-8233-a594dfdf2d57
+      iscommand: false
+      name: Check for affected Bash Uploader possible impact
+      type: condition
+      version: -1
+    taskid: 1ea37a97-35d8-49fa-8233-a594dfdf2d57
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": 140
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      IPAddresses:
+        complex:
+          accessor: Address
+          root: IP
+          transformers:
+          - operator: uniq
+      InternalRange:
+        simple: ${inputs.InternalRange}
+      MD5:
+        complex:
+          accessor: MD5
+          root: File
+          transformers:
+          - operator: uniq
+      SHA256:
+        complex:
+          accessor: SHA256
+          root: File
+          transformers:
+          - operator: uniq
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      description: "This is a multipurpose playbook used for hunting and threat detection.
+        The playbook receives inputs based on hashes, IP addresses, or domain names
+        provided manually or from outputs by other playbooks. \nWith the received
+        indicators, the playbook leverages data received by PANW products including,
+        Cortex Data Lake, Autofocus and Pan-OS to search for IP addresses, host names
+        and users related to the provided indicators.\nThe output provided by the
+        playbook facilitates pivoting searches for possibly affected IP addresses
+        or users."
+      id: bc58af28-06c5-45a7-8b85-234f5c4ceea4
+      iscommand: false
+      name: Palo Alto Networks - Hunting And Threat Detection
+      playbookName: Palo Alto Networks - Hunting And Threat Detection
+      type: playbook
+      version: -1
+    taskid: bc58af28-06c5-45a7-8b85-234f5c4ceea4
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -960,
+          "y": 960
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      IPAddress:
+        complex:
+          accessor: Address
+          root: IP
+          transformers:
+          - operator: uniq
+      InternalRange:
+        simple: ${inputs.InternalRange}
+      InvestigationIPFields:
+        simple: sourceip,destinationip
+      InvestigationUserFields:
+        simple: username
+      MD5:
+        complex:
+          accessor: MD5
+          root: File
+          transformers:
+          - operator: uniq
+      QradarIPfield:
+        simple: sourceip,destinationip
+      SHA256:
+        complex:
+          accessor: SHA256
+          root: File
+          transformers:
+          - operator: uniq
+      TimeFrame:
+        simple: LAST 7 DAYS
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      description: 'The Playbook queries QRadar SIEM for indicators such as file hashes,
+        IP addresses, domains, or urls. '
+      id: 974252c0-5c9b-4be0-8467-dfd39c59e3d1
+      iscommand: false
+      name: QRadar Indicator Hunting V2
+      playbookId: QRadar Indicator Hunting V2
+      type: playbook
+      version: -1
+    taskid: 974252c0-5c9b-4be0-8467-dfd39c59e3d1
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -470,
+          "y": 960
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      IPAddress:
+        complex:
+          accessor: Address
+          root: IP
+          transformers:
+          - operator: uniq
+      IndexName:
+        simple: '*'
+      MD5:
+        complex:
+          accessor: MD5
+          root: File
+          transformers:
+          - operator: uniq
+      SHA256:
+        complex:
+          accessor: SHA256
+          root: File
+          transformers:
+          - operator: uniq
+      SelectFields:
+        simple: source,timestamp
+      earliest_time:
+        simple: -1d
+      event_limit:
+        simple: "100"
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      description: This playbook queries Splunk for indicators such as file hashes,
+        IP addresses, domains, or urls. It outputs detected users, ip addresses, and
+        hostnames related to the indicators.
+      id: e2c50a93-9dcd-4b92-8fe6-0e19a0ebeeba
+      iscommand: false
+      name: Splunk Indicator Hunting
+      playbookId: Splunk Indicator Hunting
+      type: playbook
+      version: -1
+    taskid: e2c50a93-9dcd-4b92-8fe6-0e19a0ebeeba
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -20,
+          "y": 960
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+      - "18"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a8c96f19-07cb-456b-8f46-71328d1b7e86
+      iscommand: false
+      name: SIEM Hunting
+      type: title
+      version: -1
+    taskid: a8c96f19-07cb-456b-8f46-71328d1b7e86
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -240,
+          "y": 820
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+      - "28"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3b9ef253-5901-48dc-89c8-39decba4f79c
+      iscommand: false
+      name: Hunt Network Logs
+      type: title
+      version: -1
+    taskid: 3b9ef253-5901-48dc-89c8-39decba4f79c
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -1190,
+          "y": 820
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      text:
+        complex:
+          root: inputs.KnownRelatedIOCs
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: inputs.CustomIOCs
+            operator: append
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: cba1718f-0b78-4ccb-8c15-6a2b7fa4ec74
+      iscommand: true
+      name: Extract indicators from known and custom inputs
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: cba1718f-0b78-4ccb-8c15-6a2b7fa4ec74
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -710,
+          "y": 500
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8d37d324-0f2c-4564-8493-b1af87f46e79
+      iscommand: false
+      name: Remediation Steps
+      type: title
+      version: -1
+    taskid: 8d37d324-0f2c-4564-8493-b1af87f46e79
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -710,
+          "y": 1650
+        }
+      }
+  "23":
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "24"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Re-roll all of credentials for affected users, tokens, or keys
+        located in the environment variables in their CI processes that used one of
+        Codecov’s Bash Uploaders.
+      id: 87535b78-126e-4499-89fe-d271f0684c75
+      iscommand: false
+      name: 'Re-roll affected users '
+      type: regular
+      version: -1
+    taskid: 87535b78-126e-4499-89fe-d271f0684c75
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -710,
+          "y": 1800
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "25"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: 'You can determine the keys and tokens that are surfaced to your
+        CI environment by running the env command in your CI pipeline. If anything
+        returned from that command is considered private or sensitive, invalidating
+        the credential and generating a new one. '
+      id: 200cb34a-de6d-4276-8ab3-d2e86f790163
+      iscommand: false
+      name: Check env command in your CI pipeline
+      type: regular
+      version: -1
+    taskid: 200cb34a-de6d-4276-8ab3-d2e86f790163
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -710,
+          "y": 1970
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "27"
+      "Yes":
+      - "26"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if the Bash Uploader is locally stored.
+      id: 421e612b-e133-4596-8f81-a4e8f2444cc3
+      iscommand: false
+      name: Used local stored version of a Bash Uploader?
+      type: condition
+      version: -1
+    taskid: 421e612b-e133-4596-8f81-a4e8f2444cc3
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -710,
+          "y": 2140
+        }
+      }
+  "26":
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "27"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        if you use a locally stored version of a Bash Uploader, you should check that version for the following:
+        **curl -sm 0.5 -d “$(git remote -v)**
+
+        If this appears anywhere in your locally stored Bash Uploader, you should immediately replace the bash files with the most recent version from https://codecov.io/bash.
+      id: c56d1f45-59a9-4a89-839c-5825e79875a3
+      iscommand: false
+      name: Check using version
+      type: regular
+      version: -1
+    taskid: c56d1f45-59a9-4a89-839c-5825e79875a3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -50,
+          "y": 2320
+        }
+      }
+  "27":
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7647c176-90dc-4054-8eeb-f3ea3abdb691
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 7647c176-90dc-4054-8eeb-f3ea3abdb691
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": 2540
+        }
+      }
+  "28":
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      log_type:
+        simple: threat
+      query:
+        simple: (threatid eq 86353) or (threatid eq 86355)
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      description: 'Query Panorama Logs of types: traffic, threat, url, data-filtering
+        and wildfire.'
+      id: a037cfcc-aa5a-417c-81c7-dd569be7b783
+      iscommand: false
+      name: Panorama search thread-ids in threat logs
+      playbookId: Panorama Query Logs
+      type: playbook
+      version: -1
+    taskid: a037cfcc-aa5a-417c-81c7-dd569be7b783
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -1430,
+          "y": 960
+        }
+      }
+  "29":
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "31"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b1872629-a361-4e70-8926-f496e1128990
+      iscommand: false
+      name: Scope affected repositories
+      type: title
+      version: -1
+    taskid: b1872629-a361-4e70-8926-f496e1128990
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -710,
+          "y": 1160
+        }
+      }
+  "30":
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query:
+        complex:
+          root: inputs.Github_Code_Search_query
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Searches for code in repositories that match a given query.
+      id: 40bd0498-02d5-450c-8d93-2e436e69dec5
+      iscommand: true
+      name: Search Codecov in Git repository
+      script: '|||GitHub-search-code'
+      type: regular
+      version: -1
+    taskid: 40bd0498-02d5-450c-8d93-2e436e69dec5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -430,
+          "y": 1480
+        }
+      }
+  "31":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: state
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: GitHub
+                root: modules
+          operator: isEqualString
+          right:
+            value:
+              simple: active
+      label: "yes"
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "22"
+      "yes":
+      - "30"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if GitHub integration enabled.
+      id: 3e428184-fcd8-4c78-830d-01779ad8f0b5
+      iscommand: false
+      name: Is GitHub integration enabled?
+      type: condition
+      version: -1
+    taskid: 3e428184-fcd8-4c78-830d-01779ad8f0b5
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -710,
+          "y": 1310
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "12_13_#default#": 0.2,
+      "12_1_yes": 0.46,
+      "13_1_Yes": 0.24,
+      "13_27_#default#": 0.1,
+      "25_26_Yes": 0.43,
+      "25_27_#default#": 0.2,
+      "31_22_#default#": 0.56,
+      "31_30_yes": 0.54,
+      "6_11_yes": 0.17,
+      "6_13_#default#": 0.28
+    },
+    "paper": {
+      "dimensions": {
+        "height": 3475,
+        "width": 2030,
+        "x": -1430,
+        "y": -870
+      }
+    }
+  }
