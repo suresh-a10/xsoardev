@@ -1,0 +1,113 @@
+args:
+- description: The name of the pack.
+  name: pack
+  required: true
+- auto: PREDEFINED
+  description: Which command to use.
+  name: use_command
+  predefined:
+  - gitlab-branch-list
+  - GitHub-get-branch
+  - bitbucket-branch-get
+comment: |
+  The script gets the pack name as input and suggests an available branch name, for example:
+  pack name is "MyPack" the branch name will be "MyPack".
+  If a branch with the name "MyPack" exists, the script return "MyPack_1".
+commonfields:
+  id: SuggestBranchName
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 1.2.23
+    packID: ContentManagement
+    packName: XSOAR CI/CD
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.83255
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SuggestBranchName
+outputs:
+- contextPath: AvailableBranch
+  description: Available branch name based on the pack name.
+  type: string
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('SuggestBranchName', 'start', __line__())
+  ### pack version: 1.2.23
+
+
+
+  ATTEMPTS = 10
+
+
+  def find_available_branch_azure_devops(pack_name: str):
+      response = demisto.executeCommand('azure-devops-branch-list', args={})
+      existing_branches = response[0].get("Contents", {}).get("value", [])
+      for i in range(1, ATTEMPTS + 1):
+          branch_name = f'{pack_name}_{i}'
+          branch_exists = any(
+              branch.get("name", "").endswith(branch_name)
+              for branch in existing_branches
+          )
+          if not branch_exists:
+              return f'refs/heads/{branch_name}'
+      raise DemistoException('Please enter a branch name.')
+
+
+  def find_available_branch(pack_name: str, command_get_branch: str):
+      branch_name = pack_name
+      for i in range(ATTEMPTS):
+          if i > 0:
+              branch_name = f'{pack_name}_{i}'
+          status, get_branch_res = execute_command(command_get_branch, {'branch_name': branch_name}, fail_on_error=False)
+          if (not status) and (True):
+              return branch_name
+      raise DemistoException('Please enter a branch name.')
+
+
+  ''' MAIN FUNCTION '''
+
+
+  def main():  # pragma: no cover
+
+      try:
+          pack_name = demisto.getArg('pack')
+          command_get_branch = demisto.getArg('use_command')
+
+          if command_get_branch == 'azure-devops-branch-list':
+              branch_name = find_available_branch_azure_devops(pack_name)
+          else:
+              branch_name = find_available_branch(pack_name, command_get_branch)
+
+          return_results(CommandResults(
+              readable_output=branch_name,
+              outputs_prefix='AvailableBranch',
+              outputs=branch_name
+          ))
+
+      except Exception as ex:
+          demisto.error(str(ex))  # print the traceback
+          return_error(f'Failed to execute script. Error: {ex}', error=ex)
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+  register_module_line('SuggestBranchName', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags: []
+type: python
