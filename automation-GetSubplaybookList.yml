@@ -1,0 +1,96 @@
+args:
+- description: Provide the sub-playbook name
+  isArray: true
+  name: SubPlaybookName
+  required: true
+commonfields:
+  id: 70df2838-a085-41d8-8919-1c70cddfd25e
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.11.56082
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetSubplaybookList
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+
+  lists={}
+  main_pb_list=[]
+
+  def get_subplaybook_list(res,sub_playbook_name):
+      #print(res['playbooks'])
+
+      if len(sub_playbook_name)>0:
+          for i in range(len(sub_playbook_name)):
+              pb_list=[]
+              #pb_list.clear()
+              for item in res["playbooks"]:
+                  if item['name'] or item['id']:
+                      for task in item['tasks']:
+                          if item['tasks'][task]['type'] == 'playbook':
+                              if item['tasks'][task]['task']['playbookName'] == sub_playbook_name[i]:
+                                  pb_list.append(item['name'])
+
+              main_pb_list.append({'sub-playbookname':sub_playbook_name[i],'names':pb_list})
+      return main_pb_list
+
+  ''' MAIN FUNCTION '''
+
+  def main():
+
+      args=demisto.args()
+      sub_playbook_name = argToList(args.get('SubPlaybookName'))
+
+      payload = {'query':demisto.args().get('query','hidden:F AND deprecated:F')}
+
+      res = demisto.executeCommand("core-api-post", {"uri":"/playbook/search", "body" : json.dumps(payload)})[0]["Contents"]["response"]
+      #print(res)/
+
+      if not res['playbooks']:
+          demisto.results("Playbook query did not return any results")
+          exit(0)
+      pb_data=get_subplaybook_list(res,sub_playbook_name)
+      """
+      if len(pb_data)>0:
+          md = tableToMarkdown("Playbook Data:", pb_data, ['sub-playbookname','names'])
+          demisto.results({
+              'Type': entryTypes['note'],
+              "Contents" : md,
+              'ContentsFormat': formats['json'],
+              'HumanReadable': md,
+              'ReadableContentsFormat' : formats['markdown'],
+              'EntryContext': {'OccurrencePlaybookList':pb_data}
+          })
+      else:
+          demisto.results("No results found")
+      """
+
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
