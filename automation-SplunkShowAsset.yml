@@ -1,0 +1,69 @@
+comment: Automation to display asset objects from Splunk.
+commonfields:
+  id: SplunkShowAsset
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 3.1.37
+    packID: SplunkPy
+    packName: Splunk
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.89009
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SplunkShowAsset
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('SplunkShowAsset', 'start', __line__())
+  demisto.debug('pack name = Splunk, pack version = 3.1.37')
+
+
+
+  import json
+
+
+  def main():
+      asset_results = []
+      incident = demisto.incident()
+      if not incident:
+          raise ValueError("Error - demisto.incident() expected to return current incident "
+                           "from context but returned None")
+      labels = incident.get('labels', [])
+
+      for label in labels:
+          if label.get('type') == 'successful_asset_enrichment':
+              is_successful = label.get('value')
+              if is_successful == 'false':
+                  return CommandResults(readable_output='Asset enrichment failed.')
+          if label.get('type') == 'Asset':
+              asset_results = json.loads(label.get('value', []))
+
+      if not asset_results:
+          return CommandResults(readable_output='No assets were found in the notable')
+      markdown = tableToMarkdown("", asset_results, headers=asset_results[0].keys())
+
+      return {'ContentsFormat': formats['markdown'], 'Type': entryTypes['note'], 'Contents': markdown}
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      try:
+          return_results(main())
+      except Exception as e:
+          return_error(f'Got an error while parsing Splunk events: {e}', error=e)
+
+  register_module_line('SplunkShowAsset', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- dynamic-section
+type: python
