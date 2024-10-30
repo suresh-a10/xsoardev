@@ -1,0 +1,408 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: AkamaiSIEMで検知した内容の対処を決めるサブプレイブック
+id: e8d95f9a-24e5-47a2-8939-98dc6dcef8a6
+inputs:
+- description: Akamai検知時のAction
+  key: Action
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: ${incident.attackdatarulesaction}
+- description: 通信先一覧
+  key: RequestPath
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: ${incident.attackdatarequestpath}
+- description: Akamai検知名
+  key: DetectionMassage
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: ${incident.attackdatarulesmessage}
+- description: アクセス元国コード
+  key: Country
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: ${Whois.IP.asn_country_code}
+name: '[dev]AkamaiRiskDetermination'
+outputs:
+- contextPath: incident.alertaction
+  type: unknown
+quiet: true
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9307ea35-160d-40a6-8fa4-3b9e6c941353
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 9307ea35-160d-40a6-8fa4-3b9e6c941353
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 65
+        }
+      }
+  "1":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.Action
+          operator: isEqualString
+          right:
+            value:
+              simple: block
+      label: "yes"
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "2"
+      "yes":
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 254aaf2c-6d11-4093-8052-4ed9a8b8f18c
+      iscommand: false
+      name: Is Blocked?
+      type: condition
+      version: -1
+    taskid: 254aaf2c-6d11-4093-8052-4ed9a8b8f18c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 225
+        }
+      }
+  "2":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.DetectionMassage
+          operator: inList
+          right:
+            value:
+              simple: Scanning Tools (High Threat),Scanning Tools (Low Threat),Web
+                Attackers (High Threat),Web Attackers (Low Threat),Web Scrapers (High
+                Threat),Web Scrapers (Low Threat)
+      label: "yes"
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4f05590e-60fe-45b8-884e-684dc2b32eeb
+      iscommand: false
+      name: Is this a high-risk detection rule?
+      type: condition
+      version: -1
+    taskid: 4f05590e-60fe-45b8-884e-684dc2b32eeb
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 275,
+          "y": 400
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.RequestPath
+                transformers:
+                - operator: strLength
+          operator: greaterThan
+          right:
+            value:
+              simple: "200"
+      label: over200char
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      over200char:
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a662acee-8f2f-4595-8680-d530baf78272
+      iscommand: false
+      name: Is the accessed information more than 200 characters long?
+      type: condition
+      version: -1
+    taskid: a662acee-8f2f-4595-8680-d530baf78272
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 575
+        }
+      }
+  "4":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.Country
+          operator: isEqualString
+          right:
+            value:
+              simple: JP
+      label: "yes"
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "9"
+      "yes":
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 504c9ce3-9f74-4821-870c-3b9793c37b50
+      iscommand: false
+      name: Is it accessed from within Japan?
+      type: condition
+      version: -1
+    taskid: 504c9ce3-9f74-4821-870c-3b9793c37b50
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 602.5,
+          "y": 750
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Alert Action
+      output:
+        simple: none
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alertaction:
+        simple: none
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 2b1a0be3-02be-4f49-8ce3-6e54db745dda
+      iscommand: true
+      name: No additional action required due to blocked communication
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 2b1a0be3-02be-4f49-8ce3-6e54db745dda
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 750
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Alert Action
+      output:
+        simple: Ask_analyst
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alertaction:
+        simple: Ask_analyst
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 2d2bd364-e7ba-4f74-8590-a1171af51df5
+      iscommand: true
+      name: Ask analyst to take action
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 2d2bd364-e7ba-4f74-8590-a1171af51df5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 925
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2ad37bb8-5ed5-4c7c-8e4a-7f31b48bd80e
+      iscommand: false
+      name: End
+      type: title
+      version: -1
+    taskid: 2ad37bb8-5ed5-4c7c-8e4a-7f31b48bd80e
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 1100
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Alert Action
+      output:
+        simple: Add_blocklist
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alertaction:
+        simple: Add_blocklist
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 41ed67d6-e17c-478b-8269-11da0a8575a7
+      iscommand: true
+      name: Add to block list
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 41ed67d6-e17c-478b-8269-11da0a8575a7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 817.5,
+          "y": 925
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1100,
+        "width": 1147.5,
+        "x": 50,
+        "y": 65
+      }
+    }
+  }
