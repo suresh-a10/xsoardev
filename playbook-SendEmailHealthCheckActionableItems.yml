@@ -1,0 +1,288 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 2.0.5
+    packID: ""
+    packName: System Diagnostics and Health Check
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: This playbook is used to send email with  Health Check Actionableitems
+id: 734f245f-3e9c-4c9b-8c10-d9f75a7b58fc
+inputs: []
+name: SendEmailHealthCheckActionableItems
+outputs: []
+sourceplaybookid: HealthCheck
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c848ec9d-c9e8-4be2-84be-0dd8eeaf10d6
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: c848ec9d-c9e8-4be2-84be-0dd8eeaf10d6
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "45"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4204a1ac-2b82-4e8c-8a03-caf56d2c0065
+      iscommand: false
+      name: Send Email
+      type: title
+      version: -1
+    taskid: 4204a1ac-2b82-4e8c-8a03-caf56d2c0065
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 380,
+          "y": 750
+        }
+      }
+  "42":
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "46"
+      "yes":
+      - "43"
+    note: false
+    quietmode: 1
+    scriptarguments:
+      value:
+        simple: ${HealthCheck.ActionableItems.[0].category}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if a given value exists in the context. Will return 'no'
+        for empty empty arrays. To be used mostly with DQ and selectors.
+      id: 2e4b8233-651a-4a24-8be0-1796c5e955dd
+      iscommand: false
+      name: Check actionable items exists or not?
+      script: Exists
+      type: condition
+      version: -1
+    taskid: 2e4b8233-651a-4a24-8be0-1796c5e955dd
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 40,
+          "y": 240
+        }
+      }
+  "43":
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "44"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      columns:
+        simple: category,severity,description,resolution
+      data:
+        simple: ${HealthCheck.ActionableItems}
+      extend-context:
+        simple: TableData=
+      title:
+        simple: XSOAR Actionable Items
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Convert an array to a nice table display. Usually, from the context.
+      id: 9871283e-f789-47e3-880a-c0ce649ba1fe
+      iscommand: false
+      name: Convert Actionable item Json data to table
+      script: ToTable
+      type: regular
+      version: -1
+    taskid: 9871283e-f789-47e3-880a-c0ce649ba1fe
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 380,
+          "y": 430
+        }
+      }
+  "44":
+    continueonerrortype: ""
+    id: "44"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "25"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: HTMLTable=
+      id:
+        simple: ${lastCompletedTaskEntries}
+      text:
+        simple: ${TableData}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.mdToHTML
+      id: 3904d2cf-ba4d-429e-8051-fac6a704b4c5
+      iscommand: true
+      name: convert MD to HTML
+      script: Builtin|||mdToHtml
+      type: regular
+      version: -1
+    taskid: 3904d2cf-ba4d-429e-8051-fac6a704b4c5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 380,
+          "y": 600
+        }
+      }
+  "45":
+    continueonerrortype: ""
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "46"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      htmlBody:
+        simple: |-
+          <!DOCTYPE html>
+          <html>
+          <head>
+          <style>
+          table, th, td {
+            border: 1px solid black;
+          }
+          </style>
+          </head>
+          <body>
+          ${HTMLTable}
+          </body>
+          </html>
+      subject:
+        simple: XSOAR - Health Check Actionable Items
+      to:
+        simple: sua@paloaltonetworks.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Gmail Single User
+      description: Sends an email using Gmail.
+      id: 2c790632-1b84-455d-8466-c8853fe94325
+      iscommand: true
+      name: Send email to XSOAR Engg & XSOAR Admin
+      script: Gmail Single User|||send-mail
+      type: regular
+      version: -1
+    taskid: 2c790632-1b84-455d-8466-c8853fe94325
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 370,
+          "y": 910
+        }
+      }
+  "46":
+    continueonerrortype: ""
+    id: "46"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1c082b6b-4397-4dec-8bb4-d5924eba5a5a
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 1c082b6b-4397-4dec-8bb4-d5924eba5a5a
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1170
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1185,
+        "width": 720,
+        "x": 40,
+        "y": 50
+      }
+    }
+  }
