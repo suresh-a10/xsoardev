@@ -1,0 +1,83 @@
+commonfields:
+  id: 52199e4a-3e97-4dc5-845e-671b906c5cc5
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.14.92207
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: gp_AssignCaseReviewOwner
+outputs:
+- contextPath: ticket.review.ticketowner
+  description: ticket review owner for this ticket
+  type: unknown
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2-
+
+  from datetime import datetime,timedelta
+  import pytz
+
+
+  now = datetime.now(pytz.timezone('Asia/Shanghai'))
+  time_delta = timedelta(days=7)
+  previous_date = now - time_delta
+
+
+
+  analyst_list = ['xxx','xxx','xxx','xxx','xx']
+
+
+  last_ticket_review_ticket = demisto.executeCommand('SearchIncidentsSummary', {
+      'query': 'type:gp_schedule_task_ticket_review',
+      'fromdate':'20 days ago',
+      'size':1,
+      'sort':'created.desc'
+      })
+  fields = last_ticket_review_ticket
+  print(last_ticket_review_ticket)
+
+  fields = last_ticket_review_ticket[0]['Contents']['data']
+
+  owner = fields[0]['owner']
+
+  # print(f"last time owner is {owner}")
+
+
+  def get_next_value(lst, value):
+    try:
+      index = lst.index(value)
+      if index < len(lst) - 1:
+        return lst[index + 1]
+      elif index == len(lst) - 1:
+        return lst[0]
+      else:
+        return None
+      except ValueError:
+        return None
+
+  next_analyst = get_next_value(analyst_list,owner)
+  # print(f"this time owner is {next_analyst}")
+
+  command_results = CommandResults(
+           outputs_prefix='ticket.review',
+           outputs_key_field='ticketowner',
+           outputs=next_analyst,
+
+       )
+  return_results(command_results)
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
