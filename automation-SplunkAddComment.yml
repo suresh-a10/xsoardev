@@ -1,0 +1,75 @@
+args:
+- description: Comment to be added to the Splunk notable.
+  name: comment
+  required: true
+- auto: PREDEFINED
+  defaultValue: FROM XSOAR
+  description: The comment tag. Use the comment entry tag (defined in your instance
+    configuration) to mirror the comment to Splunk.
+  isArray: true
+  name: tags
+  predefined:
+  - FROM XSOAR
+comment: Use this script to add a comment with a tag (the "Comment tag to Splunk"
+  defined in the instance configuration) as an entry in Cortex XSOAR, which will then
+  be mirrored as a comment to a Splunk issue. This script should be run within an
+  incident.
+commonfields:
+  id: SplunkAddComment
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 3.1.37
+    packID: SplunkPy
+    packName: Splunk
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.12.68714
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SplunkAddComment
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('SplunkAddComment', 'start', __line__())
+  demisto.debug('pack name = Splunk, pack version = 3.1.37')
+
+
+
+
+  def add_comment(args: Dict[str, Any]) -> CommandResults:
+      demisto.debug("adding comment")
+      tags = argToList(args.get('tags', 'FROM XSOAR'))
+      comment_body = args.get('comment', '')
+
+      return CommandResults(
+          readable_output=comment_body, mark_as_note=True, tags=tags
+      )
+
+
+  def main():  # pragma: no cover
+      try:
+          demisto.debug('SplunkAddComment is being called')
+          res = add_comment(demisto.args())
+          return_results(res)
+
+      except Exception as ex:
+          return_error(f'Failed to execute SplunkAddComment. Error: {str(ex)}')
+
+
+  if __name__ in ["__builtin__", "builtins", '__main__']:
+      main()
+
+  register_module_line('SplunkAddComment', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags: []
+type: python
