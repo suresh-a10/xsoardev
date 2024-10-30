@@ -1,0 +1,498 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.2.0
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: "This playbook identifies duplicate incidents using the Cortex XSOAR
+  machine learning method (script).\nIn this playbook, you can choose fields and/or
+  indicators to be compared against other incidents in the Cortex XSOAR database.
+  \n\nNote: To identify similar incidents you *must* properly define the playbook
+  inputs. "
+id: 85c87b60-1b35-430c-805f-7dd61537a845
+inputs:
+- description: Choose the way you want to identify similar incidents. Choose between
+    "Indicators" / "Fields" / "Fields and Indicators".
+  key: method
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: Fields
+- description: "Select the incident field name you want the script to query.  \nFor
+    example, if you select <Type>, the playbook will query against the database for
+    all incidents with the same type as your current incident.\n Note: If you use
+    comma-separated values, the operator between them will be *AND*."
+  key: fieldExactMatch
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The start date to filter incidents. Date format is the same as in the
+    incidents query page, for example, "3 days ago", "1 month ago", "2019-01-01T00:00:00
+    +0200").
+  key: fromDate
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: 1 month ago
+- description: |-
+    The maximum number of incidents to query and set to context data.
+    Default is: 200
+  key: limit
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "200"
+- description: |-
+    The argument for dedicated query on incidents. This helps reduce the query size.
+    Default (same is in the Incident tab): "-status:closed -category:job "
+  key: query
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: -status:closed -category:job
+name: Dedup EY
+outputs:
+- contextPath: DBotFindSimilarIncidents
+  description: Return all the results from the "DBotFindSimilarIncidents" script.
+  type: unknown
+- contextPath: DBotFindSimilarIncidentsByIndicators
+  description: Return all the results from the "DBotFindSimilarIncidentsByIndicators"
+    script.
+  type: unknown
+sourceplaybookid: Dedup - Generic v4
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "50"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: dafd8570-4d25-4129-8d5f-6cc09a9a1fda
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: dafd8570-4d25-4129-8d5f-6cc09a9a1fda
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 50
+        }
+      }
+  "50":
+    continueonerrortype: ""
+    id: "50"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "51"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      UseCaseName:
+        complex:
+          root: ${incident.labels.rule_name}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f619d254-1866-42bc-87fe-ae242fac9d85
+      iscommand: false
+      name: DedupSimilarField
+      script: 45c69dcf-4353-4da3-809c-ee080cdf6479
+      type: regular
+      version: -1
+    taskid: f619d254-1866-42bc-87fe-ae242fac9d85
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 195
+        }
+      }
+  "51":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Alertfield
+          operator: isEqualString
+          right:
+            value:
+              simple: none
+      label: "yes"
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Alertfield
+          operator: isNotEqualString
+          right:
+            value:
+              simple: none
+        - left:
+            iscontext: true
+            value:
+              simple: Alertfield
+          operator: containsGeneral
+          right:
+            value:
+              simple: ','
+      label: "no"
+    continueonerrortype: ""
+    id: "51"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "61"
+      "yes":
+      - "52"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c8179745-c1be-4d12-8819-912319bb86f3
+      iscommand: false
+      name: Alertfield (None)
+      type: condition
+      version: -1
+    taskid: c8179745-c1be-4d12-8819-912319bb86f3
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "52":
+    continueonerrortype: ""
+    id: "52"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ebc0bcc0-8e04-4ed9-857e-a65827a481a4
+      iscommand: false
+      name: Not a duplicate
+      type: title
+      version: -1
+    taskid: ebc0bcc0-8e04-4ed9-857e-a65827a481a4
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -160,
+          "y": 1170
+        }
+      }
+  "56":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "56"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "62"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      fieldExactMatch:
+        simple: similarkey
+      fromDate:
+        simple: 4 days ago
+      incidentId:
+        simple: ${incident.id}
+      limit:
+        simple: "1000"
+      query:
+        simple: -status:closed -category:job
+      similarTextField:
+        simple: similarkey
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Finds past similar incidents based on incident fields' similarity. Includes an option to also display indicators similarity.
+        Note: For the similarity calculation, at least one field must be provided in one of the "similarTextField", "similarCategoricalField", or "similarJsonField" arguments.
+      id: a70f40cf-c56e-4ef0-8aed-8f8da37cbb07
+      iscommand: false
+      name: Find Incident By Similar Key
+      script: DBotFindSimilarIncidents
+      type: regular
+      version: -1
+    taskid: a70f40cf-c56e-4ef0-8aed-8f8da37cbb07
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 760
+        }
+      }
+  "61":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: ${Category}
+          operator: isEqualString
+          right:
+            value:
+              simple: none
+      label: "yes"
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: ${Category}
+          operator: isNotEqualString
+          right:
+            value:
+              simple: none
+      label: "no"
+    continueonerrortype: ""
+    id: "61"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "56"
+      "yes":
+      - "52"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 860639c2-34b8-4f8e-8448-60c42d6bd5ef
+      iscommand: false
+      name: category (none)
+      type: condition
+      version: -1
+    taskid: 860639c2-34b8-4f8e-8448-60c42d6bd5ef
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 470,
+          "y": 550
+        }
+      }
+  "62":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${DBotFindSimilarIncidents.isSimilarIncidentFound}
+          operator: isTrue
+          right:
+            value: {}
+      label: "true"
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${DBotFindSimilarIncidents.isSimilarIncidentFound}
+          operator: isFalse
+      label: "false"
+    continueonerrortype: ""
+    id: "62"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "65"
+      "false":
+      - "52"
+      "true":
+      - "63"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8e109782-9d79-4150-8390-afb245ffbb8d
+      iscommand: false
+      name: Has Similar Incident
+      type: condition
+      version: -1
+    taskid: 8e109782-9d79-4150-8390-afb245ffbb8d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 940
+        }
+      }
+  "63":
+    continueonerrortype: ""
+    id: "63"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "64"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 22843f09-3f38-43fe-8a96-1b7863cfbd26
+      iscommand: false
+      name: Add in Parent incident
+      script: 3f7ebbfc-b7cf-4e99-8c97-79ff8164fad4
+      type: regular
+      version: -1
+    taskid: 22843f09-3f38-43fe-8a96-1b7863cfbd26
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1115
+        }
+      }
+  "64":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "64"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      action:
+        simple: link
+      incidentId:
+        complex:
+          accessor: id
+          root: incident
+      linkedIncidentIDs:
+        complex:
+          accessor: id
+          root: DBotFindSimilarIncidents.similarIncident
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: incident.name, incident.id
+            operator: append
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "120"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.linkIncidents
+      id: cccc8420-83ed-4fb2-8d5e-57bff632b122
+      iscommand: true
+      name: Link to Parent Incident
+      script: Builtin|||linkIncidents
+      type: regular
+      version: -1
+    taskid: cccc8420-83ed-4fb2-8d5e-57bff632b122
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1280
+        }
+      }
+  "65":
+    continueonerrortype: ""
+    id: "65"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b4afd243-6f57-4210-8457-d10219c7ff9b
+      iscommand: false
+      name: Not a Duplicate
+      type: title
+      version: -1
+    taskid: b4afd243-6f57-4210-8457-d10219c7ff9b
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -50,
+          "y": 1300
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1325,
+        "width": 1020,
+        "x": -160,
+        "y": 50
+      }
+    }
+  }
