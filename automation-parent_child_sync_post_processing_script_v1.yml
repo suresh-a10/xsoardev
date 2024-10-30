@@ -1,0 +1,68 @@
+commonfields:
+  id: 1e0915fe-e3b7-4e9f-851a-fa49afd04250
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.11.56082
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: parent_child_sync_post_processing_script_v1
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2-
+
+  def get_incident():
+      return demisto.incidents()[0]
+
+
+
+  def parent_child_sync(custom_fields,linked_incidents):
+
+      for incident in linked_incidents:
+          demisto.executeCommand('setIncident', {'id':incident,'severity':'Low'})
+
+  def sync_and_closeCase():
+      incident = get_incident()
+
+      custom_fields = incident.get('CustomFields')
+
+      linked_incidents = incident.get('linkedIncidents')
+
+
+      if linked_incidents != []:
+          print("Parent Child Sync Up Initiated")
+          parent_child_sync(custom_fields,linked_incidents)
+      else:
+          print("Closing the investigation Successfully")
+          # demisto.executeCommand("closeInvestigation", {'id':incident.get('id')})
+
+
+  def main():
+      try:
+          sync_and_closeCase()
+      except Exception as ex:
+          return_error(f'Failed to execute parent_child_sync_post_processing_script. Error: {str(ex)}')
+
+
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+  # register_module_line('parent_child_sync_post_processing_script', 'end', __line__())
+scripttarget: 0
+subtype: python3
+tags:
+- Utility
+type: python
