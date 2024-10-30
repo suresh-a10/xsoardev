@@ -1,0 +1,74 @@
+commonfields:
+  id: b78b9385-2be1-481f-8e76-62ceb8aade94
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.14.92207
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: AssignIncidentRoundRobin_v2
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  from typing import Dict, Any
+  import traceback
+
+
+  def round_robin(analyst,last_inc_owner):
+
+      analyst_list_length = len(analyst)
+      index_len= (analyst.index(last_inc_owner)+1)
+
+      if analyst_list_length>index_len:
+          return analyst[index_len]
+      else:
+          return analyst[0]
+
+  def main():
+      analyst=[]
+      last_inc_owner=""
+
+      # try:
+      usernames=demisto.executeCommand("getUsers", {"roles":"Analyst"})[0]['Contents']
+      for i in range(len(usernames)):
+          analyst.append(usernames[i]['id'])
+
+      inc_data=demisto.executeCommand("SearchIncidentsSummary", {"query":"-owner:\"\"","fromdate":"7 days ago","size":1,"sort":"created.desc"})[0]['Contents']
+      if len(inc_data)>0:
+          last_inc_owner= inc_data[0]['Contents']['data'][0]['owner']
+          print(last_inc_owner)
+
+      new_inc_owner=round_robin(analyst,last_inc_owner)
+
+      demisto.executeCommand("setIncident", {"owner":new_inc_owner,"roles":"Analyst"})
+
+
+
+
+
+      # except Exception as ex:
+      #     demisto.error(traceback.format_exc())  # print the traceback
+      #     return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
