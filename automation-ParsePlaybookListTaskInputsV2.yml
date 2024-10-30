@@ -1,0 +1,118 @@
+args:
+- auto: PREDEFINED
+  default: true
+  defaultValue: Core REST API
+  description: Provide the REST API brand name
+  name: BrandName
+  predefined:
+  - Core REST API
+  - Demisto REST API
+  required: true
+- description: Provide name of the playbook
+  name: PlaybookName
+  required: true
+commonfields:
+  id: 866e1ed1-68ff-458d-87ad-f9a1219e0c67
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.48392
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ParsePlaybookListTaskInputsV2
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+  import re
+
+
+  ''' COMMON VARIABLES'''
+
+  playbook_task_details=[]
+  BrandNameList={'Core REST API':'core-api-post','Demisto REST API':'demisto-api-post'}
+
+
+  ''' MAIN FUNCTION '''
+
+
+  def load_playbook(playbooks_data):
+      for i in range(len(playbooks_data)):
+          for task_list in playbooks_data[i]['tasks'].values():
+              if type(task_list)==dict:
+                  if task_list['task'].get('scriptId') and task_list.get('scriptArguments'):
+                      if '|' in task_list['task']['scriptId']:
+                          playbook_task_details.append({"TaskName":task_list['task']['name'],"Type":task_list['task']['type'],"ScriptName":(task_list['task']['scriptId']).replace("|"," "),"ScriptArguments":task_list['scriptArguments']})
+                      else:
+                          playbook_task_details.append({"TaskName":task_list['task']['name'],"Type":task_list['task']['type'],"ScriptName":task_list['task']['scriptId'],"ScriptArguments":task_list['scriptArguments']})
+                  elif task_list['task'].get('scriptId'):
+                      if '|' in task_list['task']['scriptId']:
+                          playbook_task_details.append({"TaskName":task_list['task']['name'],"Type":task_list['task']['type'],"ScriptName":(task_list['task']['scriptId']).replace("|"," "),"ScriptArguments":None})
+                      else:
+                          playbook_task_details.append({"TaskName":task_list['task']['name'],"Type":task_list['task']['type'],"ScriptName":task_list['task']['scriptId'],"ScriptArguments":None})
+                  elif task_list['task'].get('playbookId'):
+                      if task_list.get('scriptArguments'):
+                          playbook_task_details.append({"TaskName":task_list['task']['name'],"Type":task_list['task']['type'],"ScriptArguments":task_list['scriptArguments']})
+                      else:
+                          playbook_task_details.append({"TaskName":task_list['task']['name'],"Type":task_list['task']['type']})
+                  elif task_list['task'].get('type') == "condition":
+                          playbook_task_details.append({"TaskName":task_list['task']['name'],"Type":task_list['task']['type'],"ScriptArguments":task_list.get('conditions')})
+                      # else:
+                      #     playbook_task_details.append({"TaskName":task_list['task']['name'],"Type":task_list['task']['type']})
+                  else:
+                      pass
+
+      return playbook_task_details
+
+
+  def table_to_markdown(tasks_details):
+      md = tableToMarkdown(name="Playbook Tasks details",t=tasks_details,headers=["TaskName","Type","ScriptName","ScriptArguments"])
+      #print(md)
+      demisto.results({
+              'Type': entryTypes['note'],
+              "Contents" : md,
+              'ContentsFormat': formats['json'],
+              'HumanReadable': md,
+              'ReadableContentsFormat' : formats['markdown'],
+              'EntryContext': {'PlaybookTaskDetails':tasks_details}
+          })
+
+
+  def main():
+
+      brand_name = demisto.args()['BrandName']
+      playbook_name = demisto.args()['PlaybookName']
+      playbook_data=demisto.executeCommand(BrandNameList[brand_name], {"uri":"/playbook/search","body":{"query":"name:\""+playbook_name+"\""" AND hidden:F AND deprecated:F"}})[0]['Contents']['response']['playbooks']
+      if len(playbook_data)>0:
+          tasks_details=load_playbook(playbook_data)
+          table_to_markdown(tasks_details)
+      else:
+          print(f'No Playbook with name {playbook_name}')
+
+
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
