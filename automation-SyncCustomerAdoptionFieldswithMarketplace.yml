@@ -1,0 +1,155 @@
+comment: This automation fetches the list of automations from XSOAR. This is then
+  added to a list. In addition to this, this list also updates the adoption table
+  to add the fields into incident fields.
+commonfields:
+  id: 9b892a6a-9f80-4564-845d-93a73d6b7d9f
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SyncCustomerAdoptionFieldswithMarketplace
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2-
+
+  def setList(contents,listname):
+      demisto.executeCommand("setList", {"listName":listname,"listData":contents})
+
+  def getList(isJSON, listname):
+      lst = demisto.executeCommand("getList", {
+          "listName":listname
+      })[0].get("Contents")
+      if isJSON:
+          lst = json.loads(lst)
+      return lst
+
+  def get_integrations():
+      integrations = demisto.executeCommand("demisto-api-post", {
+          "uri":"contentpacks/marketplace/search",
+          "body": {
+              "integrationsQuery": "",
+              "size": 9999
+          }
+
+      })
+      integrations = integrations[0].get("Contents").get("response").get("groups").get("integrations")
+
+      list_of_integrations = []
+
+      for integration in integrations:
+          list_of_integrations.append(integration.get("name"))
+
+      return list_of_integrations
+
+
+  def fetch_fields(names):
+      fields = demisto.executeCommand("demisto-api-get", {
+          "uri":"incidentfields"
+
+      })
+      fields = fields[0].get("Contents").get("response")
+      fields_out = []
+      for field in fields:
+          if field.get("name") in names:
+              fields_out.append(field)
+      return fields_out
+
+
+  def update_singlefields(integrations,fields):
+      updated_columns = []
+      fields_out = []
+      for field in fields:
+          #print(field)
+          field["selectValues"] = integrations
+          field["version"] = int(field.get("version")) + 1
+          fields_out.append(field)
+      return fields_out
+
+
+  def update_fields(integrations,fields,column_names):
+      updated_columns = []
+      fields_out = []
+      for field in fields:
+          for column in field["columns"]:
+              if column.get("displayName") in column_names:
+                  column["selectValues"] = integrations
+              updated_columns.append(column)
+          field["columns"] =  updated_columns
+          field["version"] = int(field.get("version")) + 1
+          fields_out.append(field)
+      return fields_out
+
+  def send_field_to_xsoar(field):
+      stat = demisto.executeCommand("demisto-api-post", {
+          "uri":"incidentfield",
+          "body": field
+      })
+      print(stat)
+
+  def check_new():
+      #this function checks if new integrations are present. If new integrations are not found. exit else return the list of integrations.
+      xsoar = getList(True, "MarketplaceIntegrations")
+      integrations = get_integrations()
+      diff = list(set(integrations) - set(xsoar))
+      if len(xsoar) > len(integrations):
+          diff = list(set(xsoar) - set(integrations))
+      if len(diff) == 0:
+          print("Lists are same. There is no need to update")
+          return []
+      return integrations
+
+
+
+  def main():
+      integrations = check_new()
+
+      status = "Lists are same. There is no need to update"
+
+      if len(integrations):
+          #Adoption Table 2 Field Update
+          fields = fetch_fields(["Adoption Table V2"])
+          fields = update_fields(integrations,fields,["Main Integration","Integrations"])
+          #print(fields)
+          for field in fields:
+              send_field_to_xsoar(field)
+              status = status + " Field sent to XSOAR."
+
+          #TechnologyStack Field Update
+          fields = fetch_fields(["Technology Stack"])
+          fields = update_fields(integrations,fields,["Solution Name"])
+          #print(fields)
+          for field in fields:
+              send_field_to_xsoar(field)
+              status = status + " Field sent to XSOAR."
+
+          #Use Case Ideas Field Update
+          fields = fetch_fields(["Use Case Ideas Integration Names"])
+          fields = update_singlefields(integrations,fields)
+          for field in fields:
+              send_field_to_xsoar(field)
+              status = status + " Field sent to XSOAR."
+
+          setList(integrations, "MarketplaceIntegrations")
+          status = "Integrations fetched successfully and list contents updated."
+
+
+      return_results(status)
+
+  main()
+scripttarget: 0
+subtype: python3
+tags:
+- customer adoption
+type: python
