@@ -1,0 +1,276 @@
+comment: 'After Splunk Incidents are completed this script sends details back to Splunk
+  to maintain data parity '
+commonfields:
+  id: 083d2eaf-13e1-4379-874d-619d0b5b1b7b
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.5.4002
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Prod_SplunkPostProcessing
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  # SAMPLE COMMAND
+  # !splunk-notable-event-edit
+  # eventIDs="0F3F3B2C-427F-4052-9DC8-CA05C600F3CB@@notable@@9ec18c2c934f0ef12803c1cd6fb77c4e"
+  # status=5
+  # comment="The system owner made the required changes and was verified"
+
+  # Post-processing for all incident types
+  try:
+      demisto.executeCommand('PostProc_Global',{})
+  except Exception as err:
+      demisto.results(str(err))
+
+  incident = demisto.incidents()[0]
+  this_incident_labels = incident["labels"]
+
+  # Initializing eventID
+  eventID = None
+
+  # Checking that labels actually exist
+  if type(this_incident_labels) is type(["list"]):
+
+      # Find the correct item type and extract the value
+
+      for item in this_incident_labels:
+          if item["type"] == "event_id":
+              eventID = item["value"]
+              break
+
+
+  # Want comment to be at least 10 characters, otherwise it would fail
+  # Padding with spaces
+  team_assigned = ""
+  if "teamassigned" in demisto.args():
+      team_assigned = str(demisto.args()["teamassigned"])
+
+  affected_groups = ""
+  if "affectedgroups" in demisto.args():
+      affected_groups = str(demisto.args()["affectedgroups"])
+
+  comment = "Incident ID: " + str(incident["id"]) + "\n"
+  comment += "Close Notes: " + str(demisto.args()["closeNotes"]) + "\n"
+  comment += "Team Assigned: " + team_assigned + "\n"
+  comment += "Affected Groups: " + affected_groups
+
+  if len(comment) <= 10:
+      comment += "[Default comment when the comment is too short]"
+
+
+  # Demisto Severity Level translation to Splunk Urgency
+  # Team
+  # Affected Groups
+  urgency_table = {
+      "4": "informational",
+      "3": "low",
+      "2": "medium",
+      "1": "high",
+      "0": "critical"
+  }
+
+  # Demisto Close Reason conversion to Splunk Status
+
+  closeReason_table = {
+      "Resolved": 8,
+      "False Positive": 9,
+      "Duplicate": 10,
+      "Rejected": 11,
+      "No Action Required": 12,
+      "In Remediation": 13,
+      "Support Now transfer": 14,
+      "Escalated to EAAS": 15,
+      "Escalated to implement blocks": 16,
+      "Other": 17
+  }
+
+  #demisto Alert Classification field Conversion to Splunk Disposition - STRY0252326 - 10-10-2023(dd-mm-yyyy)
+
+  disposition_table = {
+      "Not Applicable - defaulted":"disposition:7",
+      "True Positive - compromised host/account":"disposition:8",
+      "True Positive - suspicious activity":"disposition:1",
+      "Benign Positive":"disposition:9",
+      "False Positive – tuning required":"disposition:10",
+      "False Positive - inaccurate data":"disposition:4",
+      "Undetermined":"disposition:6"
+  }
+
+
+  # Getting Splunk conversions for field disposition -STRY0252326 - 10-10-2023
+  try:
+      disposition = disposition_table[str(demisto.args()["alertclassification"])]
+  except:
+      disposition = disposition_table["Undetermined"]
+
+  # Getting Splunk conversions for urgency and close reason
+  try:
+      closeReason = closeReason_table[demisto.args()["closeReason"]]
+  except KeyError as keyerr:
+      closeReason = closeReason_table[incident["closeReason"]]
+
+  urgency = urgency_table[str(incident["CustomFields"].get("severitylevel", '4'))]
+
+  # The user that closes the incident is set as the owner in Splunk
+  # Note: If this fails the owner is not changed but the data is still passed
+  # one potential issue is that if the user does not exist as a Splunk user it will fail
+  try:
+      newOwner = demisto.executeCommand('getUserByUsername', {'username': demisto.args()["closingUserId"]})[0]['Contents']['email']
+      splunk_mapping = {
+      'eventIDs': eventID,
+      'status': closeReason,
+      'comment': comment,
+      'owner': newOwner.lower(),
+      'urgency': urgency,
+      'disposition' : disposition
+      }
+      demisto.results(splunk_mapping)
+      res = demisto.executeCommand('splunk-notable-event-edit', splunk_mapping)
+      if "ValueError: Invalid owner value" in res[0]['Contents']:
+          demisto.results("Owner error found")
+          demisto.results("Attempted to be closed by: " + str(demisto.args()["closingUserId"]))
+          demisto.results("Attempting to submit to Splunk without owner")
+          splunk_mapping = {
+          'eventIDs': eventID,
+          'status': closeReason,
+          'comment': comment,
+          'urgency': urgency,
+          'disposition' : disposition
+          }
+          demisto.results(splunk_mapping)
+          demisto.results(demisto.executeCommand('splunk-notable-event-edit', splunk_mapping)[0]['Contents'])
+  except:
+      demisto.results("Submitting owner as Demisto")
+      splunk_mapping = {
+      'owner': '!svcautomationprod',
+      'eventIDs': eventID,
+      'status': closeReason,
+      'comment': comment,
+      'urgency': urgency,
+      'disposition' : disposition
+      }
+      demisto.results(splunk_mapping)
+      res = demisto.executeCommand('splunk-notable-event-edit', splunk_mapping)[0]['Contents']
+      if "ValueError: Invalid owner value" in res:
+          demisto.results("Owner error found")
+          demisto.results("Attempted to be closed by: " + str(demisto.args()["closingUserId"]))
+          demisto.results("Attempting to submit to Splunk without owner")
+          splunk_mapping = {
+          'eventIDs': eventID,
+          'status': closeReason,
+          'comment': comment,
+          'urgency': urgency,
+          'disposition' : disposition
+          }
+          demisto.results(splunk_mapping)
+          demisto.results(demisto.executeCommand('splunk-notable-event-edit', splunk_mapping)[0]['Contents'])
+
+  # The block of code is added with reference to the story STRY0244466
+  # The code does not allow to close the incident until a user attached file is marked as mandatory by the user before closing.
+  # def main1():
+
+  #     field=demisto.get(demisto.context(), 'File')
+
+  #     if field!=None:
+
+  #         incident = demisto.incidents()[0]
+  #         incident_id = incident['id']
+
+  #         user_name_list=[]
+  #         file_name_list=[]
+
+  #         data=demisto.executeCommand('GetEntries',{'id':incident_id,'category':'artifact'})[0]['Contents']
+  #         metadata=[]
+
+  #         for value in range(len(data)):
+  #             metadata.append(data[value][u'Metadata'])
+
+
+  #         for values in range(len(metadata)):
+
+  #             file_name=metadata[values][u'file']
+
+  #             if file_name is not u'' or None:
+  #                 user_name=metadata[values][u'user']
+  #                 file_name_list.append(file_name)
+  #                 user_name_list.append(user_name)
+
+  #         json_obj =demisto.executeCommand("demisto-api-post", {"uri":"/evidence/search", "body":{"incidentID":incident_id}, "using": "Core REST API_instance_1"})
+
+  #         [data] = json_obj
+
+  #         participant_list=data["Contents"]["response"]["evidences"]
+
+  #         total=len(participant_list)
+
+  #         demisto.setContext("Evidence_Count",total)
+  #         demisto.setContext("Participant_List",participant_list)
+
+  #         submitter=[]
+
+  #         for user in range(len(participant_list)):
+
+  #             value_submitter=participant_list[user]["markedBy"]
+  #             submitter.append(value_submitter)
+
+
+  #         if len(user_name_list)!=0:
+
+  #             count=0
+  #             dbot_count=0
+
+  #             for name in user_name_list:
+  #                 if name=='DBot' or name=='' or name=='!svcautomationprod' or name=='rkanch967':
+  #                     dbot_count=dbot_count+1
+
+  #             if dbot_count!=len(user_name_list):
+
+  #                 for owner in submitter:
+  #                     if owner!='DBot':
+  #                         count=count+1
+
+  #                 if count==0:
+  #                     return_error("Need to Mark at least one File that is attached by the user in a war room for evidence to close the incident.")
+
+  # main1()
+
+
+  incidents = demisto.incidents()
+
+  # Check if there is at least one incident and 'CustomFields' is present
+  if incidents and 'CustomFields' in incidents[0]:
+      custom_fields = incidents[0]['CustomFields']
+
+      # Check if 'timetomitigate' is present and is a dictionary
+      if isinstance(custom_fields.get('timetomitigate'), dict):
+          run_status = custom_fields['timetomitigate'].get('runStatus')
+
+          # Check if 'runStatus' is "running"
+          if run_status == "running":
+              demisto.executeCommand("resetTimer", {"timerField": "timetomitigate"})
+              demisto.executeCommand("startTimer", {"timerField": "timetomitigate"})
+              demisto.executeCommand("stopTimer", {"timerField": "timetomitigate"})
+          else:
+              demisto.log("Custom field 'runStatus' is not 'running' in incidents.")
+      else:
+          demisto.log("Custom field 'timetomitigate' is not a dictionary in incidents.")
+  else:
+      demisto.log("Custom field 'CustomFields' not found in incidents.")
+scripttarget: 0
+subtype: python3
+tags:
+- post-processing
+type: python
