@@ -1,0 +1,110 @@
+args:
+- isArray: true
+  name: DbotscoreData
+  required: true
+- isArray: true
+  name: VTURLData
+commonfields:
+  id: 17d72328-d476-46d4-887d-22d9b4a37b8e
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.12.63474
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SendIndicatorDataToHTMLTable
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+
+
+  ''' MAIN FUNCTION '''
+
+  indicator_verdicts= {0:'Unknown',1:'Bengin',2:'Malicious',3:'Suspicious'}
+
+  def main():
+      # html string
+      html_string="<html><style>table, th, td {border:1px solid black;}</style><table style=\"width:100%\"><thead><tr><th>Indicator</th><th>Reliability</th><th>Score</th><th>Type</th><th>Vendor</th><th>Virus Total URL</th></tr></thead><tbody><tr>"
+
+      #
+      dbotscore_data = demisto.args()['DbotscoreData']
+
+      vt_url_data = demisto.args()['VTURLData']
+      url_data =[]
+      for data in vt_url_data:
+          url_data.append({'url':data['attributes']['url'],'id':data['id']})
+
+
+      if type(dbotscore_data) == list:
+          for scoredata in dbotscore_data:
+              if scoredata['Vendor'] == 'VirusTotal (API v3)' and scoredata['Score'] >=3:
+                  if scoredata['Type'] == 'url':
+                      for item in url_data:
+                          if scoredata['Indicator'] == item['url']:
+                              html_string+="<td>"+scoredata['Indicator']+"</td>"
+                              html_string+="<td>"+scoredata['Reliability']+"</td>"
+                              html_string+="<td>"+indicator_verdicts[scoredata['Score']]+"</td>"
+                              html_string+="<td>"+scoredata['Type']+"</td>"
+                              html_string+="<td>"+scoredata['Vendor']+"</td>"
+                              html_string+="<td><a>https://www.virustotal.com/gui/url/"+item['id']+"</td></tr>"
+                          else:
+                              pass
+                  elif scoredata['Type'] == 'ip':
+                      html_string+="<td>"+scoredata['Indicator']+"</td>"
+                      html_string+="<td>"+scoredata['Reliability']+"</td>"
+                      html_string+="<td>"+indicator_verdicts[scoredata['Score']]+"</td>"
+                      html_string+="<td>"+scoredata['Type']+"</td>"
+                      html_string+="<td>"+scoredata['Vendor']+"</td>"
+                      html_string+="<td>https://www.virustotal.com/gui/ip-address/"+scoredata['Indicator']+"</td></tr>"
+                  elif scoredata['Type'] == 'domain':
+                      html_string+="<td>"+scoredata['Indicator']+"</td>"
+                      html_string+="<td>"+scoredata['Reliability']+"</td>"
+                      html_string+="<td>"+indicator_verdicts[scoredata['Score']]+"</td>"
+                      html_string+="<td>"+scoredata['Type']+"</td>"
+                      html_string+="<td>"+scoredata['Vendor']+"</td>"
+                      html_string+="<td>https://www.virustotal.com/gui/domain/"+scoredata['Indicator']+"</td></tr>"
+                  elif scoredata['Type'] == 'file':
+                      html_string+="<td>"+scoredata['Indicator']+"</td>"
+                      html_string+="<td>"+scoredata['Reliability']+"</td>"
+                      html_string+="<td>"+indicator_verdicts[scoredata['Score']]+"</td>"
+                      html_string+="<td>"+scoredata['Type']+"</td>"
+                      html_string+="<td>"+scoredata['Vendor']+"</td>"
+                      html_string+="<td>https://www.virustotal.com/gui/file/"+scoredata['Indicator']+"</td></tr>"
+                  else:
+                      pass
+
+
+          html_string+="</tbody></table></html>"
+
+      demisto.results({
+          'Contents': html_string,
+          'ContentsFormat': formats['text'],
+          'EntryContext': {'HTMLtable': html_string}
+      })
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
