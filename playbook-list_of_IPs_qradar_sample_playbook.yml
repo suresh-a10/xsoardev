@@ -1,0 +1,282 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 1acf1b5c-e2f8-4da1-80cf-3ddb05091abb
+inputs:
+- description: ""
+  key: IPAddress
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: 1.1.1.1,2.2.2.2
+- description: ""
+  key: TimeFrame
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: last 1 minutes
+- description: ""
+  key: InvestigationIPFields
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: sourceip,destinationip
+- description: ""
+  key: InvestigationUserFields
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: list of IPs qradar sample playbook
+outputs: []
+sourceplaybookid: d93777f8-e033-4c91-8a63-749264d3b624
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 47d23d9e-c05c-46e0-8684-84fae33e25d2
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 47d23d9e-c05c-46e0-8684-84fae33e25d2
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: IP
+      value:
+        complex:
+          root: inputs.IPAddress
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: ','
+            operator: split
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 97f02fa7-84a7-438d-8428-775e7f47eb5e
+      iscommand: false
+      name: Set IP to array
+      script: Set
+      type: regular
+      version: -1
+    taskid: 97f02fa7-84a7-438d-8428-775e7f47eb5e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 220
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      scriptArguments:
+        interval:
+          simple: "1"
+        query_expression:
+          complex:
+            root: IP
+            transformers:
+            - args:
+                regex:
+                  value:
+                    simple: (.*)
+                replaceWith:
+                  value:
+                    simple: UTF8(payload) ILIKE  '%$1%'
+              operator: replaceMatch
+            - args:
+                separator:
+                  value:
+                    simple: ' OR '
+              operator: join
+            - args:
+                prefix:
+                  value:
+                    simple: ' from events where '
+                suffix: {}
+              operator: concat
+            - args:
+                prefix:
+                  iscontext: true
+                  value:
+                    simple: inputs.InvestigationIPFields
+                suffix: {}
+              operator: concat
+            - args:
+                prefix:
+                  value:
+                    simple: ','
+                suffix: {}
+              operator: concat
+            - args:
+                prefix:
+                  iscontext: true
+                  value:
+                    simple: inputs.InvestigationUserFields
+                suffix: {}
+              operator: concat
+            - args:
+                prefix:
+                  value:
+                    simple: DATEFORMAT(devicetime,'dd-MM-yyyy hh:mm'),LOGSOURCENAME(logsourceid),CATEGORYNAME(category),QIDNAME(qid),
+                suffix: {}
+              operator: concat
+            - args:
+                prefix: {}
+                suffix:
+                  value:
+                    simple: ' '
+              operator: concat
+            - args:
+                prefix:
+                  value:
+                    simple: 'select '
+                suffix:
+                  iscontext: true
+                  value:
+                    simple: inputs.TimeFrame
+              operator: concat
+        timeout:
+          simple: "600"
+      wait: 1
+    note: false
+    quietmode: 0
+    scriptarguments:
+      interval:
+        simple: "1"
+      query_expression:
+        complex:
+          root: IP
+          transformers:
+          - args:
+              regex:
+                value:
+                  simple: (.*)
+              replaceWith:
+                value:
+                  simple: '''$1'''
+            operator: replaceMatch
+          - args:
+              separator:
+                value:
+                  simple: ' OR '
+            operator: join
+          - args:
+              prefix:
+                value:
+                  simple: ' from events where TEXT SEARCH '
+              suffix: {}
+            operator: concat
+          - args:
+              prefix:
+                value:
+                  simple: DATEFORMAT(StartTime,'dd-MM-yyyy hh:mm'),count(destinationip)
+              suffix: {}
+            operator: concat
+          - args:
+              prefix: {}
+              suffix:
+                value:
+                  simple: ' '
+            operator: concat
+          - args:
+              prefix:
+                value:
+                  simple: 'select '
+              suffix:
+                iscontext: true
+                value:
+                  simple: inputs.TimeFrame
+            operator: concat
+      timeout:
+        simple: "600"
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This playbook runs a QRadar query and return its results to the
+        context.
+      id: c031ee2e-7e4b-4387-85f6-2e0342789cfe
+      iscommand: false
+      name: QRadarFullSearch
+      playbookId: QRadarFullSearch
+      type: playbook
+      version: -1
+    taskid: c031ee2e-7e4b-4387-85f6-2e0342789cfe
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 460
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 505,
+        "width": 380,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
