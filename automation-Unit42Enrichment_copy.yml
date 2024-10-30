@@ -1,0 +1,69 @@
+args:
+- description: Indicator Value
+  name: indicator
+comment: Enrich indicators using Unit42
+commonfields:
+  id: 1475e0a4-adb0-45aa-8163-b8dc4a39fcbe
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dependson:
+  must:
+  - Demisto REST API|||demisto-api-post
+dockerimage: demisto/python3:3.10.4.28442
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Unit42Enrichment_copy
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2-
+
+
+  def main():
+      ind_value = demisto.args().get('indicator')
+      unit42_api_endpoint = "/unit42intel/indicator/import-and-enrich"
+
+      try:
+          if isinstance(ind_value, dict):
+              indicator = ind_value
+          else:
+              indicator = demisto.executeCommand("findIndicators", {'value': ind_value})[0].get('Contents')[0]
+
+          indicator_value = indicator.get('value')
+          indicator_type = indicator.get('indicator_type')
+          ind_payload = {'indicatorValue': indicator_value, 'indicatorType': indicator_type, 'onlyAutoFocus': True}
+          response = demisto.executeCommand("demisto-api-post", {"uri": unit42_api_endpoint, "body": ind_payload})
+
+          if is_error(response):
+              error = f'Failed to enrich indicator {indicator_value} using Unit42 Threat Intelligence. Make sure that Unit42 license\
+              is valid and Demisto REST API integration is enabled and properly configured.\n' + get_error(response)
+              raise Exception(error)
+          else:
+              return_results(f'Indicator {indicator_value} has been successfully enriched with Unit42 Threat Intelligence')
+
+      except Exception as ex:
+          demisto.error(traceback.format_exc())
+          return_error(f'Failed to execute Unit42Enrichment. Error: {str(ex)}')
+
+
+  '''ENTRY POINT'''
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+sourcescripid: 40b261b7-ad22-48de-8634-a4f1ced06e73
+subtype: python3
+tags:
+- indicator-action-button
+- reputation
+type: python
