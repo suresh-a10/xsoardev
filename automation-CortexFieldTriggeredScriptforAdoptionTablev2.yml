@@ -1,0 +1,168 @@
+comment: This automation is developed to update the list in case changes in the adoption
+  table v2. This is done in order to add the new information into the table.
+commonfields:
+  id: 876f5fd5-4946-4387-8635-4566c1415bf0
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.49934
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CortexFieldTriggeredScriptforAdoptionTablev2
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  '''
+  This automation handles the data saved in the Adooption table v2. This script is useful to add validate the data and add it to the dictionary.
+
+  Before adding data the architect/engieer is requested to refer to the list of existing integrations and directly use incident id in case of matching use cases.
+
+  '''
+  from random import randrange
+  import time
+
+
+  def getList(isJSON, listname):
+      data = demisto.executeCommand("getList", {"listName":listname})[0].get("Contents")
+      if isJSON:
+          data = json.loads(data)
+      return data
+
+  def setList(listname,contents):
+      demisto.executeCommand("setList", {"listName":listname,"listData":json.dumps(contents, indent=4)})
+
+  def lockList(listname):
+      l = getList(True,listname)
+      l["locked"] = "1"
+      demisto.executeCommand("setList", {"listName":listname,"listData":l})
+
+  def unlockList(listname):
+      l = getList(True,listname)
+      l["locked"] = "0"
+      demisto.executeCommand("setList", {"listName":listname,"listData":l})
+
+  def search_in_library(number):
+      #this function searches the given entry in repo to find matches
+      usecases = getList(True,"UsecaseLibrabyAdoption")
+      if usecases.get(number):
+          #match found
+          return usecases.get(number)
+      return "new entry"
+
+
+  def gen_new_id():
+      #this section generates new use case id
+      l = list(getList(True,"UsecaseLibrabyAdoption").keys())
+      #print(l)
+      l.remove("locked")
+      curr_max = sorted(l, key=int, reverse=True)
+      if len(curr_max) == 0:
+          #initial push
+          curr_max = 10000
+      else:
+          curr_max = curr_max[0]
+      buff = randrange(10)
+      return str(int(curr_max)+int(buff))
+
+  def add_to_repo(entry):
+      if type(entry) != dict:
+          print(f"Invalid Entry provided. Entry {entry} will be skipped.")
+          return "invalid entry"
+      if (entry.get("usecasename") == "" or entry.get("usecasename") == None) and (entry.get("usecasedescription") == "" or entry.get("usecasedescription") == None) and (entry.get("usecasedocumenturl") == "" or entry.get("usecasedocumenturl") == None):
+          print(f"Invalid Entry provided. Entry {entry} will be skipped.")
+          return "invalid entry"
+      #prepare the write package
+
+      #checkLock before generating id
+      locked = getList(True,"UsecaseLibrabyAdoption").get("locked")
+      if locked == None:
+          #unlocked or failed lock - reset the lock
+          unlockList("UsecaseLibrabyAdoption")
+          locked = "0"
+
+      counter = 0
+      while locked == "1":
+          counter = counter + 1
+          time.sleep(1)
+          locked = getList(True,"UsecaseLibrabyAdoption").get("locked")
+          if counter > 100:
+              #waiting for 100 seconds, assume error and unlock
+              unlockList("UsecaseLibrabyAdoption")
+              locked = "0"
+          if locked == None or locked == "":
+              #unlocked or failed lock - reset the lock
+              unlockList("UsecaseLibrabyAdoption")
+              locked = "0"
+
+      #table unlocked - lock the table before write
+      lockList("UsecaseLibrabyAdoption")
+      try:
+          _id = gen_new_id()
+          #lock the table to prevent writes
+          if entry.get("usecasename") == "" or entry.get("usecasename") == None:
+              entry["usecasename"] = f"Use Case #{_id}"
+          if entry.get("usecasedescription") == "" or entry.get("usecasedescription") == None:
+              entry["usecasedescription"] = f"No description provided for Use Case #{_id}"
+          if entry.get("usecasedocumenturl") == "" or entry.get("usecasedocumenturl") == None:
+              entry["usecasedocumenturl"] = ""
+
+          entry["usecasenumber"] = _id
+
+          master_record = getList(True,"UsecaseLibrabyAdoption")
+          master_record[_id] = entry
+          setList("UsecaseLibrabyAdoption",master_record)
+          #give list the time to save itself
+          time.sleep(2)
+          master_record = {}
+          #write complete unlock the list
+          unlockList("UsecaseLibrabyAdoption")
+      except Exception as e:
+          unlockList("UsecaseLibrabyAdoption")
+          return_error(e)
+      return entry
+
+
+
+
+
+  def main():
+      incident = demisto.incident()
+
+      customs = incident.get("CustomFields")
+
+      adoptiontablev2 = customs.get("adoptiontablev2")
+
+      output_entries = []
+      for entry in adoptiontablev2:
+          res = ""
+          if entry.get("usecasenumber"):
+              #use case number provided - skip the entry
+              output_entries.append(entry)
+              continue
+          res = add_to_repo(entry)
+          if res != "invalid entry":
+              output_entries.append(res)
+
+      demisto.executeCommand("setIncident", {
+          "adoptiontablev2": output_entries
+      })
+
+
+  main()
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+- customer adoption
+type: python
