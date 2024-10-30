@@ -1,0 +1,155 @@
+args:
+- isArray: true
+  name: DbotscoreData
+  required: true
+- isArray: true
+  name: VTURLData
+commonfields:
+  id: 88c2afcf-352a-4270-8194-901d1e02d91b
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.12.63474
+enabled: true
+engineinfo: {}
+hidden: true
+mainengineinfo: {}
+name: SendIndicatorDataToHTMLTable_v2
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  #LATEST_180823
+  from urllib.parse import urlparse
+
+  from typing import Dict, Any
+  import traceback
+
+  import sys
+
+
+  ''' MAIN FUNCTION '''
+
+  indicator_verdicts= {0:'Unknown',1:'Benign',2:'Suspicious',3:'Malicious'}
+
+  def add_brackets_around_dot(text):
+      if "." in text:
+          return text.replace('.', '[.]')
+      return text
+
+  # Function to remove trailing slash from URL
+  def remove_trailing_slash(url):
+      return re.sub(r'/$', '', url)
+
+  def main():
+      # html string
+      html_string="<table class=\"MsoNormalTable\" style=\"width: 180%%!; background: rgb(231, 234, 245); border-collapse: collapse\" width=\"180%%!\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\"><thead><tr style=\"\"><td colspan=\"6\" style=\"border: solid rgb(29, 150, 178) 1pt; background: rgb(29, 150, 178); padding: 0.75pt 0.75pt 0.75pt 0.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><b><span class=\"colour\" style=\"color:white\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\"> &nbsp;IOC </span></span></span></b><br></p></td></tr><tr style=\"mso-yfti-irow:0;mso-yfti-firstrow:yes\"><td style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><b><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\"> Indicator </span></span></span></b><br></p></td><td style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><b><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\"> Reliability </span></span></span></b><br></p></td><td style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><b><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\"> Score </span></span></span></b><br></p></td><td style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><b><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\"> Type </span></span></span></b><br></p></td><td style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><b><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\"> Vendor </span></span></span></b><br></p></td><td style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><b><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\"> VirusTotal URL </span></span></span></b><br></p></td></tr></thead><tbody>"
+
+      #
+      dbotscore_data = argToList(demisto.args()['DbotscoreData'])
+      vt_url_data = demisto.args().get('VTURLData',None)
+
+      url_data =[]
+      if type(vt_url_data) ==list:
+          for vt_url in vt_url_data:
+
+              #t_url = vt_url_data['URL']
+
+              #url = vt_url['URL']['attributes']['url']
+              #rl_id = vt_url['id']
+
+              #parsed_url = urlparse(url)
+              #cleaned_url = parsed_url.netloc + parsed_url.path
+              url = vt_url['attributes']['url']
+              item_url = remove_trailing_slash(url)  # Call the function here
+              url_data.append({'url':vt_url['attributes']['url'],'id':vt_url['id']})
+      else:
+          pass
+
+
+      #print(url_data)
+      has_malicious_indicators = False
+      if type(dbotscore_data) == list:
+          for scoredata in dbotscore_data:
+              if scoredata['Vendor'] == 'VirusTotal (API v3)' and scoredata['Score']>=2:
+                  has_malicious_indicators = True
+                  if scoredata['Type'] == 'url':
+                      print("Malicious URL in dbotscore_data:", scoredata['Indicator'], "URL Data Length:", len(url_data))  # Debug statement
+                      for item in url_data:
+                          item_url = remove_trailing_slash(item['url'])  # <-- Implement it here
+                          print("URL in url_data:", item['url'])  # Debug statement
+                          # Remove trailing slash from URL in url_data
+                          item_url = remove_trailing_slash(item['url'])
+                          if scoredata['Type'] == 'url':
+                              if item_url == scoredata['Indicator']:
+                                  print("Match found for:", scoredata['Indicator'])  # Debug statement
+                                  html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+add_brackets_around_dot(scoredata['Indicator'])+"</span></span></span><br></p></td>"
+                                  html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+scoredata['Reliability']+"</span></span></span><br></p></td>"
+                                  html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+indicator_verdicts[scoredata['Score']]+"</span></span></span><br></p></td>"
+                                  html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+scoredata['Type']+"</span></span></span><br></p></td>"
+                                  html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+scoredata['Vendor']+"</span></span></span><br></p></td>"
+                                  html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\"><a>https://www.virustotal.com/gui/url/"+add_brackets_around_dot(item['id'])+"</span></span></span><br></p></td></tr>"
+                              else:
+                                  print("No match found for:", scoredata['Indicator'], "and", item['url'])  # Debug statement
+                  elif scoredata['Type'] == 'ip':
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+add_brackets_around_dot(scoredata['Indicator'])+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+scoredata['Reliability']+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+indicator_verdicts[scoredata['Score']]+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+scoredata['Type']+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+scoredata['Vendor']+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">https://www.virustotal.com/gui/ip-address/"+add_brackets_around_dot(scoredata['Indicator'])+"</span></span></span><br></p></td></tr>"
+                  elif scoredata['Type'] == 'domain':
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+add_brackets_around_dot(scoredata['Indicator'])+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+scoredata['Reliability']+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+indicator_verdicts[scoredata['Score']]+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+scoredata['Type']+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+scoredata['Vendor']+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">https://www.virustotal.com/gui/domain/"+add_brackets_around_dot(scoredata['Indicator'])+"</span></span></span><br></p></td></tr>"
+                  elif scoredata['Type'] == 'file':
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+add_brackets_around_dot(scoredata['Indicator'])+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+scoredata['Reliability']+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+indicator_verdicts[scoredata['Score']]+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+scoredata['Type']+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">"+scoredata['Vendor']+"</span></span></span><br></p></td>"
+                      html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">https://www.virustotal.com/gui/file/"+add_brackets_around_dot(scoredata['Indicator'])+"</span></span></span><br></p></td></tr>"
+                  else:
+                      pass
+              else:
+                  pass
+
+          if not has_malicious_indicators:
+              html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">No Malicious Indicators</span></span></span><br></p></td>"
+              html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">\"N/A\"</span></span></span><br></p></td>"
+              html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">\"N/A\"</span></span></span><br></p></td>"
+              html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">\"N/A\"</span></span></span><br></p></td>"
+              html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">\"N/A\"</span></span></span><br></p></td>"
+              html_string+="<td contenteditable=\"plaintext-only\" style=\"border: solid rgb(29, 150, 178) 1pt; border-top: none; padding: 3.75pt 3.75pt 3.75pt 3.75pt\"><p class=\"\" style=\"margin: 0px; line-height: normal;\"><span class=\"colour\" style=\"color:black\"><span class=\"font\" style=\"font-family:Verdana, sans-serif\"><span class=\"size\" style=\"font-size:10pt\">\"N/A\"</span></span></span><br></p></td></tr>"
+
+          html_string+="</tbody></table>"
+      demisto.executeCommand("setIncident", {"ctihtml":html_string})
+      demisto.results({
+          'Contents': html_string,
+          'ContentsFormat': formats['text'],
+          'EntryContext': {'HTMLtable': html_string}
+      })
+
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
