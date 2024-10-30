@@ -1,0 +1,91 @@
+args:
+- description: The name of the list to be configured.
+  name: list_name
+  required: true
+- description: The data of the list to be configured.
+  name: list_data
+  required: true
+comment: List Creator for the Content Management pack.
+commonfields:
+  id: ListCreator
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 1.2.23
+    packID: ContentManagement
+    packName: XSOAR CI/CD
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/xsoar-tools:1.0.0.96723
+engineinfo: {}
+mainengineinfo: {}
+name: ListCreator
+outputs:
+- contextPath: ConfigurationSetup.Lists.creationstatus
+  description: The creation status of the list.
+  type: Unknown
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('ListCreator', 'start', __line__())
+  ### pack version: 1.2.23
+
+
+
+  SCRIPT_NAME = 'ListCreator'
+
+
+  def configure_list(list_name: str, list_data: str) -> bool:
+      """Create system lists using the createList built-in method.
+      """
+      demisto.debug(f'{SCRIPT_NAME} - Setting "{list_name}" list.')
+
+      res = demisto.executeCommand('createList', {'listName': list_name, 'listData': list_data})
+      if is_error(res):
+          error_message = f'{SCRIPT_NAME} - {get_error(res)}'
+          demisto.debug(error_message)
+          return False
+
+      return True
+
+
+  def main():
+      args = demisto.args()
+      list_name = args.get('list_name')
+      list_data = args.get('list_data')
+
+      try:
+          configuration_status = configure_list(list_name, list_data)
+
+          return_results(
+              CommandResults(
+                  outputs_prefix='ConfigurationSetup.Lists',
+                  outputs_key_field='listname',
+                  outputs={
+                      'listname': list_name,
+                      'creationstatus': 'Success.' if configuration_status else 'Failure.',
+                  },
+              )
+          )
+
+      except Exception as e:
+          return_error(f'{SCRIPT_NAME} - Error occurred while setting up machine.\n{e}')
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+  register_module_line('ListCreator', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- configuration
+- Content Management
+type: python
