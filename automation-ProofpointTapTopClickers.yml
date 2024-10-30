@@ -1,0 +1,46 @@
+comment: Exports a list of Proofpoint TAP top clickers to the Cortex XSOAR widget.
+commonfields:
+  id: ProofpointTapTopClickers
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.0.0
+    itemVersion: 1.2.12
+    packID: ProofpointTAP
+    packName: Proofpoint TAP
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.86272
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ProofpointTapTopClickers
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('ProofpointTapTopClickers', 'start', __line__())
+  ### pack version: 1.2.12
+
+
+
+  results = demisto.executeCommand('proofpoint-get-top-clickers', {'window': 90})[0]['Contents']['users']
+  users = []
+
+  for user in results:
+      users.append({"name": user.get("identity").get("emails", [""])[0],
+                    "data": [user.get("clickStatistics").get("clickCount")]})
+
+  return_results(json.dumps(users))
+
+  register_module_line('ProofpointTapTopClickers', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- widget
+type: python
