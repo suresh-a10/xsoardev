@@ -1,0 +1,75 @@
+args:
+- defaultValue: incident.labels.rule_name
+  name: UseCaseName
+  required: true
+commonfields:
+  id: 3e3e0de1-cb09-46d2-8b4e-a2c304958636
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CheckUseCasePresent
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import json
+  def main():
+      try:
+
+         # Fetch the rule_name argument
+          rule_name = demisto.args().get('UseCaseName')
+          demisto.debug(f"Checking for rule_name: {rule_name}")
+          list_name = 'Rule_Name'
+
+          not_found_list = 'RuleNamesNotFound'
+
+          # Fetch the list from XSOAR
+          list_content = demisto.executeCommand('getList', {'listName': list_name})
+          found_in_any_list = False
+          if list_content and list_content[0].get('Contents'):
+              try:
+                  list_content_str = list_content[0]['Contents']
+                  list_items = json.loads(list_content_str)
+                  if rule_name in list_items:
+                      found_in_any_list = True
+                      demisto.setContext("RuleNameFound", True)
+                      demisto.results({'Contents': 'Present', 'Type': 1, 'ContentFormat': 'json'})
+                  else:
+                      found_in_any_list = False
+                      demisto.setContext("RuleNameFound", False)
+                      demisto.results({'Contents': 'Not Present', 'Type': 1, 'ContentFormat': 'json'})
+                      current_not_found_list = demisto.executeCommand('getList', {'listName': not_found_list})
+                      if current_not_found_list and current_not_found_list[0].get('Contents'):
+                          list_not_present = current_not_found_list[0]['Contents']
+                          list_items_not_present = json.loads(list_not_present)
+                          if rule_name not in list_items_not_present:
+                              list_items_not_present.append(rule_name)
+                              set_list_result = demisto.executeCommand('setList', {'listName': not_found_list,'listData': list_items_not_present})
+                      else:
+                          set_list_result = demisto.executeCommand('setList', {'listName': not_found_list,'listData': json.dumps([rule_name])})
+
+
+              except json.JSONDecodeError as e:
+                  demisto.error(f"Failed to parse JSON content from list {list_name}: {str(e)}")
+      except Exception as e:
+          demisto.error(f"Failed to execute script: {str(e)}")
+          return_error(f"Failed to execute script: {str(e)}")
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
