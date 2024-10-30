@@ -1,0 +1,63 @@
+comment: This is script is used to calculate the closure TAT and Closure Time for
+  the all manual raised incidents.
+commonfields:
+  id: 0f0aaacb-9803-4d6c-89e7-dd8d98e498b0
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: MannualClosureTime
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  role=demisto.get(demisto.incidents()[0],'roles')
+
+  if "SOC_Analyst_L1" or "SOC_Analyst_L2" or "SOC_Analyst_L3"  or "WIPS" or "VA_Team" or "IT_DAM_Team" or "Investigation_Team" in role:
+
+
+      cl=datetime.now()+timedelta(hours=5,minutes=30)
+      newcl = cl.strftime('%B %d,%Y %I:%M %p')
+      #print('cli:', cli)
+      demisto.executeCommand("setIncident",{'closuretime': newcl})
+
+      cl=datetime.strftime(cl,"%Y-%m-%dT%H:%M:%S")
+      cl= cl[0:16:1] #Extract 2018-02-09T12:20
+      cl=datetime.strptime(cl,"%Y-%m-%dT%H:%M")
+      #print('cl:', cl)
+
+      args_occrtime = demisto.get(demisto.incidents()[0], 'occurred')
+      args_occrtime = args_occrtime[0:16:1] #Extract 2018-02-09T12:20
+      args_occrtime = datetime.strptime(args_occrtime,"%Y-%m-%dT%H:%M")
+      #print('occrtime: ', args_occrtime)
+
+      duration=cl-args_occrtime
+      #print('duration', duration)
+
+      minutes = duration.seconds / 60
+      #print('minutes 1:', minutes)
+
+      if duration.days > 0:
+            minutes = duration.days * 24 * 60 + int(minutes)
+      minutes=str(minutes)
+      #print('minutes 2:', minutes)
+
+      #demisto.executeCommand("setIncident",{'incidentstatus': 'Closed'},{'closuretat': minutes},{'closuretime': newcl})
+      demisto.executeCommand("setIncident",{'closuretat': minutes})
+      demisto.executeCommand("setIncident",{'incidentstatus': 'Closed'})
+scripttarget: 0
+subtype: python2
+tags:
+- post-processing
+type: python
