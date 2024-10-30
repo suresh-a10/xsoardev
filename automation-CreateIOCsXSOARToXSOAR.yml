@@ -1,0 +1,110 @@
+commonfields:
+  id: 3b56bec5-49d8-451a-8796-fb91623e0b0a
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.12.63474
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CreateIOCsXSOARToXSOAR
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  #tenant_name = "acc_TSTSINGLE"
+
+  query = "type:IP and value:6.6.7.5"
+
+  request_uri = "/indicators/search"
+  request_body = {"page":0,"size":1,"query":query,"sort":[{"field":"calculatedTime","asc":False}]}
+
+  request_response = demisto.executeCommand("core-api-post", {"uri":request_uri, "body": request_body, "using": "Core REST API_instance_1"})
+
+  iocs_objects = request_response[0]['Contents']['response']['iocObjects']
+
+
+
+
+  def get_indicator_relationship(indicator_value):
+
+      relationships = []
+      request_uri = "/relationships/search"
+      request_body = {"query":indicator_value}
+
+      request_response = demisto.executeCommand("core-api-post", {"uri":request_uri, "body": request_body, "using": "Core REST API_instance_1"})
+
+      relationship_objects = request_response[0]['Contents']['response']['data']
+      for item in relationship_objects:
+          rel_data={
+              'name': item['name'],
+              'reverseName':item['reverseName'],
+              'type':item['type'],
+              'entityA' :item['entityA'],
+              'entityAFamily':item['entityAFamily'],
+              'entityAType':item['entityAType'],
+              'entityB':item['entityB'],
+              'entityBFamily':item['entityBFamily'],
+              'entityBType':item['entityBType'],
+              'createdInSystem':item['createdInSystem'],
+              'firstseenbysource':item['CustomFields']['firstseenbysource'],
+              'lastseenbysource':item['CustomFields']['lastseenbysource']
+              }
+
+
+          relationships.append(rel_data)
+
+
+      return relationships
+
+
+  new_indicators_list = []
+  indicator_verdicts={0:'Unknown',1:'Benign',2:'Suspicious',3:'Malicious'}
+  for indicator in iocs_objects:
+
+      relationship_data=get_indicator_relationship(indicator['value'])
+      indicator_data={
+          "value":indicator['value'],
+          'score':indicator['score'],
+          'expiration':indicator['expiration'],
+          'type':indicator['indicator_type'],
+          'relationships':relationship_data
+      }
+
+      new_indicators_list.append(indicator_data)
+
+
+  print(new_indicators_list)
+
+
+  #
+
+
+  # for item in new_indicators_list:
+
+
+  #     demisto.results(demisto.executeCommand("createNewIndicator", {"value":item['value'],'verdict':indicator_verdicts[item['score']],'expiration':item['expiration']}))
+
+
+  """
+
+  for iter1_,iter2_ in zip(batch(new_indicators_list, batch_size=1000),batch(indicators_list, batch_size=1000)):
+    indicator = ",".join(iter2_) if len(iter2_) > 1 else iter2_[0]
+    demisto.executeCommand("createIndicators", {'indicators': iter1_})
+    demisto.executeCommand("Sleep", {"seconds":"5"})
+    var = demisto.executeCommand("setIndicators", {"indicatorsValues":indicator,"expiration":expirationtime,"reportedby":"XSOAR"})
+    print(var)
+  """
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
