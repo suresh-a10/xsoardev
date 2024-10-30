@@ -1,0 +1,150 @@
+args:
+- description: Define the thresholds.
+  name: Thresholds
+- auto: PREDEFINED
+  defaultValue: "False"
+  description: 'Append to existing data in grid field , Default: False'
+  name: Append
+  predefined:
+  - "True"
+  - "False"
+comment: Deprecated. No available replacement.
+commonfields:
+  id: HealthCheckAnalyzeLargeInvestigations
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 2.1.3
+    packID: HealthCheck
+    packName: System Diagnostics and Health Check
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+deprecated: true
+dockerimage: demisto/python3:3.10.10.48392
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: HealthCheckAnalyzeLargeInvestigations
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('HealthCheckAnalyzeLargeInvestigations', 'start', __line__())
+  demisto.debug('pack name = System Diagnostics and Health Check, pack version = 2.1.3')
+
+
+
+
+  import dateutil.relativedelta
+
+  THRESHOLDS = {
+      'numberofincidentswithmorethan500entries': 300,
+      'numberofincidentsbiggerthan1mb': 300,
+  }
+  DESCRIPTION = [
+      'Too many incidents with high number of war room entries were found, consider to use quiet mode in task settings',
+      'Large incidents were found, consider to use quiet mode in task settings and delete unneeded Context'
+  ]
+  RESOLUTION = [
+      'Playbook Settings: https://xsoar.pan.dev/docs/playbooks/playbook-settings',
+      'Extending Context and Ignore Outputs: https://xsoar.pan.dev/docs/playbooks/playbooks-extend-context'
+  ]
+
+
+  def format_dict_keys(entry: Dict[str, Any]) -> Dict:
+      new_entry = {}
+      for key, value in entry.items():
+          if key == 'Size(MB)':
+              new_entry['size'] = f'{value} MB'
+          elif key == 'AmountOfEntries':
+              new_entry['info'] = f'{value} Entries'
+          else:
+              new_entry[key.lower()] = value
+      new_entry.pop('size(mb)', None)
+      return new_entry
+
+
+  def formatToEntriesGrid(table):
+      for entry in table:
+          entry['amountofentries'] = entry['info']
+
+
+  def main(args):
+      thresholds = args.get('Thresholds', THRESHOLDS)
+      append = args.get('Append', 'False')
+      prev_month = datetime.today() + dateutil.relativedelta.relativedelta(months=-1)
+      current_month = datetime.today()
+      res = execute_command('GetLargestInvestigations', {
+          'from': prev_month.strftime('%Y-%m-%d'),
+          'to': current_month.strftime('%Y-%m-%d'),
+          'table_result': 'true',
+          'ignore_deprecated': 'true'
+      })
+
+      incidentsbiggerthan1mb = []
+      incidentswithmorethan500entries = []
+
+      for incident in res['data']:
+          formatted_incident = format_dict_keys(incident)
+          if incident['AmountOfEntries'] >= 500:
+              incidentswithmorethan500entries.append(formatted_incident)
+              continue
+          incidentsbiggerthan1mb.append(formatted_incident)
+
+      numberofincidentsbiggerthan1mb = len(incidentsbiggerthan1mb)
+      numberofincidentswithmorethan500entries = len(incidentswithmorethan500entries)
+      if incidentswithmorethan500entries:
+          formatToEntriesGrid(incidentswithmorethan500entries)
+
+      analyzeFields = {
+          'healthchecklargeinvestigations': incidentsbiggerthan1mb,
+          'healthchecknumberofinvestigationsbiggerthan1mb': numberofincidentsbiggerthan1mb,
+          'healthcheckincidentslargenumberofentries': incidentswithmorethan500entries
+      }
+
+      if append == 'False':
+          demisto.executeCommand('setIncident', analyzeFields)
+      else:
+          incident = demisto.incidents()
+          prevData = incident[0].get('CustomFields', {}).get('healthchecklargeinvestigations')
+          prevData.extend(analyzeFields.get("healthchecklargeinvestigations", []))
+          demisto.executeCommand('setIncident', analyzeFields)
+
+      action_items = []
+      if numberofincidentswithmorethan500entries > int(thresholds['numberofincidentswithmorethan500entries']):
+          action_items.append({
+              'category': 'DB Analysis',
+              'severity': 'High',
+              'description': DESCRIPTION[0],
+              'resolution': '{}'.format(RESOLUTION[0]),
+          })
+
+      if numberofincidentsbiggerthan1mb > thresholds['numberofincidentsbiggerthan1mb']:
+          action_items.append({
+              'category': 'DB Analysis',
+              'severity': 'High',
+              'description': DESCRIPTION[1],
+              'resolution': '{}\n{}'.format(RESOLUTION[0], RESOLUTION[1]),
+          })
+
+      results = CommandResults(
+          outputs_prefix='dbstatactionableitems',
+          outputs=action_items)
+
+      return results
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):  # pragma: no cover
+      return_results(main(demisto.args()))
+
+  register_module_line('HealthCheckAnalyzeLargeInvestigations', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags: []
+type: python
