@@ -1,0 +1,1414 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Migration Playbook Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 847f9217-aaea-4d1a-8faa-0eb81d1d7322
+inputs: []
+name: Migration Playbook
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+      - "22"
+      - "23"
+      - "24"
+      - "17"
+      - "34"
+      - "35"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 823bbe4c-caff-47f5-82ea-d572ebb8c2d2
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 823bbe4c-caff-47f5-82ea-d572ebb8c2d2
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 1340,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      body:
+        simple: '{"size":500}'
+      extend-context:
+        simple: |
+          integration=response.instances={"brand":val.brand || "None","name":val.name || "None", "modified":val.modified|| "None", "fetch": val.configvalues.isFetch || "False", "islongrunning":val.islongRunning || "False", "enginegroup" :val.engineGroup || "None"}
+      ignore-outputs:
+        simple: "true"
+      uri:
+        simple: /settings/integration/search
+      using:
+        simple: ${incident.coreapiinstance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: send HTTP POST request.
+      id: 0405580d-4137-4855-8c7a-19944b9e5a3a
+      iscommand: true
+      name: Get integrations
+      script: '|||core-api-post'
+      type: regular
+      version: -1
+    taskid: 0405580d-4137-4855-8c7a-19944b9e5a3a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 690
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      gridfield:
+        simple: integrationinstances
+      keys:
+        simple: brand,name,modified,fetch,islongrunning,enginegroup
+      val1:
+        simple: ${integration.brand}
+      val2:
+        simple: ${integration.name}
+      val3:
+        simple: ${integration.modified}
+      val4:
+        simple: ${integration.fetch}
+      val5:
+        simple: ${integration.islongrunning}
+      val6:
+        simple: ${integration.enginegroup}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Automation used to more easily populate a grid field.  This is necessary when you want to assign certain values as static or if you have context paths that you will assign to different values as well.  Instead of a value you can enter `TIMESTAMP` to get the current timestamp in ISO format. For example:
+        `!GridFieldSetup keys=ip,src,timestamp val1=${AWS.EC2.Instances.NetworkInterfaces.PrivateIpAddress} val2="AWS" val3="TIMESTAMP" gridfiled="gridfield"`
+      id: 9f72cdc0-3808-4727-8e86-157eedb62aff
+      iscommand: false
+      name: Grid Field Setup
+      script: GridFieldSetup
+      type: regular
+      version: -1
+    taskid: 9f72cdc0-3808-4727-8e86-157eedb62aff
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1040
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      integrationinstances:
+        simple: ''''''
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 8b5e4587-e23e-4bcd-80de-50ecb0ef19d6
+      iscommand: true
+      name: Set Grid Field
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 8b5e4587-e23e-4bcd-80de-50ecb0ef19d6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 865
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: 'incidentInfo=Contents.data={"type": val.type, "name": val.name}'
+      ignore-outputs:
+        simple: "true"
+      query:
+        simple: status:active
+      size:
+        simple: "2000"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: "Searches Cortex XSOAR Incidents and returnrs the most relevant
+        fields. Default search range is the last 30 days, if you want to change this,
+        use the fromDate argument. \n\nReturns the id, name, type, severity, status,
+        owner, and created/closed times to context.  You can add additional fields
+        using the add_field_to_context argument.\n\nThis automation runs using the
+        default Limited User role, unless you explicitly change the permissions.  Based
+        on the SearchIncidentsV2 from the Common Scripts pack, but more efficient."
+      id: eac12fc7-97f5-4010-86dc-0d81ff9c4da0
+      iscommand: false
+      name: Get Incidents
+      script: SearchIncidentsSummary
+      type: regular
+      version: -1
+    taskid: eac12fc7-97f5-4010-86dc-0d81ff9c4da0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 340
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: uniqueTypes
+      value:
+        complex:
+          accessor: type
+          root: incidentInfo
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: d9de6045-aa32-41a9-8967-c4578a809915
+      iscommand: false
+      name: Set Incident  Unique Type
+      script: Set
+      type: regular
+      version: -1
+    taskid: d9de6045-aa32-41a9-8967-c4578a809915
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 515
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      my_dict_list:
+        simple: ${incidentInfo}
+      my_list:
+        simple: ${uniqueTypes}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9a38182d-9d5f-46d1-8bce-423168fbd760
+      iscommand: false
+      name: Calculate Number of Incidents Per Type
+      script: 501d9489-63e2-4f90-8c4f-7b183584e997
+      type: regular
+      version: -1
+    taskid: 9a38182d-9d5f-46d1-8bce-423168fbd760
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 690
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      incidentinfo:
+        simple: ''''''
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 31df329c-bc9d-4277-8b6b-1a05f5b5ff24
+      iscommand: true
+      name: Set Grid Field
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 31df329c-bc9d-4277-8b6b-1a05f5b5ff24
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 865
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      gridfield:
+        simple: incidentinfo
+      keys:
+        simple: name,count
+      val1:
+        simple: ${incidentsNo.name}
+      val2:
+        simple: ${incidentsNo.count}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Automation used to more easily populate a grid field.  This is necessary when you want to assign certain values as static or if you have context paths that you will assign to different values as well.  Instead of a value you can enter `TIMESTAMP` to get the current timestamp in ISO format. For example:
+        `!GridFieldSetup keys=ip,src,timestamp val1=${AWS.EC2.Instances.NetworkInterfaces.PrivateIpAddress} val2="AWS" val3="TIMESTAMP" gridfiled="gridfield"`
+      id: 0347fe76-cc5a-4f93-8bf8-6525bb6a4ab9
+      iscommand: false
+      name: Grid Field Setup
+      script: GridFieldSetup
+      type: regular
+      version: -1
+    taskid: 0347fe76-cc5a-4f93-8bf8-6525bb6a4ab9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1040
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: users=.={"name":val.name,"email":val.email || "N/A", "roles":val.roles.demisto.join(',')}
+      ignore-outputs:
+        simple: "true"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.get.users
+      id: 0d0f4bd4-d470-4749-8c01-d67403d8171b
+      iscommand: true
+      name: Get Users
+      script: Builtin|||getUsers
+      type: regular
+      version: -1
+    taskid: 0d0f4bd4-d470-4749-8c01-d67403d8171b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 690
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      getusers:
+        simple: ''''''
+      getusres:
+        simple: ''''''
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 2d091b86-634a-4fc2-80f9-2d01f95158db
+      iscommand: true
+      name: Set Grid Field
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 2d091b86-634a-4fc2-80f9-2d01f95158db
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 865
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      gridfield:
+        simple: getusers
+      keys:
+        simple: name,mail,roles
+      val1:
+        simple: ${users.name}
+      val2:
+        simple: ${users.email}
+      val3:
+        simple: ${users.roles}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Automation used to more easily populate a grid field.  This is necessary when you want to assign certain values as static or if you have context paths that you will assign to different values as well.  Instead of a value you can enter `TIMESTAMP` to get the current timestamp in ISO format. For example:
+        `!GridFieldSetup keys=ip,src,timestamp val1=${AWS.EC2.Instances.NetworkInterfaces.PrivateIpAddress} val2="AWS" val3="TIMESTAMP" gridfiled="gridfield"`
+      id: 4cc228aa-1bc7-42de-818f-a073613372ea
+      iscommand: false
+      name: Grid Field Setup
+      script: GridFieldSetup
+      type: regular
+      version: -1
+    taskid: 4cc228aa-1bc7-42de-818f-a073613372ea
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 1040
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      incidenttypes:
+        simple: ''''''
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: ec8fbdd9-7ff9-4b20-88b8-68ce492f0142
+      iscommand: true
+      name: Set Grid Field
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: ec8fbdd9-7ff9-4b20-88b8-68ce492f0142
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1340,
+          "y": 865
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      gridfield:
+        simple: incidenttypes
+      keys:
+        simple: closurescript,created,isdisabled,layout,modified,name,playbookname
+      val1:
+        simple: ${incTypes.closurescript}
+      val2:
+        simple: ${incTypes.created}
+      val3:
+        simple: ${incTypes.isdisabled}
+      val4:
+        simple: ${incTypes.layout}
+      val5:
+        simple: ${incTypes.modified}
+      val6:
+        simple: ${incTypes.name}
+      val7:
+        simple: ${incTypes.playbookname}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Automation used to more easily populate a grid field.  This is necessary when you want to assign certain values as static or if you have context paths that you will assign to different values as well.  Instead of a value you can enter `TIMESTAMP` to get the current timestamp in ISO format. For example:
+        `!GridFieldSetup keys=ip,src,timestamp val1=${AWS.EC2.Instances.NetworkInterfaces.PrivateIpAddress} val2="AWS" val3="TIMESTAMP" gridfiled="gridfield"`
+      id: 25a5eda1-1c6e-4055-8b8c-ea28bc877ab5
+      iscommand: false
+      name: Grid Field Setup
+      script: GridFieldSetup
+      type: regular
+      version: -1
+    taskid: 25a5eda1-1c6e-4055-8b8c-ea28bc877ab5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1340,
+          "y": 1040
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: incTypes=response={"name":val.name,"playbookname":val.playbookId  ||
+          "None","layout":val.layout,"created":val.created || "None","modified":val.modified
+          || "None","isdisabled":val.disabled || "None", "closurescript":val.closureScript  ||
+          "None"}
+      ignore-outputs:
+        simple: "false"
+      uri:
+        simple: /incidenttype
+      using:
+        simple: ${incident.coreapiinstance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: send HTTP GET requests.
+      id: 49dffb05-5c26-49a4-81f7-97e798afa5c5
+      iscommand: true
+      name: Get Incident Types Configuration
+      script: '|||core-api-get'
+      type: regular
+      version: -1
+    taskid: 49dffb05-5c26-49a4-81f7-97e798afa5c5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1340,
+          "y": 690
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: eebc93d5-7c6f-458e-8fe7-b13dcd48c490
+      iscommand: false
+      name: Get PreProcess Rules Summary
+      type: title
+      version: -1
+    taskid: eebc93d5-7c6f-458e-8fe7-b13dcd48c490
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1892.5,
+          "y": 195
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "37"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: 'preProcess=response={"name": val.name,"created": val.created || "None","modified":
+          val.modified,"filters": val.newEventFilters,"action": val.action,"linkto":
+          val.linkTo,"scriptid": val.scriptID || "None","enabled": val.enabled}'
+      uri:
+        simple: /preprocess/rules
+      using:
+        simple: ${incident.coreapiinstance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: send HTTP GET requests.
+      id: 81177034-46a2-4c68-8c69-abe1de7d89b8
+      iscommand: true
+      name: Get PreProcess Rules
+      script: '|||core-api-get'
+      type: regular
+      version: -1
+    taskid: 81177034-46a2-4c68-8c69-abe1de7d89b8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1892.5,
+          "y": 340
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      getusres:
+        simple: ''''''
+      preprocess:
+        simple: ''''''
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: b1a7e512-15ad-464f-88b9-27224172d9c5
+      iscommand: true
+      name: Set Grid Field
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: b1a7e512-15ad-464f-88b9-27224172d9c5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1892.5,
+          "y": 865
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      gridfield:
+        simple: preprocess
+      keys:
+        simple: name, created,modified,filters,action,linkto,scriptid,enabled
+      val1:
+        simple: ${preProcess.name}
+      val2:
+        simple: ${preProcess.created}
+      val3:
+        simple: ${preProcess.modified}
+      val4:
+        complex:
+          accessor: filters
+          root: preProcess
+          transformers:
+          - operator: StringifyArray
+      val5:
+        simple: ${preProcess.action}
+      val6:
+        simple: ${preProcess.linkto}
+      val7:
+        simple: ${preProcess.scriptid}
+      val8:
+        simple: ${preProcess.enabled}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Automation used to more easily populate a grid field.  This is necessary when you want to assign certain values as static or if you have context paths that you will assign to different values as well.  Instead of a value you can enter `TIMESTAMP` to get the current timestamp in ISO format. For example:
+        `!GridFieldSetup keys=ip,src,timestamp val1=${AWS.EC2.Instances.NetworkInterfaces.PrivateIpAddress} val2="AWS" val3="TIMESTAMP" gridfiled="gridfield"`
+      id: 256da6cb-4edf-47d4-8aea-32ada827f802
+      iscommand: false
+      name: Grid Field Setup
+      script: GridFieldSetup
+      type: regular
+      version: -1
+    taskid: 256da6cb-4edf-47d4-8aea-32ada827f802
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1892.5,
+          "y": 1040
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ce287b10-ba40-4fa6-82a5-325f69aefffb
+      iscommand: false
+      name: Get Integration Summary
+      type: title
+      version: -1
+    taskid: ce287b10-ba40-4fa6-82a5-325f69aefffb
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 530
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 901cfba2-6e29-4922-8527-432ea337c560
+      iscommand: false
+      name: Get Active Incidents Summary
+      type: title
+      version: -1
+    taskid: 901cfba2-6e29-4922-8527-432ea337c560
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 195
+        }
+      }
+  "23":
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d4e9ed10-fed9-4a1e-8935-7bc8ad519e37
+      iscommand: false
+      name: Get Users Summary
+      type: title
+      version: -1
+    taskid: d4e9ed10-fed9-4a1e-8935-7bc8ad519e37
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 530
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9043acd0-fff3-4c90-8a94-61d822b36b5e
+      iscommand: false
+      name: Get Incident Type Configuration Summary
+      type: title
+      version: -1
+    taskid: 9043acd0-fff3-4c90-8a94-61d822b36b5e
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1340,
+          "y": 530
+        }
+      }
+  "26":
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: fe56bdf0-b2de-4ac4-8769-073cbe737081
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: fe56bdf0-b2de-4ac4-8769-073cbe737081
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1780,
+          "y": 1215
+        }
+      }
+  "27":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: preProcess
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "26"
+      "yes":
+      - "19"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e11b2795-2ab8-43bc-832f-215b01be406d
+      iscommand: false
+      name: PreProcess Exists?
+      type: condition
+      version: -1
+    taskid: e11b2795-2ab8-43bc-832f-215b01be406d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1780,
+          "y": 690
+        }
+      }
+  "28":
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: '{"page": 0, "size": 50, "query": "", "sort": [{"field": "id", "asc":
+          false}]}'
+      extend-context:
+        simple: 'jobs=response.data={ "type" : val.rawType || "False", "closeprevrun"
+          : val.closePrevRun || "False", "lastruntime" : val.closePrevRun || "False","prevrunstatus":
+          val.previousRunStatus || "False", "isrecurrent" : val.recurrent || "False",
+          "isfeed": val.isFeed || "False", "created": val.created || "False", "modified"
+          : val.modified || "False"}'
+      uri:
+        simple: /jobs/search
+      using:
+        simple: ${incident.coreapiinstance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: send HTTP POST request.
+      id: a0802eaf-08ad-4147-89cf-4d6924bfc35c
+      iscommand: true
+      name: Get Jobs
+      script: '|||core-api-post'
+      type: regular
+      version: -1
+    taskid: a0802eaf-08ad-4147-89cf-4d6924bfc35c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2455,
+          "y": 515
+        }
+      }
+  "29":
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      jobs:
+        simple: '""'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 630a8059-fac1-4c4a-8483-c1874de7f851
+      iscommand: true
+      name: Set Grid
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 630a8059-fac1-4c4a-8483-c1874de7f851
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2342.5,
+          "y": 865
+        }
+      }
+  "30":
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      gridfield:
+        simple: jobs
+      keys:
+        simple: type,closeprevrun,lustruntime,prerunstatus,isrecurrent,isfeed,created,modified
+      val1:
+        simple: ${jobs.type}
+      val2:
+        simple: ${jobs.closeprevrun}
+      val3:
+        simple: ${jobs.lastruntime}
+      val4:
+        simple: ${jobs.prevrunstatus}
+      val5:
+        simple: ${jobs.isrecurrent}
+      val6:
+        simple: ${jobs.isfeed}
+      val7:
+        simple: ${jobs.created}
+      val8:
+        simple: ${jobs.modified}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Automation used to more easily populate a grid field.  This is necessary when you want to assign certain values as static or if you have context paths that you will assign to different values as well.  Instead of a value you can enter `TIMESTAMP` to get the current timestamp in ISO format. For example:
+        `!GridFieldSetup keys=ip,src,timestamp val1=${AWS.EC2.Instances.NetworkInterfaces.PrivateIpAddress} val2="AWS" val3="TIMESTAMP" gridfiled="gridfield"`
+      id: 7b3642c8-4371-49d3-8ab9-6449c6196440
+      iscommand: false
+      name: Grid Field Setup
+      script: GridFieldSetup
+      type: regular
+      version: -1
+    taskid: 7b3642c8-4371-49d3-8ab9-6449c6196440
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2342.5,
+          "y": 1040
+        }
+      }
+  "31":
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "32"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: 'list=response={"name": val.id || "None", "modified": val.modified
+          || "None", "created" : val.created || "None", "size": val.sizeInBytes ||
+          "None", "issystem": val.system || "False", "type": val.type, "description":
+          val.description || "None", "datalength":val.data || "None"}'
+      uri:
+        simple: /lists
+      using:
+        simple: ${incident.coreapiinstance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: send HTTP GET requests.
+      id: 28c938f0-acee-422b-8a07-ffa2560f16fb
+      iscommand: true
+      name: Get Lists
+      script: '|||core-api-get'
+      type: regular
+      version: -1
+    taskid: 28c938f0-acee-422b-8a07-ffa2560f16fb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2895,
+          "y": 690
+        }
+      }
+  "32":
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      lists:
+        simple: '""'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: d96df55a-1f7f-4fee-895d-d474cc8eb869
+      iscommand: true
+      name: Set Grid Field
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: d96df55a-1f7f-4fee-895d-d474cc8eb869
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2895,
+          "y": 865
+        }
+      }
+  "33":
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      gridfield:
+        simple: lists
+      keys:
+        simple: name,modified,created,size,issystem,type,description,datalength
+      val1:
+        simple: ${list.name}
+      val2:
+        simple: ${list.modified}
+      val3:
+        simple: ${list.created}
+      val4:
+        simple: ${list.size}
+      val5:
+        simple: ${list.issystem}
+      val6:
+        simple: ${list.type}
+      val7:
+        simple: ${list.description}
+      val8:
+        complex:
+          accessor: datalength
+          root: list
+          transformers:
+          - operator: strLength
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Automation used to more easily populate a grid field.  This is necessary when you want to assign certain values as static or if you have context paths that you will assign to different values as well.  Instead of a value you can enter `TIMESTAMP` to get the current timestamp in ISO format. For example:
+        `!GridFieldSetup keys=ip,src,timestamp val1=${AWS.EC2.Instances.NetworkInterfaces.PrivateIpAddress} val2="AWS" val3="TIMESTAMP" gridfiled="gridfield"`
+      id: 8ce58af0-8577-4320-8a6e-bf7e1d81b90e
+      iscommand: false
+      name: Grid Field Setup
+      script: GridFieldSetup
+      type: regular
+      version: -1
+    taskid: 8ce58af0-8577-4320-8a6e-bf7e1d81b90e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2895,
+          "y": 1040
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "28"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: df94dfc6-29b5-416b-84a5-64b87ebd346e
+      iscommand: false
+      name: Get Jobs Summary
+      type: title
+      version: -1
+    taskid: df94dfc6-29b5-416b-84a5-64b87ebd346e
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 2455,
+          "y": 355
+        }
+      }
+  "35":
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "31"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 92e535e5-1cd7-4eb4-8342-5a7e896bee2e
+      iscommand: false
+      name: Get Lists Summary
+      type: title
+      version: -1
+    taskid: 92e535e5-1cd7-4eb4-8342-5a7e896bee2e
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 2895,
+          "y": 530
+        }
+      }
+  "36":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: jobs
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "26"
+      "yes":
+      - "29"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a93c913c-aed6-4b00-8618-f5bbcfe655a4
+      iscommand: false
+      name: jobs exist?
+      type: condition
+      version: -1
+    taskid: a93c913c-aed6-4b00-8618-f5bbcfe655a4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2455,
+          "y": 690
+        }
+      }
+  "37":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: preProcess
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "26"
+      "yes":
+      - "27"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 60ba68b5-2fc4-4dc7-8c63-46f7a49c1014
+      iscommand: false
+      name: any rule exist?
+      type: condition
+      version: -1
+    taskid: 60ba68b5-2fc4-4dc7-8c63-46f7a49c1014
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1892.5,
+          "y": 515
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1230,
+        "width": 3225,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
