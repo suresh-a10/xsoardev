@@ -1,0 +1,79 @@
+args:
+- name: employee
+  required: true
+- name: date
+  required: true
+- description: List which contains shift data
+  name: listname
+  required: true
+- description: Corresponding Role for A shift in XSOAR
+  name: roleA
+  required: true
+- description: Corresponding Role for B shift in XSOAR
+  name: roleB
+  required: true
+- description: Corresponding Role for C shift in XSOAR
+  name: roleC
+  required: true
+- description: If there is a default role has to be assigned along with Shift based
+    role provide that here, Enter only one role
+  name: defaultRole
+comment: This script will read the input Employee Name and Employee Date , extract
+  Employee Shift based on these 2 arguments and update the role of the employee
+commonfields:
+  id: 7444b010-42ba-426c-8dc9-ec9024e567de
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.5.31928
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: updateEmployeeShift
+pswd: ""
+runas: Administrator
+runonce: false
+script: |-
+  args = demisto.args()
+  emp_name = args.get('employee')
+  date = args.get('date')
+  shifts = args.get('listname')
+  defaultRole = args.get('defaultRole')
+
+  res = demisto.executeCommand("getList", {"listName":shifts})
+  res = json.loads(res[0]['Contents'])
+  role = res[emp_name][date]
+
+  roles = []
+  if defaultRole:
+      roles.append(defaultRole)
+
+  if role == "A":
+      roleA = args.get('roleA')
+      roles.append(roleA)
+  elif role == "B":
+      roleB = args.get('roleB')
+      roles.append(roleB)
+  else:
+      roleC = args.get('roleC')
+      roles.append(roleC)
+
+  resp = demisto.executeCommand("demisto-api-post", {"uri":"/users/update", "body":{"id":emp_name,"roles":{"roles":roles},"defaultAdmin":"False"}})
+  try:
+      if resp[0]['Contents']['response']:
+          demisto.results("Role has been updated")
+  except:
+      demisto.results("Failed to add or update role")
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
