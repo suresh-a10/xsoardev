@@ -1,0 +1,77 @@
+args:
+- name: Data
+  required: true
+- name: Title
+  required: true
+commonfields:
+  id: 9c74c9a3-6950-4758-8e70-b6454b780e8c
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.48392
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: TestHTMLToMarkdown
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+  import json
+
+
+
+
+  ''' MAIN FUNCTION '''
+
+  def convert_to_html(data,title):
+      res=""
+      html_string = "<!DOCTYPE html><html><body><h2>"+title+"</h2><table>"
+      for key,value in sorted(data.items(),reverse=True):
+          res+="<tr><td>"+key+"</td><td>"+value+"</td></tr>"
+
+      html_string+=res
+      html_string+="</table></body></html>"
+
+
+      return html_string
+
+
+
+  def main():
+      try:
+          # TODO: replace the invoked command function with yours
+          data = demisto.args()['Data']
+          title = demisto.args()['Title']
+          result=convert_to_html(data,title)
+          md = demisto.executeCommand("HTMLtoMD", {"html":result})[0]['Contents']
+          res = json.loads(md)
+          demisto.results(demisto.executeCommand('setIncident',{'host':res['Result']}))
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
