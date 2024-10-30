@@ -1,0 +1,88 @@
+args:
+- description: Provide the File details
+  name: File
+  required: true
+- auto: PREDEFINED
+  description: Provide the Lists
+  name: ListNames
+  predefined:
+  - SPOC1
+  - SPOC2
+  required: true
+commonfields:
+  id: 485990db-55c2-4626-8043-a51cc5a8c6fa
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.8.37753
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetFileEntryIDData
+outputs:
+- contextPath: FileEntryIDs
+  description: List of Entry IDs
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+
+
+
+  # TODO: ADD additional command functions that translate XSOAR inputs/outputs
+
+
+  ''' MAIN FUNCTION '''
+
+
+  def main():
+      try:
+          file_entryIDs = []
+          file_details = demisto.args()['File']
+          list_names = argToList(demisto.args()['ListNames'])
+          for list_index in range(len(list_names)):
+              res = demisto.executeCommand("getList", {"listName":list_names[list_index],"using":"InnerServicesModule"})[0]['Contents']
+              user_list = res.split("\n")
+              strip_username = file_details['Name'].split('_')
+              for user in user_list:
+                  if user == strip_username[-1].strip('.xlsx'):
+                      file_entryIDs.append(file_details['EntryID'])
+
+          md = tableToMarkdown("Entry IDs",file_entryIDs, headers=['EntryID'])
+          demisto.results({
+              'Type': entryTypes['note'],
+              'Contents': file_entryIDs,
+              'ContentsFormat': formats['json'],
+              'HumanReadable': md,
+              'ReadableContentsFormat' : formats['markdown'],
+              'EntryContext':{'FileEntryIDs':file_entryIDs}
+          })
+
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
