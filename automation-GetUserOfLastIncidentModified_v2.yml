@@ -1,0 +1,82 @@
+comment: This script can be used to get user id who modified the incident lastly.
+commonfields:
+  id: d6cf6162-a3a7-4ebb-8a99-529790147eb0
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.9.40422
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetUserOfLastIncidentModified_v2
+pswd: ""
+runas: DBotRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+
+
+
+  ''' MAIN FUNCTION '''
+  def get_user_id(user_id):
+      if user_id == '':
+          user_id='Dbot'
+      else:
+          pass
+      return user_id
+
+  def main():
+      try:
+          incident_data=demisto.incidents()[0]
+          #new = demisto.args()['new']
+          inc_custom_data = incident_data.get('CustomFields').get('demolongtext')
+
+          entries_list=[]
+          if len(inc_custom_data)>0:
+              entries= demisto.executeCommand("getEntries", {'id':incident_data['id'],"filter":{"categories":['procedural']}})
+
+              if len(entries)>0:
+                  entries_list.append({"ID":entries[-1]['ID'],"User":entries[-1]['Metadata']['user'],"Modified":entries[-1]['Metadata']['modified']})
+
+
+                  md = tableToMarkdown('Modified User Details',entries_list,headers=['ID','User','Modified'],removeNull=True)
+                  demisto.results({
+                      'Type': entryTypes['note'],
+                      "Contents" : md,
+                      'ContentsFormat': formats['json'],
+                      'HumanReadable': md,
+                      'ReadableContentsFormat' : formats['markdown'],
+                      'EntryContext':{'ModifiedUserDetails':entries_list}
+                  })
+              else:
+                   return_error("No Entries present")
+          else:
+              return_error("Demo Long Text field should be updated")
+
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags:
+- dynamic-section
+type: python
