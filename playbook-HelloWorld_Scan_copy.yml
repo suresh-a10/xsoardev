@@ -1,0 +1,350 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.0.0
+    itemVersion: 1.2.9
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: |-
+  This Playbook simulates a vulnerability scan using the "HelloWorld" sample integration. It's used to demonstrate how to use the GenericPolling mechanism to run jobs that take several seconds or minutes to complete. It is designed to be used as a subplaybook, but you can also use it as a standalone playbook, by providing the ${Endpoint.Hostname} input in the Context.
+
+  Other inputs include the report output format (JSON context or File attached), and the Interval/Timeouts to use for polling the scan status until it's complete.
+id: 3269980c-db43-4677-8627-d3729d83c35f
+inputs:
+- description: Hostname to run the scan against. By default takes ${Endpoint.Hostname}
+    from the context as the input.
+  key: Hostname
+  playbookInputQuery: null
+  required: true
+  value:
+    complex:
+      accessor: Hostname}
+      root: ${Endpoint
+- description: 'Output report format: can be "json" (output parsed and written in
+    the Context) or "file" (saved as an attachment). By default is "json".'
+  key: Report Format
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: json
+- description: How often to check for the scan to be completed (minutes)
+  key: Interval
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: "1"
+- description: How long to wait for the scan to be completed before timing out (minutes)
+  key: Timeout
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: "15"
+name: HelloWorld Scan_copy
+outputs:
+- contextPath: HelloWorld.Scan.entity.entity-id
+  description: Scanned entity ID.
+- contextPath: HelloWorld.Scan.entity.ip_address
+  description: Scanned entity IP address.
+- contextPath: HelloWorld.Scan.entity.type
+  description: Scanned entity type.
+- contextPath: HelloWorld.Scan.entity.vulnerability_status
+  description: Scanned entity vulnerability status.
+- contextPath: HelloWorld.Scan.entity.vulns
+  description: Scanned entity CVE.
+- contextPath: CVE.ID
+  description: The ID of the CVE.
+- contextPath: InfoFile.EntryID
+  description: The EntryID of the report file.
+- contextPath: InfoFile.Extension
+  description: The extension of the report file.
+- contextPath: InfoFile.Name
+  description: The name of the report file.
+- contextPath: InfoFile.Info
+  description: The info of the report file.
+- contextPath: InfoFile.Size
+  description: The size of the report file.
+- contextPath: InfoFile.Type
+  description: The type of the report file.
+sourceplaybookid: HelloWorld Scan
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 458fa958-cccf-4ca1-8257-a93d1f2ca41e
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 458fa958-cccf-4ca1-8257-a93d1f2ca41e
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hostname:
+        simple: ${inputs.Hostname}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Start a HelloWorld scan on an asset, identified from by ${input.Hostname}
+        key.
+      id: 2297969a-64d7-4470-872d-828b29c428a2
+      iscommand: true
+      name: Start a Hello World Scan
+      script: '|||helloworld-scan-start'
+      type: regular
+      version: -1
+    taskid: 2297969a-64d7-4470-872d-828b29c428a2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 370
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Ids:
+        simple: ${HelloWorld.Scan.scan_id}
+      Interval:
+        simple: ${inputs.Interval}
+      PollingCommandArgName:
+        simple: scan_id
+      PollingCommandName:
+        simple: helloworld-scan-status
+      Timeout:
+        simple: ${inputs.Timeout}
+      dt:
+        simple: HelloWorld.Scan(val.status !== 'COMPLETE').scan_id
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Use this playbook as a sub-playbook to block execution of the master playbook until a remote action is complete.
+        This playbook implements polling by continuously running the command in Step \#2 until the operation completes.
+        The remote action should have the following structure:
+
+        1. Initiate the operation.
+        2. Poll to check if the operation completed.
+        3. (optional) Get the results of the operation.
+      id: 2a4b9853-c5a2-4ed2-8893-9c7042064766
+      iscommand: false
+      name: GenericPolling
+      playbookId: GenericPolling
+      type: playbook
+      version: -1
+    taskid: 2a4b9853-c5a2-4ed2-8893-9c7042064766
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 545
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      format:
+        simple: ${inputs.Report Format}
+      scan_id:
+        simple: ${HelloWorld.Scan.scan_id}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Retrieve scan status in Context or as a File (default) for a Scan.
+      id: 01a26ad8-30f0-4fd6-8a41-e2999ef56f61
+      iscommand: true
+      name: Retrieve HelloWorld Scan Results
+      script: '|||helloworld-scan-results'
+      type: regular
+      version: -1
+    taskid: 01a26ad8-30f0-4fd6-8a41-e2999ef56f61
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 720
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 551eed65-f6fd-4ec4-8b6e-06407e09ff3a
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 551eed65-f6fd-4ec4-8b6e-06407e09ff3a
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 895
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.Hostname
+          operator: isNotEmpty
+      label: "true"
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      "true":
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if the input Hostname is valid (i.e. is not Empty), do not
+        run the scan otherwise.
+      id: ff841fb7-49e2-4bea-8991-18da8a3a004b
+      iscommand: false
+      name: Is Hostname set?
+      type: condition
+      version: -1
+    taskid: ff841fb7-49e2-4bea-8991-18da8a3a004b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 195
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      message:
+        simple: Hostname is not set, cannot run the playbook!
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints an error entry with a given message
+      id: 111b457a-34e5-4cd4-82d4-7e12c6ab107f
+      iscommand: false
+      name: Print Error
+      script: PrintErrorEntry
+      type: regular
+      version: -1
+    taskid: 111b457a-34e5-4cd4-82d4-7e12c6ab107f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 720
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 910,
+        "width": 810,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
