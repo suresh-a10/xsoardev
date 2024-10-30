@@ -1,0 +1,1332 @@
+args:
+- defaultValue: type
+  description: The name of the incident field where its type is stored. Default is
+    "type". Change this argument only in case you use a custom field for specifying
+    incident type.
+  name: incidentTypeFieldName
+- description: A comma-separated list of incident types by which to filter. The default
+    is the current incident type. Specify "None" to ignore incident type from deduplication
+    logic.
+  name: incidentTypes
+- defaultValue: 30 days ago
+  description: The start date by which to search for duplicated existing incidents.
+    Date format is the same as in the incidents query page. For example, "3 days ago",
+    "2019-01-01T00:00:00 +0200").
+  name: existingIncidentsLookback
+- description: Additional text by which to query incidents.
+  name: query
+- defaultValue: "3000"
+  description: The maximum number of incidents to fetch.
+  name: limit
+- auto: PREDEFINED
+  defaultValue: emailsubject
+  description: Subject of the email.
+  name: emailSubject
+  predefined:
+  - Subject of the email.
+- defaultValue: emailbody
+  description: Body of the email.
+  name: emailBody
+  predefined:
+  - ""
+- defaultValue: emailbodyhtml
+  description: HTML body of the email.
+  name: emailBodyHTML
+- defaultValue: emailfrom
+  description: Incident fields contains the email from value.
+  name: emailFrom
+- auto: PREDEFINED
+  defaultValue: TextOnly
+  description: Whether to take into account the email from field for deduplication.
+    "TextOnly" - incidents will be considered as duplicated based on test similarity
+    only, ignoring the sender's address. "Exact" - incidents will be considered as
+    duplicated if their text is similar and their sender is the same. "Domain" -  incidents
+    will be considered as duplicated if their text is similar and their senders' address
+    has the same domain. Default is "Domain".
+  name: fromPolicy
+  predefined:
+  - TextOnly
+  - Exact
+  - Domain
+- auto: PREDEFINED
+  defaultValue: All
+  description: Whether to compare the new incident to past closed or non closed incidents
+    only.
+  name: statusScope
+  predefined:
+  - All
+  - ClosedOnly
+  - NonClosedOnly
+- auto: PREDEFINED
+  defaultValue: "false"
+  description: Whether to close the current incident if a duplicate incident is found.
+  name: closeAsDuplicate
+  predefined:
+  - "true"
+  - "false"
+- defaultValue: "0.99"
+  description: Threshold to consider incident as duplication, number between 0-1.
+  name: threshold
+- defaultValue: "20"
+  description: Maximum number of duplicate incidents IDs to return.
+  name: maxIncidentsToReturn
+- description: A comma-separated list of incident fields to populate.
+  name: populateFields
+- defaultValue: 30 days ago
+  description: Deprecated. Use the *existingIncidentsLookback* argument instead.
+  name: exsitingIncidentsLookback
+comment: Can be used to find duplicate emails for incidents of type phishing, including  malicious,
+  spam, and legitimate emails.
+commonfields:
+  id: FindDuplicateEmailIncidents
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.0.0
+    itemVersion: 3.6.23
+    packID: Phishing
+    packName: Phishing
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/sklearn:1.0.0.105679
+engineinfo: {}
+mainengineinfo: {}
+name: FindDuplicateEmailIncidents
+outputs:
+- contextPath: duplicateIncident
+  description: The oldest duplicate incident found with the highest similarity to
+    the current incident.
+  type: unknown
+- contextPath: duplicateIncident.id
+  description: Duplicate incident ID.
+  type: string
+- contextPath: duplicateIncident.rawId
+  description: Duplicate incident ID.
+  type: Unknown
+- contextPath: duplicateIncident.name
+  description: Duplicate incident name.
+  type: Unknown
+- contextPath: duplicateIncident.similarity
+  description: Number in range 0-1 which describe the similarity between the existing
+    incident and the new incident.
+  type: Unknown
+- contextPath: isDuplicateIncidentFound
+  description: Whether a duplicate incident was found ("true" or "false").
+  type: boolean
+- contextPath: allDuplicateIncidents
+  description: All duplicate incidents found where their similarity with the new incident
+    exceeds the threshold.
+  type: Unknown
+- contextPath: allDuplicateIncidents.id
+  description: A list of all duplicate incidents IDs found.
+  type: Unknown
+- contextPath: allDuplicateIncidents.rawId
+  description: A list of all duplicate incidents IDs found.
+  type: Unknown
+- contextPath: allDuplicateIncidents.name
+  description: A list of all duplicate incidents names found.
+  type: Unknown
+- contextPath: allDuplicateIncidents.similarity
+  description: A list of the similarity between duplicate incidents and new the incident
+    of all duplicate incidents names found.
+  type: Unknown
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('FindDuplicateEmailIncidents', 'start', __line__())
+  demisto.debug('pack name = Phishing, pack version = 3.6.23')
+
+
+  import dateutil  # type: ignore
+
+
+  import pandas as pd
+  from bs4 import BeautifulSoup
+  from sklearn.feature_extraction.text import CountVectorizer
+  from numpy import dot
+  from numpy.linalg import norm
+  from email.utils import parseaddr
+  import tldextract
+  from urllib.parse import urlparse
+  import re
+
+
+  ### GENERATED CODE ###: from FormatURLApiModule import *  # noqa: E402
+  # This code was inserted in place of an API module.
+  register_module_line('FormatURLApiModule', 'start', __line__(), wrapper=-3)
+  import ipaddress
+  import tldextract
+  import urllib.parse
+
+  from re import Match
+
+
+  class URLError(Exception):
+      pass
+
+
+  class URLType:
+      """
+      A class to represent an url and its parts
+      """
+
+      def __init__(self, raw_url: str):
+          self.raw = raw_url
+          self.scheme = ''
+          self.user_info = ''
+          self.hostname = ''
+          self.port = ''
+          self.path = ''
+          self.query = ''
+          self.fragment = ''
+
+      def __str__(self):
+          return (
+              f'Scheme = {self.scheme}\nUser_info = {self.user_info}\nHostname = {self.hostname}\nPort = {self.port}\n'
+              f'Path = {self.path}\nQuery = {self.query}\nFragment = {self.fragment}')
+
+
+  class URLCheck:
+      """
+      This class will build and validate a URL based on "URL Living Standard" (https://url.spec.whatwg.org)
+      """
+      sub_delims = ("!", "$", "&", "'", "(", ")", "*", "+", ",", ";", "=")
+      brackets = ("\"", "'", "[", "]", "{", "}", "(", ")")
+
+      bracket_pairs = {
+          '{': '}',
+          '(': ')',
+          '[': ']',
+          '"': '"',
+          '\'': '\'',
+      }
+
+      no_fetch_extract = tldextract.TLDExtract(suffix_list_urls=(), cache_dir=None)
+
+      def __init__(self, original_url: str):
+          """
+          Args:
+              original_url: The original URL input
+
+          Attributes:
+              self.modified_url: The URL while being parsed by the formatter char by char
+              self.original_url: The original URL as it was inputted
+              self.url - The parsed URL and its parts (as a URLType object - see above)
+              self.base: A pointer to the first char of the section being checked and validated
+              self.output: The final URL output by the formatter
+              self.inside_brackets = A flag to indicate the parser index is within brackets
+              self.port = A flag to state that a port is found in the URL
+              self.query = A flag to state that a query is found in the URL
+              self.fragment = A flag to state that a fragment is found in the URL
+              self.done = A flag to state that the parser is done and no more parsing is needed
+          """
+
+          self.modified_url = original_url
+          self.original_url = original_url
+          self.url = URLType(original_url)
+          self.base = 0  # This attribute increases as the url is being parsed
+          self.output = ''
+
+          self.inside_brackets = False
+          self.opening_bracket = ''
+          self.port = False
+          self.query = False
+          self.fragment = False
+          self.done = False
+          self.quoted = False
+
+          if self.original_url:
+              self.remove_leading_chars()
+
+          else:
+              raise URLError("Empty string given")
+
+          if any(map(self.modified_url[:8].__contains__, ["//", "%3A", "%3a"])):
+              # The URL seems to have a scheme indicated by presence of "//" or "%3A"
+              self.scheme_check()
+
+          host_end_position = -1
+          special_chars = ("/", "?", "#")  # Any one of these states the end of the host / authority part in a URL
+
+          for char in special_chars:
+              try:
+                  host_end_position = self.modified_url[self.base:].index(char)
+                  break  # index for the end of the part found, breaking loop
+              except ValueError:
+                  continue  # no reserved char found, URL has no path, query or fragment parts.
+
+          try:
+              if "@" in self.modified_url[:host_end_position]:
+                  # Checks if url has '@' sign in its authority part
+
+                  self.user_info_check()
+
+          except ValueError:
+              # No '@' in url at all
+              pass
+
+          self.host_check()
+
+          if not self.done and self.port:
+              self.port_check()
+
+          if not self.done:
+              self.path_check()
+
+          if not self.done and self.query:
+              self.query_check()
+
+          if not self.done and self.fragment:
+              self.fragment_check()
+
+          while '%' in self.output:
+              unquoted = urllib.parse.unquote(self.output)
+              if unquoted != self.output:
+                  self.output = unquoted
+              else:
+                  break
+
+      def __str__(self):
+          return f"{self.output}"
+
+      def __repr__(self):
+          return f"{self.output}"
+
+      def scheme_check(self):
+          """
+          Parses and validates the scheme part of the URL, accepts ascii and "+", "-", "." according to standard.
+          """
+
+          index = self.base
+          scheme = ''
+
+          while self.modified_url[index].isascii() or self.modified_url[index] in ("+", "-", "."):
+
+              char = self.modified_url[index]
+              if char in self.sub_delims:
+                  raise URLError(f"Invalid character {char} at position {index}")
+
+              elif char == "%" or char == ":":
+                  # The colon might appear as is or if the URL is quoted as "%3A"
+
+                  if char == "%":
+                      # If % is present in the scheme it must be followed by "3A" to represent a colon (":")
+
+                      if self.modified_url[index + 1:index + 3].upper() != "3A":
+                          raise URLError(f"Invalid character {char} at position {index}")
+
+                      else:
+                          self.output += ":"
+                          index += 3
+                          self.quoted = True
+
+                  if char == ":":
+                      self.output += char
+                      index += 1
+
+                  if self.modified_url[index:index + 2] != "//":
+                      # If URL has ascii chars and ':' with no '//' it is invalid
+
+                      raise URLError(f"Invalid character {char} at position {index}")
+
+                  else:
+                      self.url.scheme = scheme
+                      self.output += self.modified_url[index:index + 2]
+                      self.base = index + 2
+
+                      if self.base == len(self.modified_url):
+                          raise URLError("Only scheme provided")
+
+                      return
+
+              elif index == len(self.modified_url) - 1:
+                  # Reached end of url and no ":" found (like "foo//")
+
+                  raise URLError('Invalid scheme')
+
+              else:
+                  # base is not incremented as it was incremented by 2 before
+                  self.output += char
+                  scheme += char
+                  index += 1
+
+      def user_info_check(self):
+          """
+          Parses and validates the user_info part of the URL. Will only accept a username, password isn't allowed.
+          """
+
+          index = self.base
+          user_info = ""
+
+          if self.modified_url[index] == "@":
+              raise URLError(f"Invalid character {self.modified_url[index]} at position {index}")
+
+          else:
+              while self.modified_url[index] not in ('@', '/', '?', '#', '[', ']'):
+                  self.output += self.modified_url[index]
+                  user_info += self.modified_url[index]
+                  index += 1
+
+              if self.modified_url[index] == '@':
+                  self.output += self.modified_url[index]
+                  self.url.user_info = user_info
+                  self.base = index + 1
+                  return
+
+              else:
+                  raise URLError(f"Invalid character {self.modified_url[index]} at position {index}")
+
+      def host_check(self):
+          """
+          Parses and validates the host part of the URL. The domain must be valid, either a domain, IPv4 or an
+          IPv6 with square brackets.
+          """
+
+          index = self.base
+          host: Any = ''
+          is_ip = False
+
+          while index < len(self.modified_url) and self.modified_url[index] not in ('/', '?', '#'):
+
+              if self.modified_url[index] in self.sub_delims:
+                  if self.modified_url[index] in self.brackets:
+                      # Just a small trick to stop the parsing if a bracket is found
+                      index = len(self.modified_url)
+                      self.check_done(index)
+
+                  else:
+                      raise URLError(f"Invalid character {self.modified_url[index]} at position {index}")
+
+              elif self.modified_url[index] == "%" and not self.hex_check(index):
+                  raise URLError(f"Invalid character {self.modified_url[index]} at position {index}")
+
+              elif self.modified_url[index] == ":" and not self.inside_brackets:
+                  # ":" are only allowed if host is ipv6 in which case inside_brackets equals True
+                  if index == len(self.modified_url) - 1:
+                      raise URLError(f"Invalid character {self.modified_url[index]} at position {index}")
+
+                  elif index <= 4:
+                      # This might be an IPv6 with no scheme
+                      self.inside_brackets = True
+                      self.output = f"[{self.output}"  # Reading the bracket that was removed by the cleaner
+
+                  else:
+                      self.port = True
+                      self.output += self.modified_url[index]
+                      index += 1
+                      self.base = index
+                      self.url.hostname = host
+                      return  # Going back to main to handle port part
+
+              elif self.modified_url[index] == "[":
+                  if not self.inside_brackets and index == self.base:
+                      # if index==base we're at the first char of the host in which "[" is ok
+                      self.output += self.modified_url[index]
+                      index += 1
+                      self.inside_brackets = True
+
+                  else:
+                      raise URLError(f"Invalid character {self.modified_url[index]} at position {index}")
+
+              elif self.modified_url[index] == "]":
+
+                  if not self.inside_brackets:
+                      if self.check_domain(host) and all(char in self.brackets for char in self.modified_url[index:]):
+                          # Domain is valid with trailing "]" and brackets, the formatter will remove the extra chars
+                          self.done = True
+                          return
+
+                      else:
+                          raise URLError(f"Invalid character {self.modified_url[index]} at position {index}")
+
+                  else:
+                      try:
+                          ip = ipaddress.ip_address(host)
+                          is_ip = True
+
+                      except ValueError:
+                          raise URLError(f"Only IPv6 is allowed within square brackets, not {host}")
+
+                      if self.inside_brackets and ip.version == 6:
+                          self.output += self.modified_url[index]
+                          index += 1
+                          self.inside_brackets = False
+                          break
+
+                      raise URLError(f"Only IPv6 is allowed within square brackets, not {host}")
+
+              else:
+                  self.output += self.modified_url[index]
+                  host += self.modified_url[index]
+                  index += 1
+
+          if not is_ip:
+              try:
+                  ip = ipaddress.ip_address(host)
+
+                  if ip.version == 6 and not self.output.endswith(']'):
+                      self.output = f"{self.output}]"  # Adding a closing square bracket for IPv6
+
+              except ValueError:
+                  self.check_domain(host)
+
+          self.url.hostname = host
+          self.check_done(index)
+
+      def port_check(self):
+          """
+          Parses and validates the port part of the URL, accepts only digits. Index is starting after ":"
+          """
+
+          index = self.base
+          port = ""
+
+          while index < len(self.modified_url) and self.modified_url[index] not in ('/', '?', '#'):
+              if self.modified_url[index].isdigit():
+                  self.output += self.modified_url[index]
+                  port += self.modified_url[index]
+                  index += 1
+
+              else:
+                  raise URLError(f"Invalid character {self.modified_url[index]} at position {index}")
+
+          self.url.port = port
+          self.check_done(index)
+
+      def path_check(self):
+          """
+          Parses and validates the path part of the URL.
+          """
+
+          index = self.base
+          path = ""
+
+          while index < len(self.modified_url) and self.modified_url[index] not in ('?', '#'):
+              index, char = self.check_valid_character(index)
+              path += char
+
+          if self.check_done(index):
+              self.url.path = path
+              self.output += path
+              return
+
+          if self.modified_url[index] == "?":
+              self.query = True
+
+          elif self.modified_url[index] == "#":
+              self.fragment = True
+
+          self.output += path
+          self.output += self.modified_url[index]
+          index += 1
+          self.base = index
+          self.url.path = path
+
+      def query_check(self):
+          """
+          Parses and validates the query part of the URL. The query starts after a "?".
+          """
+          index = self.base
+          query = ''
+
+          while index < len(self.modified_url) and self.modified_url[index] != '#':
+              index, char = self.check_valid_character(index)
+              query += char
+
+          self.url.query = query
+          self.output += query
+
+          if self.check_done(index):
+              return
+
+          elif self.modified_url[index] == "#":
+              self.output += self.modified_url[index]
+              index += 1
+              self.base = index
+              self.fragment = True
+
+      def fragment_check(self):
+          """
+          Parses and validates the fragment part of the URL, will not allow gen and sub delims unless encoded
+          """
+
+          index = self.base
+          fragment = ""
+
+          while index < len(self.modified_url):
+              index, char = self.check_valid_character(index)
+              fragment += char
+
+          self.url.fragment = fragment
+          self.output += fragment
+
+      def check_valid_character(self, index: int) -> tuple[int, str]:
+          """
+          Checks the validity of a character passed by the main formatter
+
+          Args:
+              index: the index of the character within the URL
+
+          Returns:
+              returns the new index after incrementation and the part of the URL that was checked
+
+          """
+
+          part = ""
+          char = self.modified_url[index]
+
+          if char == "%":
+              if not self.hex_check(index):
+                  raise URLError(f"Invalid character {char} at position {index}")
+
+              else:
+                  part += char
+                  index += 1
+
+          elif char in self.brackets:
+              # char is a type of bracket or quotation mark
+
+              if index == len(self.modified_url) - 1 and not self.inside_brackets:
+                  # Edge case of a bracket or quote at the end of the URL but not part of it
+                  return len(self.modified_url), part
+
+              elif self.inside_brackets and char == self.bracket_pairs[self.opening_bracket]:
+                  # If the char is a closing bracket check that it matches the opening one.
+                  self.inside_brackets = False
+                  part += char
+                  index += 1
+
+              elif char in self.bracket_pairs:
+                  # If the char is an opening bracket set `inside_brackets` flag to True
+                  self.inside_brackets = True
+                  self.opening_bracket = char
+                  part += char
+                  index += 1
+
+              else:
+                  # The char is a closing bracket but there was no opening one.
+                  return len(self.modified_url), part
+
+          elif char == '\\':
+              # Edge case of the url ending with an escape char
+              return len(self.modified_url), part
+
+          elif not char.isalnum() and not self.check_codepoint_validity(char):
+              raise URLError(f"Invalid character {self.modified_url[index]} at position {index}")
+
+          else:
+              part += char
+              index += 1
+
+          return index, part
+
+      @staticmethod
+      def check_codepoint_validity(char: str) -> bool:
+          """
+          Checks if a character from the URL is a valid code point, see
+          https://infra.spec.whatwg.org/#code-points for more information.  # disable-secrets-detection
+
+          Args:
+              char (str): A character derived from the URL
+
+          Returns:
+              bool: Is the character a valid code point.
+          """
+          url_code_points = ("!", "$", "&", "\"", "(", ")", "*", "+", ",", "-", ".", "/", ":", ";", "=", "?", "@",
+                             "_", "~")
+          unicode_code_points = {"start": "\u00A0", "end": "\U0010FFFD"}
+          surrogate_characters = {"start": "\uD800", "end": "\uDFFF"}
+          non_characters = {"start": "\uFDD0", "end": "\uFDEF"}
+
+          if surrogate_characters["start"] <= char <= surrogate_characters["end"]:
+              return False
+
+          elif non_characters["start"] <= char <= non_characters["end"]:
+              return False
+
+          elif char in url_code_points:
+              return True
+
+          return unicode_code_points['start'] <= char <= unicode_code_points['end']
+
+      def check_domain(self, host: str) -> bool:
+          """
+          Checks if the domain is a valid domain (has at least 1 dot and a tld >= 2)
+
+          Args:
+              host: The host string as extracted by the formatter
+
+          Returns:
+              True if the domain is valid
+
+          Raises:
+              URLError if the domain is invalid
+          """
+
+          if host.endswith("."):
+              host = host.rstrip(".")
+
+          if host.count(".") < 1:
+              raise URLError(f"Invalid domain {host}")
+
+          elif len(host.split(".")[-1]) < 2:
+              raise URLError(f"Invalid tld for {host}")
+
+          elif not self.no_fetch_extract(host).suffix:
+              raise URLError(f"Invalid tld for {host}")
+
+          else:
+              return True
+
+      def hex_check(self, index: int) -> bool:
+          """
+          Checks the next two chars in the url are hex digits
+
+          Args:
+              index: points to the position of the % character, used as a pointer to chars.
+
+          Returns:
+              True if %xx is a valid hexadecimal code.
+
+          Raises:
+              ValueError if the chars after % are invalid
+          """
+
+          try:
+              int(self.modified_url[index + 1:index + 3], 16)
+              return True
+
+          except ValueError:
+              return False
+
+      def check_done(self, index: int) -> bool:
+          """
+          Checks if the validator already went over the URL and nothing is left to check.
+
+          Args:
+              index: The current index of the pointer
+
+          Returns:
+              True if the entire URL has been verified False if not.
+          """
+
+          if index == len(self.modified_url):
+              # End of inputted url, no need to test further
+              self.done = True
+              return True
+
+          elif self.modified_url[index] == "/":
+              self.output += self.modified_url[index]
+              index += 1
+
+          self.base = index
+          return False
+
+      def remove_leading_chars(self):
+          """
+          Will remove all leading chars of the following ("\"", "'", "[", "]", "{", "}", "(", ")", ",")
+          from the URL.
+          """
+
+          beginning = 0
+          end = -1
+
+          in_brackets = True
+
+          while in_brackets:
+              try:
+                  if self.bracket_pairs[self.modified_url[beginning]] == self.modified_url[end]:
+                      beginning += 1
+                      end -= 1
+
+                  else:
+                      in_brackets = False
+
+              except KeyError:
+                  in_brackets = False
+
+          while self.modified_url[beginning] in self.brackets:
+              beginning += 1
+
+          if end == -1:
+              self.modified_url = self.modified_url[beginning:]
+
+          else:
+              self.modified_url = self.modified_url[beginning:end + 1]
+
+
+  class URLFormatter:
+
+      # URL Security Wrappers
+      ATP_regex = re.compile('.*?[.]safelinks[.]protection[.](?:outlook|office365)[.](?:com|us)/.*?[?]url=(.*?)&', re.I)
+      fireeye_regex = re.compile('.*?fireeye[.]com.*?&u=(.*)', re.I)
+      proofpoint_regex = re.compile('(?i)(?:proofpoint.com/v[1-2]/(?:url\?u=)?(.+?)(?:&amp|&d|$)|'
+                                    'https?(?::|%3A)//urldefense[.]\w{2,3}/v3/__(.+?)(?:__;|$))')
+      trendmicro_regex = re.compile('.*?trendmicro\.com(?::443)?/wis/clicktime/.*?/?url==3d(.*?)&',  # disable-secrets-detection
+                                    re.I)
+
+      # Scheme slash fixer
+      scheme_fix = re.compile("https?(:[/|\\\]*)")
+
+      def __init__(self, original_url):
+          """
+          Main class for formatting a URL
+
+          Args:
+              original_url: The original URL in lower case
+
+          Raises:
+              URLError if an exception occurs
+          """
+
+          self.original_url = original_url
+          self.output = ''
+
+          url = self.correct_and_refang_url(self.original_url)
+          url = self.strip_wrappers(url)
+          url = self.correct_and_refang_url(url)
+
+          try:
+              self.output = URLCheck(url).output
+
+          except URLError:
+              raise
+
+      def __repr__(self):
+          return f"{self.output}"
+
+      def __str__(self):
+          return f"{self.output}"
+
+      @staticmethod
+      def strip_wrappers(url: str) -> str:
+          """
+          Allows for stripping of multiple safety wrappers of URLs
+
+          Args:
+              url: The original wrapped URL
+
+          Returns:
+              The URL without wrappers
+          """
+
+          wrapper = True
+
+          while wrapper:
+              # Will strip multiple wrapped URLs, wrappers are finite the loop will stop once all wrappers were removed
+
+              if "%3A" in url[:8].upper():
+                  # If scheme has %3A URL is probably quoted and should be unquoted
+                  url = urllib.parse.unquote(url)
+
+              if URLFormatter.fireeye_regex.match(url):
+                  url = URLFormatter.fireeye_regex.findall(url)[0]
+
+              elif URLFormatter.trendmicro_regex.match(url):
+                  url = URLFormatter.trendmicro_regex.findall(url)[0]
+
+              elif URLFormatter.ATP_regex.match(url):
+                  url = URLFormatter.ATP_regex.findall(url)[0]
+
+              elif URLFormatter.proofpoint_regex.findall(url):
+                  url = URLFormatter.extract_url_proofpoint(URLFormatter.proofpoint_regex.findall(url)[0])
+
+              else:
+                  wrapper = False
+
+          return url
+
+      @staticmethod
+      def extract_url_proofpoint(url: str) -> str:
+          """
+          Extracts the domain from the Proofpoint wrappers using a regex
+
+          Args:
+              url: The proofpoint wrapped URL
+
+          Returns:
+              Unquoted extracted URL as a string
+          """
+
+          if url[0]:
+              # Proofpoint v1 and v2
+              return urllib.parse.unquote(url[0].replace("-", "%").replace("_", "/"))
+
+          else:
+              # Proofpoint v3
+              return urllib.parse.unquote(url[1])
+
+      @staticmethod
+      def correct_and_refang_url(url: str) -> str:
+          """
+          Refangs URL and corrects its scheme
+
+          Args:
+              url: The original URL
+
+          Returns:
+              Refnaged corrected URL
+          """
+
+          schemas = re.compile("(meow|hxxp)", re.IGNORECASE)
+          url = url.replace("[.]", ".")
+          url = url.replace("[:]", ":")
+          lower_url = url.lower()
+          if lower_url.startswith(('hxxp', 'meow')):
+              url = re.sub(schemas, "http", url, count=1)
+
+          def fix_scheme(match: Match) -> str:
+              return re.sub(":(\\\\|/)*", "://", match.group(0))
+
+          return URLFormatter.scheme_fix.sub(fix_scheme, url)
+
+
+  def _is_valid_cidr(cidr: str) -> bool:
+      """
+      Will check if "url" is a valid CIDR in order to ignore it
+      Args:
+          cidr: the suspected input
+
+      Returns:
+          True if inout is a valid CIDR
+
+      """
+      if not cidr[-1].isdigit():  # precaution incase the regex caught an extra char by mistake
+          cidr = cidr[:-1]
+
+      try:
+          ipaddress.ip_network(cidr)
+          return True
+      except ValueError:
+          return False
+
+
+  def format_urls(raw_urls: list[str]) -> list[str]:
+      formatted_urls: List[str] = []
+
+      for url in raw_urls:
+          formatted_url = ''
+
+          if _is_valid_cidr(url):
+              # If input is a valid CIDR formatter will ignore it to let it become a CIDR
+              formatted_urls.append('')
+              continue
+
+          try:
+              formatted_url = URLFormatter(url).output
+
+          except URLError:
+              demisto.debug(traceback.format_exc())
+
+          except Exception:
+              demisto.debug(traceback.format_exc())
+
+          finally:
+              formatted_urls.append(formatted_url)
+      return formatted_urls
+
+  register_module_line('FormatURLApiModule', 'end', __line__(), wrapper=1)
+  ### END GENERATED CODE ###
+
+  no_fetch_extract = tldextract.TLDExtract(suffix_list_urls=[], cache_dir=None)
+  pd.options.mode.chained_assignment = None  # default='warn'
+
+  SIMILARITY_THRESHOLD = float(demisto.args().get('threshold', 0.97))
+  CLOSE_TO_SIMILAR_DISTANCE = 0.2
+
+  EMAIL_BODY_FIELD = 'emailbody'
+  EMAIL_SUBJECT_FIELD = 'emailsubject'
+  EMAIL_HTML_FIELD = 'emailbodyhtml'
+  FROM_FIELD = 'emailfrom'
+  FROM_DOMAIN_FIELD = 'fromdomain'
+  PREPROCESSED_EMAIL_BODY = 'preprocessedemailbody'
+  PREPROCESSED_EMAIL_SUBJECT = 'preprocessedemailsubject'
+  MERGED_TEXT_FIELD = 'mereged_text'
+  MIN_TEXT_LENGTH = 50
+  DEFAULT_ARGS = {
+      'limit': '1000',
+      'incidentTypes': 'Phishing',
+      'existingIncidentsLookback': '100 days ago',
+  }
+  FROM_POLICY_TEXT_ONLY = 'TextOnly'
+  FROM_POLICY_EXACT = 'Exact'
+  FROM_POLICY_DOMAIN = 'Domain'
+
+  FROM_POLICY = FROM_POLICY_TEXT_ONLY
+  URL_REGEX = r'(?:(?:https?|ftp|hxxps?):\/\/|www\[?\.\]?|ftp\[?\.\]?)(?:[-\w\d]+\[?\.\]?)+[-\w\d]+(?::\d+)?' \
+              r'(?:(?:\/|\?)[-\w\d+&@#\/%=~_$?!\-:,.\(\);]*[\w\d+&@#\/%=~_$\(\);])?'
+
+  IGNORE_INCIDENT_TYPE_VALUE = 'None'
+
+
+  def get_existing_incidents(input_args, current_incident_type):
+      global DEFAULT_ARGS
+      get_incidents_args = {}
+      get_incidents_args['limit'] = input_args.get('limit', DEFAULT_ARGS['limit'])
+      if 'existingIncidentsLookback' in input_args:
+          get_incidents_args['fromDate'] = input_args['existingIncidentsLookback']
+      elif 'existingIncidentsLookback' in DEFAULT_ARGS:
+          get_incidents_args['fromDate'] = DEFAULT_ARGS['existingIncidentsLookback']
+      status_scope = input_args.get('statusScope', 'All')
+      query_components = []
+      if 'query' in input_args and input_args['query']:
+          query_components.append(input_args['query'])
+      if status_scope == 'ClosedOnly':
+          query_components.append('status:closed')
+      elif status_scope == 'NonClosedOnly':
+          query_components.append('-status:closed')
+      elif status_scope == 'All':
+          pass
+      else:
+          return_error(f'Unsupported statusScope: {status_scope}')
+      type_values = input_args.get('incidentTypes', current_incident_type)
+      if type_values != IGNORE_INCIDENT_TYPE_VALUE:
+          type_field = input_args.get('incidentTypeFieldName', 'type')
+          type_query = generate_incident_type_query_component(type_field, type_values)
+          query_components.append(type_query)
+      if len(query_components) > 0:
+          get_incidents_args['query'] = ' and '.join(f'({c})' for c in query_components)
+
+      fields = [EMAIL_BODY_FIELD, EMAIL_SUBJECT_FIELD, EMAIL_HTML_FIELD, FROM_FIELD, FROM_DOMAIN_FIELD, 'created', 'id',
+                'name', 'status', 'emailto', 'emailcc', 'emailbcc', 'removedfromcampaigns']
+
+      if 'populateFields' in input_args and input_args['populateFields'] is not None:
+          get_incidents_args['populateFields'] = ','.join([','.join(fields), input_args['populateFields']])
+      else:
+          get_incidents_args['populateFields'] = ','.join(fields)
+
+      demisto.debug(f'Calling GetIncidentsByQuery with {get_incidents_args=}')
+      incidents_query_res = demisto.executeCommand('GetIncidentsByQuery', get_incidents_args)
+      if is_error(incidents_query_res):
+          return_error(get_error(incidents_query_res))
+      incidents_query_contents = '{}'
+
+      for res in incidents_query_res:
+          if res['Contents']:
+              incidents_query_contents = res['Contents']
+      incidents = json.loads(incidents_query_contents)
+      return incidents
+
+
+  def generate_incident_type_query_component(type_field_arg, type_values_arg):
+      type_field = type_field_arg.strip()
+      type_values = [x.strip() for x in type_values_arg.split(',')]
+      types_unions = ' '.join(f'"{t}"' for t in type_values)
+      return f'{type_field}:({types_unions})'
+
+
+  def extract_domain(address):
+      global no_fetch_extract
+      if address == '':
+          return ''
+      demisto.debug(f'Going to extract domain from {address=}')
+      email_address = parseaddr(address)[1]
+      ext = no_fetch_extract(email_address)
+      return f'{ext.domain}.{ext.suffix}'
+
+
+  def get_text_from_html(html):
+      soup = BeautifulSoup(html, features="html.parser")
+      # kill all script and style elements
+      for script in soup(["script", "style"]):
+          script.extract()  # rip it out
+      # get text
+      text = soup.get_text()
+      # break into lines and remove leading and trailing space on each
+      lines = (line.strip() for line in text.splitlines())
+      # break multi-headlines into a line each
+      chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+      # drop blank lines
+      text = '\n'.join(chunk for chunk in chunks if chunk)
+      return text
+
+
+  def eliminate_urls_extensions(text):
+      urls_list = re.findall(URL_REGEX, text)
+      if len(urls_list) == 0:
+          return text
+      formatted_urls_list = format_urls(urls_list)
+      for url, formatted_url in zip(urls_list, formatted_urls_list):
+          parsed_uri = urlparse(formatted_url)
+          url_with_no_path = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+          text = text.replace(url, url_with_no_path)
+      return text
+
+
+  def preprocess_email_body(incident):
+      email_body = email_html = ''
+      if EMAIL_BODY_FIELD in incident:
+          email_body = incident[EMAIL_BODY_FIELD]
+      if EMAIL_HTML_FIELD in incident:
+          email_html = incident[EMAIL_HTML_FIELD]
+      if isinstance(email_html, float):
+          email_html = ''
+      if email_body is None or isinstance(email_body, float) or email_body.strip() == '':
+          email_body = get_text_from_html(email_html)
+      return eliminate_urls_extensions(email_body)
+
+
+  def preprocess_email_subject(incident):
+      email_subject = ''
+      if EMAIL_SUBJECT_FIELD in incident:
+          email_subject = incident[EMAIL_SUBJECT_FIELD]
+      if isinstance(email_subject, float):
+          email_subject = ''
+      return eliminate_urls_extensions(email_subject)
+
+
+  def concatenate_subject_body(row):
+      return f'{row[PREPROCESSED_EMAIL_SUBJECT]}\n{row[PREPROCESSED_EMAIL_BODY]}'
+
+
+  def preprocess_incidents_df(existing_incidents):
+      global MERGED_TEXT_FIELD, FROM_FIELD, FROM_DOMAIN_FIELD
+      incidents_df = pd.DataFrame(existing_incidents)
+      if 'CustomFields' in incidents_df.columns:
+          incidents_df['CustomFields'] = incidents_df['CustomFields'].fillna(value={})
+          custom_fields_df = incidents_df['CustomFields'].apply(pd.Series)
+          unique_keys = [k for k in custom_fields_df if k not in incidents_df]
+          custom_fields_df = custom_fields_df[unique_keys]
+          incidents_df = pd.concat([incidents_df.drop('CustomFields', axis=1),
+                                    custom_fields_df], axis=1).reset_index()
+      incidents_df[PREPROCESSED_EMAIL_SUBJECT] = incidents_df.apply(lambda x: preprocess_email_subject(x), axis=1)
+      incidents_df[PREPROCESSED_EMAIL_BODY] = incidents_df.apply(lambda x: preprocess_email_body(x), axis=1)
+      incidents_df[MERGED_TEXT_FIELD] = incidents_df.apply(concatenate_subject_body, axis=1)
+      incidents_df = incidents_df[incidents_df[MERGED_TEXT_FIELD].str.len() >= MIN_TEXT_LENGTH]
+      incidents_df = incidents_df.reset_index()
+      if FROM_FIELD in incidents_df:
+          incidents_df[FROM_FIELD] = incidents_df[FROM_FIELD].fillna(value='')
+      else:
+          incidents_df[FROM_FIELD] = ''
+      incidents_df[FROM_FIELD] = incidents_df[FROM_FIELD].apply(lambda x: x.strip())
+      incidents_df[FROM_DOMAIN_FIELD] = incidents_df[FROM_FIELD].apply(lambda address: extract_domain(address))
+      incidents_df['created'] = incidents_df['created'].apply(lambda x: dateutil.parser.parse(x))  # type: ignore
+      return incidents_df
+
+
+  def incident_has_text_fields(incident):
+      text_fields = [EMAIL_SUBJECT_FIELD, EMAIL_HTML_FIELD, EMAIL_BODY_FIELD]
+      custom_fields = incident.get('CustomFields', []) or []
+      if any(field in incident for field in text_fields):
+          return True
+      elif 'CustomFields' in incident and any(field in custom_fields for field in text_fields):
+          return True
+      return False
+
+
+  def filter_out_same_incident(existing_incidents_df, new_incident):
+      same_id_mask = existing_incidents_df['id'] == new_incident['id']
+      existing_incidents_df = existing_incidents_df[~same_id_mask]
+      return existing_incidents_df
+
+
+  def filter_newer_incidents(existing_incidents_df, new_incident):
+      new_incident_datetime = dateutil.parser.parse(new_incident['created'])  # type: ignore
+      earlier_incidents_mask = existing_incidents_df['created'] < new_incident_datetime
+      return existing_incidents_df[earlier_incidents_mask]
+
+
+  def vectorize(text, vectorizer):
+      return vectorizer.transform([text]).toarray()[0]
+
+
+  def cosine_sim(a, b):
+      return dot(a, b) / (norm(a) * norm(b))
+
+
+  def find_duplicate_incidents(new_incident, existing_incidents_df, max_incidents_to_return):
+      global MERGED_TEXT_FIELD, FROM_POLICY
+      new_incident_text = new_incident[MERGED_TEXT_FIELD]
+      text = [new_incident_text] + existing_incidents_df[MERGED_TEXT_FIELD].tolist()
+      vectorizer = CountVectorizer(token_pattern=r"(?u)\b\w\w+\b|!|\?|\"|\'").fit(text)
+      new_incident_vector = vectorize(new_incident_text, vectorizer)
+      existing_incidents_df['vector'] = existing_incidents_df[MERGED_TEXT_FIELD].apply(lambda x: vectorize(x, vectorizer))
+      existing_incidents_df['similarity'] = existing_incidents_df['vector'].apply(
+          lambda x: cosine_sim(x, new_incident_vector))
+      if FROM_POLICY == FROM_POLICY_DOMAIN:
+          mask = (existing_incidents_df[FROM_DOMAIN_FIELD] != '') & \
+                 (existing_incidents_df[FROM_DOMAIN_FIELD] == new_incident[FROM_DOMAIN_FIELD])
+          existing_incidents_df = existing_incidents_df[mask]
+      elif FROM_POLICY == FROM_POLICY_EXACT:
+          mask = (existing_incidents_df[FROM_FIELD] != '') & \
+                 (existing_incidents_df[FROM_FIELD] == new_incident[FROM_FIELD])
+          existing_incidents_df = existing_incidents_df[mask]
+      existing_incidents_df['distance'] = existing_incidents_df['similarity'].apply(lambda x: 1 - x)
+      tie_breaker_col = 'id'
+      try:
+          existing_incidents_df['int_id'] = existing_incidents_df['id'].astype(int)
+          tie_breaker_col = 'int_id'
+      except Exception:
+          pass
+      existing_incidents_df = existing_incidents_df.sort_values(by=['distance', 'created', tie_breaker_col])
+      return existing_incidents_df.head(max_incidents_to_return)
+
+
+  def return_entry(message, duplicate_incidents_df=None, new_incident=None):
+      if duplicate_incidents_df is None:
+          duplicate_incident = {}
+          all_duplicate_incidents = []
+          full_incidents = []
+      else:
+          most_similar_incident = duplicate_incidents_df.iloc[0]
+          duplicate_incident = format_incident_context(most_similar_incident)
+          all_duplicate_incidents = [format_incident_context(row) for _, row in duplicate_incidents_df.iterrows()]
+          new_incident['created'] = new_incident['created'].astype(str)
+          duplicate_incidents_df['created'] = duplicate_incidents_df['created'].astype(str)
+          duplicate_incidents_df = duplicate_incidents_df.drop('vector', axis=1)
+          full_incidents = new_incident.to_dict(orient='records') + duplicate_incidents_df.to_dict(orient='records')
+      outputs = {
+          'duplicateIncident': duplicate_incident,
+          'isDuplicateIncidentFound': duplicate_incidents_df is not None,
+          'allDuplicateIncidents': all_duplicate_incidents
+      }
+      return_outputs(message, outputs, raw_response=json.dumps(full_incidents))
+
+
+  def format_incident_context(df_row):
+      duplicate_incident = {
+          'rawId': df_row['id'],
+          'id': df_row['id'],
+          'name': df_row.get('name'),
+          'similarity': df_row.get('similarity'),
+      }
+      return duplicate_incident
+
+
+  def close_new_incident_and_link_to_existing(new_incident, duplicate_incidents_df):
+      mask = duplicate_incidents_df['similarity'] >= SIMILARITY_THRESHOLD
+      duplicate_incidents_df = duplicate_incidents_df[mask]
+      most_similar_incident = duplicate_incidents_df.iloc[0]
+      max_similarity = duplicate_incidents_df.iloc[0]['similarity']
+      min_similarity = duplicate_incidents_df.iloc[-1]['similarity']
+      formatted_incident, headers = format_incident_hr(duplicate_incidents_df)
+      incident = 'incidents' if len(duplicate_incidents_df) > 1 else 'incident'
+
+      if max_similarity > min_similarity:
+          title = "Duplicate {} found with similarity {:.1f}%-{:.1f}%".format(incident, min_similarity * 100,
+                                                                              max_similarity * 100)
+      else:
+          title = "Duplicate {} found with similarity {:.1f}%".format(incident, max_similarity * 100)
+      message = tableToMarkdown(title,
+                                formatted_incident, headers)
+      if demisto.args().get('closeAsDuplicate', 'true') == 'true':
+          res = demisto.executeCommand("CloseInvestigationAsDuplicate", {
+              'duplicateId': most_similar_incident['id']})
+          if is_error(res):
+              return_error(res)
+          message += 'This incident (#{}) will be closed and linked to #{}.'.format(new_incident.iloc[0]['id'],
+                                                                                    most_similar_incident['id'])
+      return_entry(message, duplicate_incidents_df, new_incident)
+
+
+  def create_new_incident():
+      return_entry('This incident is not a duplicate of an existing incident.')
+
+
+  def format_incident_hr(duplicate_incidents_df):
+      incidents_list = duplicate_incidents_df.to_dict('records')
+      json_lists = []
+      status_map = {'0': 'Pending', '1': 'Active', '2': 'Closed', '3': 'Archive'}
+      for incident in incidents_list:
+          json_lists.append({'Id': "[{}](#/Details/{})".format(incident['id'], incident['id']),
+                             'Name': incident['name'],
+                             'Status': status_map[str(incident.get('status'))],
+                             'Time': str(incident['created']),
+                             'Email From': incident.get(demisto.args().get(FROM_FIELD)),
+                             'Text Similarity': "{:.1f}%".format(incident['similarity'] * 100),
+                             })
+      headers = ['Id', 'Name', 'Status', 'Time', 'Email From', 'Text Similarity']
+      return json_lists, headers
+
+
+  def create_new_incident_low_similarity(duplicate_incidents_df):
+      message = '## This incident is not a duplicate of an existing incident.\n'
+      similarity = duplicate_incidents_df.iloc[0]['similarity']
+      if similarity > SIMILARITY_THRESHOLD - CLOSE_TO_SIMILAR_DISTANCE:
+          mask = duplicate_incidents_df['similarity'] >= SIMILARITY_THRESHOLD - CLOSE_TO_SIMILAR_DISTANCE
+          duplicate_incidents_df = duplicate_incidents_df[mask]
+          formatted_incident, headers = format_incident_hr(duplicate_incidents_df)
+          message += tableToMarkdown("Most similar incidents found", formatted_incident, headers=headers)
+          message += 'The threshold for considering 2 incidents as duplicate is a similarity ' \
+                     'of {:.1f}%.\n'.format(SIMILARITY_THRESHOLD * 100)
+          message += 'Therefore these 2 incidents will not be considered as duplicate and the current incident ' \
+                     'will remain active.\n'
+      return_entry(message)
+
+
+  def create_new_incident_no_text_fields():
+      text_fields = [EMAIL_BODY_FIELD, EMAIL_HTML_FIELD, EMAIL_SUBJECT_FIELD]
+      message = 'No text fields were found within this incident: {}.\n'.format(','.join(text_fields))
+      message += 'Incident will remain active.'
+      return_entry(message)
+
+
+  def create_new_incident_too_short():
+      return_entry('Incident text after preprocessing is too short for deduplication. Incident will remain active.')
+
+
+  def main():
+      global EMAIL_BODY_FIELD, EMAIL_SUBJECT_FIELD, EMAIL_HTML_FIELD, FROM_FIELD, MIN_TEXT_LENGTH, FROM_POLICY
+      input_args = demisto.args()
+      EMAIL_BODY_FIELD = input_args.get('emailBody', EMAIL_BODY_FIELD)
+      EMAIL_SUBJECT_FIELD = input_args.get('emailSubject', EMAIL_SUBJECT_FIELD)
+      EMAIL_HTML_FIELD = input_args.get('emailBodyHTML', EMAIL_HTML_FIELD)
+      FROM_FIELD = input_args.get('emailFrom', FROM_FIELD)
+      FROM_POLICY = input_args.get('fromPolicy', FROM_POLICY)
+      max_incidents_to_return = input_args.get('maxIncidentsToReturn', '20')
+      try:
+          max_incidents_to_return = int(max_incidents_to_return)
+      except Exception:
+          return_error('Illegal value of arguement "maxIncidentsToReturn": {}. '
+                       'Value should be an integer'.format(max_incidents_to_return))
+      new_incident = demisto.incidents()[0]
+      type_field = input_args.get('incidentTypeFieldName', 'type')
+      existing_incidents = get_existing_incidents(input_args, new_incident.get(type_field, IGNORE_INCIDENT_TYPE_VALUE))
+      demisto.debug(f'found {len(existing_incidents)} incidents by query')
+      if len(existing_incidents) == 0:
+          create_new_incident()
+          return None
+      if not incident_has_text_fields(new_incident):
+          create_new_incident_no_text_fields()
+          return None
+      new_incident_df = preprocess_incidents_df([new_incident])
+      if len(new_incident_df) == 0:  # len(new_incident_df)==0 means new incident is too short
+          create_new_incident_too_short()
+          return None
+      existing_incidents_df = preprocess_incidents_df(existing_incidents)
+      existing_incidents_df = filter_out_same_incident(existing_incidents_df, new_incident)
+      existing_incidents_df = filter_newer_incidents(existing_incidents_df, new_incident)
+      if len(existing_incidents_df) == 0:
+          create_new_incident()
+          return None
+      new_incident_preprocessed = new_incident_df.iloc[0].to_dict()
+      duplicate_incidents_df = find_duplicate_incidents(new_incident_preprocessed,
+                                                        existing_incidents_df, max_incidents_to_return)
+      if len(duplicate_incidents_df) == 0:
+          create_new_incident()
+          return None
+      if duplicate_incidents_df.iloc[0]['similarity'] < SIMILARITY_THRESHOLD:
+          create_new_incident_low_similarity(duplicate_incidents_df)
+          return None
+      else:
+
+          return close_new_incident_and_link_to_existing(new_incident_df, duplicate_incidents_df)
+
+
+  if __name__ in ['__main__', '__builtin__', 'builtins']:
+      main()
+
+  register_module_line('FindDuplicateEmailIncidents', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- ml
+- phishing
+timeout: 600ns
+type: python
