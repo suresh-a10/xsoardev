@@ -1,0 +1,1655 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 1.7.4
+    packID: PrismaCloudCompute
+    packName: Prisma Cloud Compute by Palo Alto Networks
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+deprecated: true
+description: Deprecated. Use "Prisma Cloud Compute - Audit Alert v3" instead. Default
+  playbook for parsing and enrichment of Prisma Cloud Compute audit alerts.
+id: Prisma Cloud Compute - Audit Alert v2
+inputs:
+- description: The base URL of the Prisma Cloud Compute Instance used to create a
+    link back to the alerts for an image.
+  key: baseUrl
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: https://app.prismacloud.io
+- description: A specific project name to get alert profiles for
+  key: Project
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: Project
+      root: PrismaCloudCompute.AlertProfiles.ServiceNow
+name: Prisma Cloud Compute - Audit Alert v2
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b80861e4-761b-4ba3-8718-1753f3d3f8db
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: b80861e4-761b-4ba3-8718-1753f3d3f8db
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": -790
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "53"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alert_raw_json:
+        complex:
+          accessor: prismacloudcomputerawalertjson
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Parse raw vulnerabilities JSON data
+      id: 21ea5bd5-ebb6-49f3-8f26-dada4f2fa115
+      iscommand: false
+      name: Parse Audit Alert
+      script: PrismaCloudComputeParseAuditAlert
+      type: regular
+      version: -1
+    taskid: 21ea5bd5-ebb6-49f3-8f26-dada4f2fa115
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": -330
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "58"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hostname:
+        complex:
+          accessor: host
+          root: PrismaCloudCompute.AuditAlert
+      name:
+        complex:
+          accessor: image
+          root: PrismaCloudCompute.AuditAlert
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns images by the query specification.
+      id: 0299eb6d-4809-4dd8-8052-8c6cb383e556
+      iscommand: true
+      name: Pull Images Details
+      script: '|||prisma-cloud-compute-images-scan-list'
+      type: regular
+      version: -1
+    taskid: 0299eb6d-4809-4dd8-8052-8c6cb383e556
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 190
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      cvedescription:
+        complex:
+          accessor: Description
+          root: PrismaCloudCompute.Images.Vulnerabilities
+      cvss:
+        complex:
+          accessor: Cvss
+          root: PrismaCloudCompute.Images.Vulnerabilities
+      description:
+        complex:
+          accessor: Description
+          root: PrismaCloudCompute.Images.Vulnerabilities
+      source:
+        simple: Prisma Cloud Compute
+      tags:
+        complex:
+          accessor: PackageName
+          root: PrismaCloudCompute.Images.Vulnerabilities
+      type:
+        simple: CVE
+      value:
+        complex:
+          accessor: Cve
+          root: PrismaCloudCompute.Images.Vulnerabilities
+      verdict:
+        simple: Suspicious
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.new.indicator
+      id: b73ca62b-970b-4ec4-8866-7b464fd5904b
+      iscommand: true
+      name: Create Indicators from Image Vulnerabilities
+      script: Builtin|||createNewIndicator
+      type: regular
+      version: -1
+    taskid: b73ca62b-970b-4ec4-8866-7b464fd5904b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1280
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Prisma Cloud Compute Markdown
+      output:
+        simple: ${ComplianceTable}
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      columns:
+        simple: Severity,Title,Description
+      data:
+        complex:
+          accessor: complianceIssues
+          root: PrismaCloudCompute.ReportsImagesScan
+      extend-context:
+        simple: ComplianceTable=.
+      title:
+        simple: Prisma Cloud Compute  Image Compliance
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Grab the compliance issues under the image details from PCC.
+      id: 8c7b6e5d-4896-4601-8602-2c128b4dc9e6
+      iscommand: false
+      name: Gather Image Compliance Issues
+      script: ToTable
+      tags:
+      - compliance
+      type: regular
+      version: -1
+    taskid: 8c7b6e5d-4896-4601-8602-2c128b4dc9e6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 622.5,
+          "y": 1800
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "50"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c6dc14f9-1dc6-4844-8afa-704cd09cd999
+      iscommand: false
+      name: Case Details
+      type: title
+      version: -1
+    taskid: c6dc14f9-1dc6-4844-8afa-704cd09cd999
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": -655
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "46"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: efb76bf2-1a60-4ad2-8585-429ef8cd65a3
+      iscommand: false
+      name: Vulnerability
+      type: title
+      version: -1
+    taskid: efb76bf2-1a60-4ad2-8585-429ef8cd65a3
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 925
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "48"
+      - "36"
+      - "55"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 68c6cc11-6743-4eb5-88ba-0a6e5f6bcb96
+      iscommand: false
+      name: Compliance
+      type: title
+      version: -1
+    taskid: 68c6cc11-6743-4eb5-88ba-0a6e5f6bcb96
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1460
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      project:
+        complex:
+          root: inputs.Project
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: AlertProfiles returns all the alert profiles.
+      id: 4fb070b5-545a-491e-85b1-bdb9f8f9d279
+      iscommand: true
+      name: Get Alert Profiles
+      script: '|||prisma-cloud-compute-get-alert-profiles'
+      tags:
+      - policy
+      type: regular
+      version: -1
+    taskid: 4fb070b5-545a-491e-85b1-bdb9f8f9d279
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -290,
+          "y": 1780
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b6c8573b-6031-403a-8f7a-cc0d85ce1b3c
+      iscommand: false
+      name: Remediation
+      type: title
+      version: -1
+    taskid: b6c8573b-6031-403a-8f7a-cc0d85ce1b3c
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 3450
+        }
+      }
+  "26":
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "27"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 6efd3a5f-89ba-46ac-8395-1717ddf723c2
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 6efd3a5f-89ba-46ac-8395-1717ddf723c2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 3800
+        }
+      }
+  "27":
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a230c647-cfef-4dcd-84d3-6e2420c97eed
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: a230c647-cfef-4dcd-84d3-6e2420c97eed
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -830,
+          "y": 4100
+        }
+      }
+  "29":
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "59"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ace0fef6-0a4a-49a3-855d-0b2b27ef5f39
+      iscommand: false
+      name: Forensics
+      type: title
+      version: -1
+    taskid: ace0fef6-0a4a-49a3-855d-0b2b27ef5f39
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1975
+        }
+      }
+  "30":
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      execution-timeout:
+        simple: "120"
+      hostname:
+        complex:
+          accessor: prismacloudcomputehost
+          root: incident
+      lines:
+        simple: "20"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: DefenderLogs returns the last Defender logs.
+      id: 36cb816e-1e8b-47a7-8880-5d947281b0b3
+      iscommand: true
+      name: Get Defender Logs
+      script: '|||prisma-cloud-compute-logs-defender'
+      type: regular
+      version: -1
+    taskid: 36cb816e-1e8b-47a7-8880-5d947281b0b3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 2620
+        }
+      }
+  "31":
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "43"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      project:
+        complex:
+          root: inputs.Project
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: List returns the available backups.
+      id: 3c4902c8-f46c-4408-824a-ebda1e7208bf
+      iscommand: true
+      name: List Defender Backups
+      script: '|||prisma-cloud-compute-get-backups'
+      tags:
+      - backups
+      type: regular
+      version: -1
+    taskid: 3c4902c8-f46c-4408-824a-ebda1e7208bf
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 3110
+        }
+      }
+  "32":
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "31"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hostname:
+        complex:
+          accessor: prismacloudcomputehost
+          root: incident
+      ignore-outputs:
+        simple: "true"
+      lines:
+        simple: "50"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: DownloadDefenderLogs downloads all defender logs and metadata.
+      id: 2ca90edc-742e-4612-8efc-9ce0419552a2
+      iscommand: true
+      name: Download Defender Logs
+      script: '|||prisma-cloud-compute-logs-defender-download'
+      type: regular
+      version: -1
+    taskid: 2ca90edc-742e-4612-8efc-9ce0419552a2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 2945
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Prisma Cloud Compute Defender Logs
+      output:
+        simple: ${LogsTable}
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "32"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      data:
+        complex:
+          accessor: Logs
+          root: PrismaCloudCompute.Defenders
+      extend-context:
+        simple: LogsTable=.
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Convert an array to a nice table display (usually from the context).
+      id: a74e1567-b245-4062-8894-4c001655cd8d
+      iscommand: false
+      name: Set Logs to Layout
+      script: ToTable
+      type: regular
+      version: -1
+    taskid: a74e1567-b245-4062-8894-4c001655cd8d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 2780
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: PCC=.
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Get the Waas container policies from Defend >> WAAS >> Containers.
+      id: 1d466ed7-5edd-4f86-822a-e789af6e9e3a
+      iscommand: true
+      name: Get Container WaaS Policies
+      script: '|||prisma-cloud-compute-get-waas-policies'
+      tags:
+      - policy
+      type: regular
+      version: -1
+    taskid: 1d466ed7-5edd-4f86-822a-e789af6e9e3a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1600
+        }
+      }
+  "37":
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "38"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      image:
+        complex:
+          accessor: prismacloudcomputeimage
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Get information about the containers and their profile events.
+        This command supports asterisks which allows you to get container profiles
+        by filtering its fields according to a specific substring.
+      id: 9112b3a7-731c-4c29-85bf-37696f9edf09
+      iscommand: true
+      name: Get container profile
+      script: '|||prisma-cloud-compute-profile-container-list'
+      tags:
+      - forensics
+      type: regular
+      version: -1
+    taskid: 9112b3a7-731c-4c29-85bf-37696f9edf09
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -337.5,
+          "y": 3060
+        }
+      }
+  "38":
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hostname:
+        complex:
+          accessor: host
+          root: PrismaCloudCompute.AuditAlert
+      id:
+        complex:
+          accessor: _id
+          root: PrismaCloudCompute.ProfileContainer
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Get runtime forensics data for a specific container on a specific
+        host
+      id: 42f12fa8-e5d1-4432-8b2c-0c195a679388
+      iscommand: true
+      name: Get container forensics
+      script: '|||prisma-cloud-compute-profile-container-forensic-list'
+      type: regular
+      version: -1
+    taskid: 42f12fa8-e5d1-4432-8b2c-0c195a679388
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -337.5,
+          "y": 3265
+        }
+      }
+  "39":
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "62"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hostname:
+        complex:
+          accessor: prismacloudcomputehost
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Get information about the hosts and their profile events. This
+        command supports asterisks which allows you to get host profiles by filtering
+        its fields according to a specific substring.
+      id: 85ca3dc0-e4fd-4dc4-820b-446f643404cc
+      iscommand: true
+      name: Get Host Profile
+      script: '|||prisma-cloud-compute-profile-host-list'
+      type: regular
+      version: -1
+    taskid: 85ca3dc0-e4fd-4dc4-820b-446f643404cc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 562.5,
+          "y": 2620
+        }
+      }
+  "40":
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "41"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      FromDays:
+        simple: "5"
+      ImageName:
+        complex:
+          accessor: image
+          root: PrismaCloudCompute.ReportsImagesScan.cloudMetadata
+          transformers:
+          - operator: uniq
+      audit_type:
+        complex:
+          accessor: category
+          root: PrismaCloudCompute.AuditAlert
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Get the audits for the firewall container policies.
+      id: 0a0fbdca-b268-4ea7-868c-4f7000286f74
+      iscommand: true
+      name: 'Get container audits '
+      script: '|||prisma-cloud-compute-get-audit-firewall-container-alerts'
+      type: regular
+      version: -1
+    taskid: 0a0fbdca-b268-4ea7-868c-4f7000286f74
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 570
+        }
+      }
+  "41":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Prisma Cloud Compute Audit Table
+      output:
+        simple: ${AuditTable}
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      data:
+        complex:
+          accessor: AuditAlert
+          root: PrismaCloudCompute
+      extend-context:
+        simple: AuditTable=.
+      ignore-outputs:
+        simple: "true"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Convert an array to a nice table display (usually, from the context).
+      id: 214b4ff5-7e88-4a12-8aae-34a809bcc3a0
+      iscommand: false
+      name: Set Audits to Table
+      script: ToTable
+      type: regular
+      version: -1
+    taskid: 214b4ff5-7e88-4a12-8aae-34a809bcc3a0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 760
+        }
+      }
+  "42":
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Perform manual remediation to ensure full incident resolution
+      id: 7ebf4ade-5f3f-4efd-8b83-9dd68dcf0db5
+      iscommand: false
+      name: Manually Remediate
+      type: regular
+      version: -1
+    taskid: 7ebf4ade-5f3f-4efd-8b83-9dd68dcf0db5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 3615
+        }
+      }
+  "43":
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: 'Indicators=.={"Value": val.value, "Description": val.CustomFields.description,
+          "CVSS": val.CustomFields.cvss}'
+      ignore-outputs:
+        simple: "true"
+      query:
+        simple: id:${incident.id} and type:CVE
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.find.indicators
+      id: b3d668e5-f113-4e0d-81cc-a6211e071479
+      iscommand: true
+      name: Create Indicator Table
+      script: Builtin|||findIndicators
+      type: regular
+      version: -1
+    taskid: b3d668e5-f113-4e0d-81cc-a6211e071479
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 3285
+        }
+      }
+  "45":
+    continueonerrortype: ""
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      externallink:
+        complex:
+          accessor: consoleLink
+          root: PrismaCloudCompute.AuditAlert
+          transformers:
+          - operator: Stringify
+          - args:
+              prefix:
+                value:
+                  simple: /compute?computeState=
+              suffix: {}
+            operator: concat
+          - args:
+              prefix:
+                iscontext: true
+                value:
+                  simple: inputs.baseUrl
+              suffix: {}
+            operator: concat
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 9bddec8b-d0e2-40fc-8509-9be80647ec0b
+      iscommand: true
+      name: Set Incident Link
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 9bddec8b-d0e2-40fc-8509-9be80647ec0b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 732.5,
+          "y": 180
+        }
+      }
+  "46":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Vulnerabilities
+                root: PrismaCloudCompute.Images
+          operator: isNotEmpty
+          right:
+            value: {}
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Cve
+                root: PrismaCloudCompute.Images.Vulnerabilities
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "46"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "7"
+      "yes":
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 29238081-6482-4960-8dd6-f51b6f6cf1e0
+      iscommand: false
+      name: Check if alert has image vulnerabilities
+      type: condition
+      version: -1
+    taskid: 29238081-6482-4960-8dd6-f51b6f6cf1e0
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1070
+        }
+      }
+  "47":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.baseUrl
+          operator: isNotEmpty
+          right:
+            value: {}
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: consoleLink
+                root: PrismaCloudCompute.AuditAlert
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "47"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "7"
+      "yes":
+      - "45"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3dc6f2a9-80de-4469-8a42-eb9bf14be893
+      iscommand: false
+      name: Does baseUrl exist in inputs?
+      type: condition
+      version: -1
+    taskid: 3dc6f2a9-80de-4469-8a42-eb9bf14be893
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 732.5,
+          "y": -30
+        }
+      }
+  "48":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: PrismaCloudCompute.ReportsImagesScan.complianceIssues
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "48"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "29"
+      "yes":
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 80825ee7-bf7f-4538-80b0-6c4e5afecbb7
+      iscommand: false
+      name: Check if Image Compliance Issues Exist
+      type: condition
+      version: -1
+    taskid: 80825ee7-bf7f-4538-80b0-6c4e5afecbb7
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 622.5,
+          "y": 1600
+        }
+      }
+  "50":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: prismacloudcomputerawalertjson
+                root: incident
+          operator: isNotEmpty
+          right:
+            value: {}
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: prismacloudcomputerawalertjson
+                root: incident
+          operator: containsGeneral
+          right:
+            value:
+              simple: '"kind": "audit"'
+      label: "yes"
+    continueonerrortype: ""
+    id: "50"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "27"
+      "yes":
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 781b9f9c-08b4-4b41-86d8-ea02e57472d7
+      iscommand: false
+      name: Check if Raw Alert JSON exist
+      type: condition
+      version: -1
+    taskid: 781b9f9c-08b4-4b41-86d8-ea02e57472d7
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": -520
+        }
+      }
+  "53":
+    continueonerrortype: ""
+    id: "53"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "57"
+      - "47"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7334fdc5-bfef-43c5-8bee-c9936c112b1e
+      iscommand: false
+      name: Gather Additional Details
+      type: title
+      version: -1
+    taskid: 7334fdc5-bfef-43c5-8bee-c9936c112b1e
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": -170
+        }
+      }
+  "55":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.Project
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "55"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "29"
+      "yes":
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bf6ec20a-4e6d-46ed-81c1-6189edd1b81f
+      iscommand: false
+      name: Check if project name exist
+      type: condition
+      version: -1
+    taskid: bf6ec20a-4e6d-46ed-81c1-6189edd1b81f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -290,
+          "y": 1600
+        }
+      }
+  "56":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: type
+                root: PrismaCloudCompute.AuditAlert
+          operator: containsGeneral
+          right:
+            value:
+              simple: container
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: prismacloudcomputeimage
+                root: incident
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "56"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "11"
+      "yes":
+      - "61"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2208d11c-75c0-4af9-8dc6-78d120841f9a
+      iscommand: false
+      name: Is Container alert type
+      type: condition
+      version: -1
+    taskid: 2208d11c-75c0-4af9-8dc6-78d120841f9a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -337.5,
+          "y": 2620
+        }
+      }
+  "57":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: image
+                root: PrismaCloudCompute.AuditAlert
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "57"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9b648821-436e-4968-86dc-13a4d060d085
+      iscommand: false
+      name: Is there an image name
+      type: condition
+      version: -1
+    taskid: 9b648821-436e-4968-86dc-13a4d060d085
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": -20
+        }
+      }
+  "58":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: image
+                root: PrismaCloudCompute.ReportsImagesScan.cloudMetadata
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "58"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      "yes":
+      - "40"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 90752ac9-7e36-4def-8023-dc3e24d5b740
+      iscommand: false
+      name: Check if image scan report was found
+      type: condition
+      version: -1
+    taskid: 90752ac9-7e36-4def-8023-dc3e24d5b740
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 380
+        }
+      }
+  "59":
+    continueonerrortype: ""
+    id: "59"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "60"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hostname:
+        complex:
+          accessor: host
+          root: PrismaCloudCompute.AuditAlert
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Retrieve a list of defenders and their information.
+      id: 08a62d27-46b8-4125-8a1c-a5b6541948b8
+      iscommand: true
+      name: 'Get host''s defenders list '
+      script: '|||prisma-cloud-compute-defenders-list'
+      type: regular
+      version: -1
+    taskid: 08a62d27-46b8-4125-8a1c-a5b6541948b8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 2120
+        }
+      }
+  "60":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: DefenderDetails
+                root: PrismaCloudCompute
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "60"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "11"
+      "yes":
+      - "63"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 65f18f33-3201-4622-8249-a55f567578eb
+      iscommand: false
+      name: Check if there's a defender on the host
+      type: condition
+      version: -1
+    taskid: 65f18f33-3201-4622-8249-a55f567578eb
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 2280
+        }
+      }
+  "61":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: type
+                root: PrismaCloudCompute.DefenderDetails
+          operator: startWith
+          right:
+            value:
+              simple: server
+      label: "yes"
+    continueonerrortype: ""
+    id: "61"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "37"
+      "yes":
+      - "11"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7d926822-74fc-494b-80d2-6a2edc96882d
+      iscommand: false
+      name: Check if defender type is server
+      type: condition
+      version: -1
+    taskid: 7d926822-74fc-494b-80d2-6a2edc96882d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -337.5,
+          "y": 2820
+        }
+      }
+  "62":
+    continueonerrortype: ""
+    id: "62"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      id:
+        complex:
+          accessor: host
+          root: PrismaCloudCompute.AuditAlert
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Get forensics on a specific host.
+      id: cffec7b6-25a0-4977-89dd-a033c6795943
+      iscommand: true
+      name: Get host forensic
+      script: '|||prisma-cloud-compute-host-forensic-list'
+      type: regular
+      version: -1
+    taskid: cffec7b6-25a0-4977-89dd-a033c6795943
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 562.5,
+          "y": 2945
+        }
+      }
+  "63":
+    continueonerrortype: ""
+    id: "63"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+      - "56"
+      - "39"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2a8eb6e5-77ba-481d-8981-b110e9539979
+      iscommand: false
+      name: "Yes"
+      type: title
+      version: -1
+    taskid: 2a8eb6e5-77ba-481d-8981-b110e9539979
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 2480
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "46_3_yes": 0.6,
+      "55_9_yes": 0.54,
+      "56_11_#default#": 0.13,
+      "57_2_yes": 0.43,
+      "58_40_yes": 0.51,
+      "60_11_#default#": 0.19,
+      "61_11_yes": 0.13
+    },
+    "paper": {
+      "dimensions": {
+        "height": 4955,
+        "width": 1942.5,
+        "x": -830,
+        "y": -790
+      }
+    }
+  }
