@@ -1,0 +1,324 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.10.0
+    itemVersion: 6.1.65
+    packID: CortexXDR
+    packName: Cortex XDR by Palo Alto Networks
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: This is the *main* playbook for Cortex XDR IOCs sync. The playbook will
+  "sync" IOCs into Cortex XDR by pushing new IOCs in and disabling expired IOCs. The
+  playbook utilizes Cortex XSOAR tags and loops in order to find IOCs using a query
+  provided by the user. The playbook will iterate over the IOCs pushing them in batches
+  into Cortex XDR. In the second phase, the playbook will disable expired IOCs that
+  were previously pushed into Cortex XDR. We recommend running this playbook as a
+  job a twice a day after disabling the integration sync function.
+id: Cortex XDR IOCs - Push new IOCs to XDR (Main)
+inputs:
+- description: This parameter will set the batch size to be pushed into Cortex XDR
+    with every iteration of the loop.
+  key: batch_size
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "4000"
+- description: The query used to search for IOCs from Cortex XSOAR to be pushed into
+    Cortex XDR. This query must include `-tags:xdr_pushed and -tags:xdr_not_processed`
+    in order to work properly.
+  key: query
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: reputation:Bad and (type:File or type:Domain or type:IP) and expirationStatus:active
+      and -tags:xdr_pushed and -tags:xdr_not_processed
+name: Cortex XDR IOCs - Push new IOCs to XDR (Main)
+outputs: []
+starttaskid: "0"
+system: true
+tags:
+- XDR
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5681f201-b224-43f9-8af8-31939eb892ba
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 5681f201-b224-43f9-8af8-31939eb892ba
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Done
+      value:
+        simple: "False"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: ed493297-2c03-4460-8872-15507f4ab298
+      iscommand: false
+      name: Set Done Flag
+      script: Set
+      type: regular
+      version: -1
+    taskid: ed493297-2c03-4460-8872-15507f4ab298
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 195
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9611b261-2f8b-4f1c-8cf1-81cc7b182753
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 9611b261-2f8b-4f1c-8cf1-81cc7b182753
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1070
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "false"
+      key:
+        simple: Done
+      value:
+        simple: "False"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: d7a43208-6964-43ca-8561-0ab354468d6a
+      iscommand: false
+      name: Reset Done Flag
+      script: Set
+      type: regular
+      version: -1
+    taskid: d7a43208-6964-43ca-8561-0ab354468d6a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 545
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      builtincondition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${Done}
+          operator: isEqualString
+          right:
+            value:
+              simple: "True"
+      exitCondition: ""
+      iscommand: false
+      max: 1000
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      batch_size:
+        simple: ${inputs.batch_size}
+      query:
+        simple: ${inputs.query}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Pushes new IOCs into Cortex XDR tagging them as `xdr_pushed`.
+      id: e26dbc7b-84f7-4888-8995-c4aa00b7aef6
+      iscommand: false
+      name: Cortex XDR IOCs - Push new IOCs to XDR
+      playbookId: Cortex XDR IOCs - Push new IOCs to XDR
+      type: playbook
+      version: -1
+    taskid: e26dbc7b-84f7-4888-8995-c4aa00b7aef6
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 370
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      builtincondition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${Done}
+          operator: isEqualString
+          right:
+            value:
+              simple: "True"
+      exitCondition: ""
+      iscommand: false
+      max: 1000
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      batch_size:
+        simple: ${inputs.batch_size}
+      query:
+        simple: expirationStatus:expired and tags:xdr_pushed and -tags:xdr_disabled
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This playbook will disables indicators in Cortex XDR after they
+        have expired from Cortex XSOAR.
+      id: 105f6804-8cd4-4f0b-82b6-48f72f71091e
+      iscommand: false
+      name: Cortex XDR IOCs - Disable expired IOCs in XDR
+      playbookId: Cortex XDR IOCs - Disable expired IOCs in XDR
+      type: playbook
+      version: -1
+    taskid: 105f6804-8cd4-4f0b-82b6-48f72f71091e
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 720
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: d6d51ca0-e8cd-4942-82a9-8a5ae377e13e
+      iscommand: true
+      name: Close Incident
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: d6d51ca0-e8cd-4942-82a9-8a5ae377e13e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 895
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1085,
+        "width": 380,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
