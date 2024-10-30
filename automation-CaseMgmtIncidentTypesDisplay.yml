@@ -1,0 +1,70 @@
+comment: "Restricts the Incident Types a user can create manually based on an XSOAR
+  list, and prevents changing the Incident Type manually once it is created.\n\nRequirements
+  - Create an XSOAR List called IncidentTypesFromList a list of comma separated Incident
+  Types\n\nIncident Type 1,Incident Type 2, Incident Type 3 "
+commonfields:
+  id: CaseMgmtIncidentTypesDisplay
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.2.0
+    itemVersion: 1.4.8
+    packID: CaseManagement-Generic
+    packName: CaseManagement-Generic
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.14.100715
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CaseMgmtIncidentTypesDisplay
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('CaseMgmtIncidentTypesDisplay', 'start', __line__())
+  ### pack version: 1.4.8
+
+
+
+
+  # check if this is a new Incident or not
+  incident = demisto.incident().get("id")
+
+  # if new Incident, the ID will be empty:
+  if not incident:
+
+      # get the XSOAR IncidentTypesFromList XSOAR List, and split on the comma
+      types_list = demisto.executeCommand("getList", {"listName": "IncidentTypesFromList"})[0]["Contents"]
+
+      # check if the list exists, if not, display the default options.
+      if "Item not found" in types_list:
+          # do nothing, return the original values from the field
+          pass
+      else:
+          # split the Incident Types based on the comma
+          types_list = types_list.split(",")
+
+          # strip whitespace
+          types_list = [x.strip() for x in types_list]
+
+          # return the options to display to the user
+          return_results({'hidden': False, 'options': types_list})
+
+  # if it's an existing Incident, prevent changing the type from the UI.
+  else:
+      # get the current Incident Type, and only return that type.
+      incident_type = demisto.incident().get("type")
+      return_results({'hidden': False, 'options': [incident_type]})
+
+  register_module_line('CaseMgmtIncidentTypesDisplay', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- field-display
+type: python
