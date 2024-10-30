@@ -1,0 +1,596 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.0.0
+    itemVersion: 1.2.22
+    packID: Rapid7_Nexpose
+    packName: Rapid7 InsightVM
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: |-
+  Use this playbook as a sub-playbook to configure a report and download it.
+  This playbook implements polling by continuously running the `nexpose-get-report-status` command until the operation completes.
+  The remote action should have the following structure:
+
+  1. Initiate the operation - insert the type of the report (sites, scan, or assets) and it's additional arguments if required.
+  2. Poll to check if the operation completed.
+  3. Get the results of the operation.
+id: Nexpose - Create and Download Report
+inputs:
+- description: '`sites`, `scan`, or `assets`.'
+  key: report_type
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: Multiple criteria of integer<int32> Site ids to create the report on,
+    comma-separated.
+  key: sites
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Multiple criteria of integer<int64> Asset ids to create the report
+    on, comma-separated.
+  key: assets
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: integer <int64> The identifier of the scan.
+  key: scan
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The report name.
+  key: name
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Report template id to create the report with. If none is provided,
+    the first template available will be used.
+  key: template
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The report format. Default is pdf.
+  key: format
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: Nexpose - Create and Download Report
+outputs:
+- contextPath: InfoFile.EntryId
+  description: Entry Id of the report file
+  type: string
+- contextPath: InfoFile.Name
+  description: Name of the report file
+  type: string
+- contextPath: InfoFile.Extension
+  description: File extension of the report file
+  type: string
+- contextPath: InfoFile.Info
+  description: Info about the report file
+  type: string
+- contextPath: InfoFile.Size
+  description: Size of the report file
+  type: number
+- contextPath: InfoFile.Type
+  description: Type of the report file
+  type: string
+- contextPath: Nexpose.Report.ID
+  description: The identifier of the report.
+  type: string
+- contextPath: Nexpose.Report.InstanceID
+  description: The identifier of the report instance.
+  type: string
+- contextPath: Nexpose.Report.Status
+  description: 'The status of the report generation process. Valid values: "aborted",
+    "failed", "complete", "running", "unknown"'
+  type: string
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b221086e-e3e5-4bab-83a1-d6ae44c05eda
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: b221086e-e3e5-4bab-83a1-d6ae44c05eda
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 50
+        }
+      }
+  "1":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.report_type
+          operator: isEqualString
+          right:
+            value:
+              simple: sites
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.sites
+          operator: isNotEmpty
+      label: Sites report
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.report_type
+          operator: isEqualString
+          right:
+            value:
+              simple: scan
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.scan
+          operator: isNotEmpty
+      label: Scan report
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.report_type
+          operator: isEqualString
+          right:
+            value:
+              simple: assets
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.assets
+          operator: isNotEmpty
+      label: Assets report
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      Assets report:
+      - "9"
+      Scan report:
+      - "10"
+      Sites report:
+      - "8"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks which command to run.
+      id: 36988f2e-bd88-49bd-8122-6dfd4c15a207
+      iscommand: false
+      name: Check input
+      type: condition
+      version: -1
+    taskid: 36988f2e-bd88-49bd-8122-6dfd4c15a207
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 195
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      AdditionalPollingCommandArgNames:
+        simple: report_id
+      AdditionalPollingCommandArgValues:
+        simple: ${Nexpose.Report.ID}
+      Ids:
+        simple: ${Nexpose.Report.InstanceID}
+      Interval:
+        simple: "1"
+      PollingCommandArgName:
+        simple: instance_id
+      PollingCommandName:
+        simple: nexpose-get-report-status
+      Timeout:
+        simple: "10"
+      dt:
+        simple: Nexpose.Report(val.Status == 'running').InstanceID
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Use this playbook as a sub-playbook to block execution of the master playbook until a remote action is complete.
+        This playbook implements polling by continuously running the command in Step \#2 until the operation completes.
+        The remote action should have the following structure:
+
+        1. Initiate the operation.
+        2. Poll to check if the operation completed.
+        3. (optional) Get the results of the operation.
+      id: dd55700f-caa2-494c-8be4-13637d6888e6
+      iscommand: false
+      name: GenericPolling
+      playbookId: GenericPolling
+      type: playbook
+      version: -1
+    taskid: dd55700f-caa2-494c-8be4-13637d6888e6
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 665
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 475f5eb1-f8a7-4956-84df-931bdc8cfb09
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 475f5eb1-f8a7-4956-84df-931bdc8cfb09
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1440
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      format:
+        complex:
+          accessor: Report.Format
+          root: Nexpose
+      instance_id:
+        complex:
+          accessor: Report.InstanceID
+          root: Nexpose
+      name:
+        complex:
+          accessor: Report.Name
+          root: Nexpose
+      report_id:
+        complex:
+          accessor: Report.ID
+          root: Nexpose
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns the contents of a generated report.
+      id: b5f6dc85-89e7-4132-81ec-3866600f677c
+      iscommand: true
+      name: Download Report
+      script: '|||nexpose-download-report'
+      type: regular
+      version: -1
+    taskid: b5f6dc85-89e7-4132-81ec-3866600f677c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1210
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      download_immediately:
+        simple: "false"
+      format:
+        complex:
+          accessor: format
+          root: inputs
+      name:
+        complex:
+          accessor: name
+          root: inputs
+      sites:
+        complex:
+          accessor: sites
+          root: inputs
+      template:
+        complex:
+          accessor: template
+          root: inputs
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Generates a new report on given sites according to a template and
+        arguments.
+      id: 5a7a409f-1929-4c41-80e9-5588b4dbfda3
+      iscommand: true
+      name: Create Sites report
+      script: '|||nexpose-create-sites-report'
+      type: regular
+      version: -1
+    taskid: 5a7a409f-1929-4c41-80e9-5588b4dbfda3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -160,
+          "y": 380
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      assets:
+        complex:
+          accessor: assets
+          root: inputs
+      download_immediately:
+        simple: "false"
+      format:
+        complex:
+          accessor: format
+          root: inputs
+      name:
+        complex:
+          accessor: name
+          root: inputs
+      template:
+        complex:
+          accessor: template
+          root: inputs
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Generates a new report on given assets according to a template
+        and arguments.
+      id: f2522ae9-89c4-4035-872f-72bf630669ad
+      iscommand: true
+      name: Create Assets report
+      script: '|||nexpose-create-assets-report'
+      type: regular
+      version: -1
+    taskid: f2522ae9-89c4-4035-872f-72bf630669ad
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 475
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      download_immediately:
+        simple: "false"
+      format:
+        complex:
+          accessor: format
+          root: inputs
+      name:
+        complex:
+          accessor: name
+          root: inputs
+      scan:
+        complex:
+          accessor: scan
+          root: inputs
+      template:
+        complex:
+          accessor: template
+          root: inputs
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Generates a new report for a specified scan.
+      id: dbccdbf6-e3ec-415f-8c45-45bd7066da9d
+      iscommand: true
+      name: Create Scan report
+      script: '|||nexpose-create-scan-report'
+      type: regular
+      version: -1
+    taskid: dbccdbf6-e3ec-415f-8c45-45bd7066da9d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 690,
+          "y": 380
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      instance_id:
+        complex:
+          accessor: Report.InstanceID
+          root: Nexpose
+      report_id:
+        complex:
+          accessor: Report.ID
+          root: Nexpose
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns the status of a report generation process.
+      id: 3a3107d6-4c15-410d-81cf-2ad12ceab134
+      iscommand: true
+      name: Get Report Status
+      script: '|||nexpose-get-report-status'
+      type: regular
+      version: -1
+    taskid: 3a3107d6-4c15-410d-81cf-2ad12ceab134
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 830
+        }
+      }
+  "12":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Report.Status
+                root: Nexpose
+          operator: isEqualString
+          right:
+            value:
+              simple: complete
+      label: "yes"
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8cfd8f0a-7506-4420-8276-057d5c20228b
+      iscommand: false
+      name: Verify Status
+      type: condition
+      version: -1
+    taskid: 8cfd8f0a-7506-4420-8276-057d5c20228b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1020
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1455,
+        "width": 1230,
+        "x": -160,
+        "y": 50
+      }
+    }
+  }
