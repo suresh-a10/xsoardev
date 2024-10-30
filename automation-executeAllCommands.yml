@@ -1,0 +1,65 @@
+args:
+- name: inputCommandsListName
+  required: true
+- name: successListName
+  required: true
+- name: errorListName
+  required: true
+commonfields:
+  id: e7ead1b6-f731-4065-8d01-287ca2f07631
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.8.39276
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: executeAllCommands
+outputs:
+- contextPath: executionResults
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import json
+
+  inputCommandsListName = demisto.args()['inputCommandsListName']
+  successListName = demisto.args()['successListName']
+  errorListName = demisto.args()['errorListName']
+
+  res = demisto.executeCommand("getList", {"listName":inputCommandsListName})
+  response = json.loads(res[0]['Contents'])
+
+  errorCommands = []
+  successCommands = []
+
+  for item in response:
+      try:
+          commandStatus = demisto.executeCommand(item['command'], item['arguments'])
+
+          if is_error(commandStatus):
+              demisto.results('Command ' + item['command'] + ' Execution Failed. Error message: ' + commandStatus)
+              errorCommands.append(item['command'])
+          else:
+              demisto.results('Command ' + item['command'] + ' Execution Successful. Message: ' + commandStatus[0]['HumanReadable'])
+              successCommands.append(item['command'])
+      except Exception as exc:
+          demisto.results('Command ' + item['command'] + ' Execution Failed. Error message: ' + str(exc))
+          errorCommands.append(item['command'])
+          pass
+
+  demisto.results(demisto.executeCommand('setList', {'listName':successListName , 'listData' : successCommands}))
+  demisto.results(demisto.executeCommand('setList', {'listName':errorListName , 'listData' : errorCommands}))
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
