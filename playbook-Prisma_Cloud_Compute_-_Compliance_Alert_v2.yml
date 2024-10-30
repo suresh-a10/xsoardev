@@ -1,0 +1,460 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.10.0
+    itemVersion: 1.7.4
+    packID: PrismaCloudCompute
+    packName: Prisma Cloud Compute by Palo Alto Networks
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: |-
+  Playbook for enriching Prisma Cloud Compute compliance alerts.
+  It will handle hosts, images and container compliance alerts.
+  Each sub-playbook in this playbook is dedicated to a specific resource type: host, container or image, and will loop through all of the retrieved Compliance Issue IDs in order to retrieve enriched information about each of the resources.
+  The enriched information will be displayed in the layout under dedicated tabs and includes resources information like hostnames, container ID, image ID, cloud provider info, enriched compliance issue details and more.
+
+  In addition, the playbook can create and update external ticketing systems for each compliance issue automatically with the relevant enriched information. In order to do so, fill the relevant playbook inputs.
+id: Prisma Cloud Compute - Compliance Alert v2
+inputs:
+- description: |
+    Which ticketing system should be used to create an external ticket.
+    Available options:
+    - Jira
+    - ServiceNow
+
+    If neither of the above are selected, no external ticket will be created.
+    For Jira, also set the "JiraProjectName" and "JiraIssueTypeName" playbook inputs.
+  key: TicketingSystem
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: 'Issue type name. For example: "Task".'
+  key: JiraIssueTypeName
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The project name with which to associate the issue.
+  key: JiraProjectName
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: Prisma Cloud Compute - Compliance Alert v2
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5ca7aea7-9b69-4cb9-89da-e594f3bd3694
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 5ca7aea7-9b69-4cb9-89da-e594f3bd3694
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 200
+        }
+      }
+  "2":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: alertcategory
+                root: incident
+          operator: isEqualString
+          right:
+            value:
+              simple: host
+      label: Host
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: alertcategory
+                root: incident
+          operator: isEqualString
+          right:
+            value:
+              simple: image
+      label: Image
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: alertcategory
+                root: incident
+          operator: isEqualString
+          right:
+            value:
+              simple: container
+      label: Container
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "17"
+      Container:
+      - "9"
+      Host:
+      - "7"
+      Image:
+      - "8"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 30da0a08-bbe3-4cc5-8747-d3bebc5cac21
+      iscommand: false
+      name: What is the resource type?
+      type: condition
+      version: -1
+    taskid: 30da0a08-bbe3-4cc5-8747-d3bebc5cac21
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 410
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 45827dd7-cfe0-4845-82e8-315e620755b9
+      iscommand: false
+      name: Host
+      type: title
+      version: -1
+    taskid: 45827dd7-cfe0-4845-82e8-315e620755b9
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -20,
+          "y": 655
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 90bc265c-9fdf-4353-8463-8426794c5a4b
+      iscommand: false
+      name: Image
+      type: title
+      version: -1
+    taskid: 90bc265c-9fdf-4353-8463-8426794c5a4b
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 655
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 368782d5-e263-48a3-889c-3c5eaa345309
+      iscommand: false
+      name: Container
+      type: title
+      version: -1
+    taskid: 368782d5-e263-48a3-889c-3c5eaa345309
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": 655
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 21bf7b25-e71b-4ab5-868c-7d639d766f3d
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 21bf7b25-e71b-4ab5-868c-7d639d766f3d
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1030
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ComplianceIssueID:
+        complex:
+          accessor: compliancenotes
+          root: incident
+          transformers:
+          - operator: ParseJSON
+          - args:
+              field:
+                value:
+                  simple: id
+            operator: getField
+      JiraIssueTypeName:
+        complex:
+          root: inputs.JiraIssueTypeName
+      JiraProjectName:
+        complex:
+          root: inputs.JiraProjectName
+      TicketingSystem:
+        complex:
+          root: inputs.TicketingSystem
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      id: ae4d1720-f3b1-49f2-8f23-65cf67ef9b19
+      iscommand: false
+      name: Prisma Cloud Compute - Compliance Alert Host Enrichment Loop
+      playbookId: Prisma Cloud Compute - Compliance Alert Host Enrichment Loop
+      type: playbook
+      version: -1
+    taskid: ae4d1720-f3b1-49f2-8f23-65cf67ef9b19
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -20,
+          "y": 810
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ComplianceIssueID:
+        complex:
+          accessor: compliancenotes
+          root: incident
+          transformers:
+          - operator: ParseJSON
+          - args:
+              field:
+                value:
+                  simple: id
+            operator: getField
+      JiraIssueTypeName:
+        complex:
+          root: inputs.JiraIssueTypeName
+      JiraProjectName:
+        complex:
+          root: inputs.JiraProjectName
+      TicketingSystem:
+        complex:
+          root: inputs.TicketingSystem
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      id: feef410f-03ca-461c-8892-c5fbbf5c1cb5
+      iscommand: false
+      name: Prisma Cloud Compute - Compliance Alert Container Enrichment Loop
+      playbookId: Prisma Cloud Compute - Compliance Alert Container Enrichment Loop
+      type: playbook
+      version: -1
+    taskid: feef410f-03ca-461c-8892-c5fbbf5c1cb5
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": 810
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ComplianceIssueID:
+        complex:
+          accessor: compliancenotes
+          root: incident
+          transformers:
+          - operator: ParseJSON
+          - args:
+              field:
+                value:
+                  simple: id
+            operator: getField
+      JiraIssueTypeName:
+        complex:
+          root: inputs.JiraIssueTypeName
+      JiraProjectName:
+        complex:
+          root: inputs.JiraProjectName
+      TicketingSystem:
+        complex:
+          root: inputs.TicketingSystem
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      id: 137f921c-23cf-43a5-8e57-dd7d636fabb2
+      iscommand: false
+      name: Prisma Cloud Compute - Compliance Alert Image Enrichment Loop
+      playbookId: Prisma Cloud Compute - Compliance Alert Image Enrichment Loop
+      type: playbook
+      version: -1
+    taskid: 137f921c-23cf-43a5-8e57-dd7d636fabb2
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 810
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "2_17_#default#": 0.31,
+      "2_8_Image": 0.35
+    },
+    "paper": {
+      "dimensions": {
+        "height": 895,
+        "width": 1320,
+        "x": -20,
+        "y": 200
+      }
+    }
+  }
