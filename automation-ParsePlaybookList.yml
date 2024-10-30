@@ -1,0 +1,87 @@
+args:
+- description: Provide the playbook data
+  isArray: true
+  name: PlaybookData
+  required: true
+commonfields:
+  id: d351e8f0-24cc-4d02-864b-00fc42f4635c
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.48392
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ParsePlaybookList
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+  import re
+
+
+  ''' STANDALONE FUNCTION '''
+
+
+  ''' MAIN FUNCTION '''
+
+  playbook_api_endpoints=[]
+  def playbook_api_commands(playbook_data):
+      if len(playbook_data)>0:
+          for i in range(len(playbook_data)):
+              for task_list in playbook_data[i]['tasks'].values():
+                  for task_item in task_list.values():
+                      if type(task_item) == dict:
+                          for key,value in task_item.items():
+                              if key == 'uri':
+                                  playbook_api_endpoints.append(value['simple'])
+                              else:
+                                  pass
+
+
+
+      return playbook_api_endpoints
+
+
+
+  def main():
+      try:
+          playbook_data = demisto.args()['PlaybookData']
+          uri_list = playbook_api_commands(playbook_data)
+
+          if len(uri_list)>0:
+              for uri in uri_list:
+                  demisto.results({
+                                  "Contents":uri,
+                                  "ContentsFormat":formats['json'],
+                                  'EntryContext': {'APIEndpoints':{'URI':uri}}
+                              })
+
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
