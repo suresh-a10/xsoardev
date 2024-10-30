@@ -1,0 +1,303 @@
+commonfields:
+  id: 6d839c6c-b39e-4a2b-806e-2b175c530aca
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.5.21272
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CD_QradarStartTimer_PROD_v1_P_copy
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  import random
+
+
+  inc_data = demisto.incidents()[0]
+  #print(inc_data)
+  custom_fields = inc_data.get("CustomFields",{})
+
+  name = inc_data.get("investigationId")
+
+  # Python template - reading arguments, calling a command, handling errors and returning results
+  demisto.executeCommand('setIncident',{ 'owner':""})
+  demisto.executeCommand('setIncident',{ 'cdincidentstate':"New"})
+  demisto.executeCommand('setIncident',{ 'cdassignmentgroup':"L1 Analyst"})
+  '''demisto.executeCommand('setIncident',{ 'notesselection':"Work Notes"})
+  demisto.executeCommand('setIncident',{ 'snowstate':"New"})
+  demisto.executeCommand('setIncident',{ 'snowcategory':"Security"})
+  #demisto.executeCommand('setIncident',{ 'snowconfigurationitem':"Syntegon Security Operation CI"})
+  demisto.executeCommand('setIncident',{ 'snowassignmentgroup':"Syn_Infosys_SOC_Monitoring"})
+  demisto.executeCommand('setIncident',{ 'snowcaller':"web_syntegon_demisto"})
+  demisto.executeCommand('setIncident',{ 'snowcompany':"Syntegon"})
+  demisto.executeCommand('setIncident',{ 'snowshortdescription':"Creating ITSM Incident In ServiceNow"})'''
+  Acknowledgement_SLA = [10,15,60,120]
+  Response_SLA = [30,45,120,480]
+  Escalation_SLA = [120,240,480,1440]
+  #Resolution_SLA = []
+
+
+  #time
+  now = datetime.utcnow()
+  now = now.strftime("%Y-%m-%d %H:%M:%S")
+  now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
+  #print("Now Time: ",now)
+  newtime = now.strftime('%Y-%m-%dT%H:%M:%S+00:00')
+
+  magnitude = custom_fields.get("cdsmagnitude")
+
+  rule_name = custom_fields.get("cdsoffensetitle") #offense title change in prod
+  offense_id = custom_fields.get("cdssourceincidentid")
+  priority = ""
+  #time = custom_fields.get("created")
+  #incid = str(offense_id)
+  tenant = inc_data.get("account")
+  #incident_id = inc_data.get("investigationId")
+  name = str(offense_id) + " " + rule_name
+  role_L1 = "CORAS_MSS-MTSL_L1"
+  role_L2 = "CORAS_MSS-MTSL_L2"
+  role_L3 = "CORAS_MSS-MTSL_L3"
+
+
+
+  def p1_p2():
+      res1 = demisto.executeCommand("getUsers", {"roles":role_L1, "online": "true"})
+      res2 = demisto.executeCommand("getUsers", {"roles":role_L2, "online": "true"})
+      res3 = demisto.executeCommand("getUsers", {"roles":role_L3, "online": "true"})
+      now = datetime.utcnow()
+      now = now.strftime("%Y-%m-%d %H:%M:%S")
+      now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
+      nowtime = now.strftime('%Y-%m-%dT%H:%M:%S+00:00')
+      formatt = str(now)
+      #time = str(nowtime)
+
+      if res2[0]["Contents"] != []:
+          L2_Analyst = []
+          for i in range(0,len(res2[0]["Contents"])):
+              abc = res2[0]["Contents"][i]["username"]
+              i += 1
+          L2_Analyst.append(abc)
+          L2 = random.choice(L2_Analyst)
+          demisto.executeCommand("setIncident", {"owner":L2, "cdincidentowner":L2, 'cdincidentstate':"In Progress", 'cdacknowledgementtime':nowtime, 'cdincidentinprogresstimeline':nowtime, 'cdassignmentgroup':"L2 Analyst"})
+          demisto.executeCommand('stopTimer',{ 'timerField':'cdacknowledgementsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresolutionsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdescalationsla' })
+
+          #print("L2 Assigned.")
+
+      elif res1[0]["Contents"] != []:
+          L1_Analyst = []
+          for i in range(0,len(res1[0]["Contents"])):
+              abkl = res1[0]["Contents"][i]["username"]
+              i += 1
+          L1_Analyst.append(abkl)
+          L1 = random.choice(L1_Analyst)
+
+          demisto.executeCommand("setIncident", {"owner":L1, "cdincidentowner":L1, 'cdincidentstate':"In Progress", 'cdacknowledgementtime':nowtime, 'cdincidentinprogresstimeline':nowtime, 'cdassignmentgroup':"L1 Analyst"})
+          demisto.executeCommand('stopTimer',{ 'timerField':'cdacknowledgementsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresolutionsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdescalationsla' })
+          #print("L1 Assigned.")
+      elif res3[0]["Contents"] != []:
+          L3_Analyst = []
+          for i in range(0,len(res3[0]["Contents"])):
+              abkl = res3[0]["Contents"][i]["username"]
+              i += 1
+          L3_Analyst.append(abkl)
+          L3 = random.choice(L3_Analyst)
+
+          demisto.executeCommand("setIncident", {"owner":L3, "cdincidentowner":L3, 'cdincidentstate':"In Progress", 'cdacknowledgementtime':nowtime, 'cdincidentinprogresstimeline':nowtime, 'cdassignmentgroup':"L3 Analyst"})
+          demisto.executeCommand('stopTimer',{ 'timerField':'cdacknowledgementsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresolutionsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdescalationsla' })
+          #print("L3 Assigned.")
+      else:
+          user = ["abcdef","ghijk.lmn","opqr.stu","vwxyz.abc01"]
+          incident_id = inc_data.get("investigationId")
+          #print(incident_id)
+          L3 = random.choice(user)
+
+          demisto.executeCommand("setIncident", {"owner":L3, "cdincidentowner":L3, 'cdincidentstate':"In Progress", 'cdacknowledgementtime':nowtime, 'cdincidentinprogresstimeline':nowtime, 'cdassignmentgroup':"L3 Analyst"})
+          demisto.executeCommand('stopTimer',{ 'timerField':'cdacknowledgementsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresolutionsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdescalationsla' })
+          #incid = custom_fields.get("investigationid")
+          mail_to = "abcdef@infosys.com,ghijk.lmn@infosys.com,opqr.stu@infosys.com,vwxyz.abc01@infosys.com,CyberNxt.abc009@infosys.com"
+          subject = "Auto assignment failed for Offense ID "+ str(offense_id)
+
+          Content =f"Hi SOC Team,<br><br>It is to notify that for the following incident no L1, L2 and L3 were available. So, L3 has been assigned automatically. Please check the incident –<br><br>Incident Priority – {priority}<br>Incident Creation Time - {formatt}<br>Owner - {L3}<br>Customer Name - {tenant}<br>Incident Name – {name}<br><br>Regards,<br>DemistoTeam"
+          result = demisto.executeCommand("send-mail", {"to":mail_to,"subject":subject,"htmlBody":Content,"using":"Mail Sender (New)_instance_1"})
+          demisto.results(result)
+
+
+  def p3_p4():
+      res1 = demisto.executeCommand("getUsers", {"roles":role_L1, "online": "true"})
+      res2 = demisto.executeCommand("getUsers", {"roles":role_L2, "online": "true"})
+      res3 = demisto.executeCommand("getUsers", {"roles":role_L3, "online": "true"})
+      now = datetime.utcnow()
+      now = now.strftime("%Y-%m-%d %H:%M:%S")
+      now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
+      nowtime = now.strftime('%Y-%m-%dT%H:%M:%S+00:00')
+      #time = str(nowtime)
+      formatt = str(now)
+
+
+      if res1[0]["Contents"] != []:
+          L1_Analyst = []
+          for i in range(0,len(res1[0]["Contents"])):
+              abc = res1[0]["Contents"][i]["username"]
+              i += 1
+          L1_Analyst.append(abc)
+          L1 = random.choice(L1_Analyst)
+          demisto.executeCommand("setIncident", {"owner":L1, "cdincidentowner":L1, 'cdincidentstate':"In Progress", 'cdacknowledgementtime':nowtime, 'cdincidentinprogresstimeline':nowtime, 'cdassignmentgroup':"L1 Analyst"})
+          demisto.executeCommand('stopTimer',{ 'timerField':'cdacknowledgementsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresolutionsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdescalationsla' })
+          #print("L1 Assigned.")
+      elif res2[0]["Contents"] != []:
+          L2_Analyst = []
+          for i in range(0,len(res2[0]["Contents"])):
+              abkl = res2[0]["Contents"][i]["username"]
+              i += 1
+          L2_Analyst.append(abkl)
+          L2 = random.choice(L2_Analyst)
+          demisto.executeCommand("setIncident", {"owner":L2, "cdincidentowner":L2, 'cdincidentstate':"In Progress", 'cdacknowledgementtime':nowtime, 'cdincidentinprogresstimeline':nowtime, 'cdassignmentgroup':"L2 Analyst"})
+          demisto.executeCommand('stopTimer',{ 'timerField':'cdacknowledgementsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresolutionsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdescalationsla' })
+          #print("L2 Assigned.")
+      elif res3[0]["Contents"] != []:
+          L3_Analyst = []
+          for i in range(0,len(res3[0]["Contents"])):
+              abkl = res3[0]["Contents"][i]["username"]
+              i += 1
+          L3_Analyst.append(abkl)
+          L3 = random.choice(L3_Analyst)
+
+          demisto.executeCommand("setIncident", {"owner":L3, "cdincidentowner":L3, 'cdincidentstate':"In Progress", 'cdacknowledgementtime':nowtime, 'cdincidentinprogresstimeline':nowtime, 'cdassignmentgroup':"L3 Analyst"})
+          demisto.executeCommand('stopTimer',{ 'timerField':'cdacknowledgementsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresolutionsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdescalationsla' })
+          #print("L3 Assigned.")
+      else:
+          user = ["abcdef","ghijk.lmn","opqr.stu","vwxyz.abc01"]
+          incident_id = inc_data.get("investigationId")
+          #print(incident_id)
+          L3 = random.choice(user)
+
+          demisto.executeCommand("setIncident", {"cdincidentowner":L3, 'cdincidentstate':"In Progress", 'cdacknowledgementtime':nowtime, 'cdincidentinprogresstimeline':nowtime, 'cdassignmentgroup':"L3 Analyst"})
+          demisto.executeCommand("setIncident", {"owner":L3})
+          demisto.executeCommand('stopTimer',{ 'timerField':'cdacknowledgementsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresolutionsla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+          demisto.executeCommand('startTimer',{ 'timerField':'cdescalationsla' })
+          #incid = custom_fields.get("investigationid")
+
+          mail_to = "abcdef@infosys.com,ghijk.lmn@infosys.com,opqr.stu@infosys.com,vwxyz.abc01@infosys.com,CyberNxt.abc009@infosys.com"
+          subject = "Auto assignment failed for Offense ID "+ str(offense_id)
+
+          Content = f"Hi SOC Team,<br><br>It is to notify that for the following incident no L1, L2 and L3 were available. So, L3 has been assigned automatically. Please check the incident –<br><br>Incident Priority – {priority}<br>Incident Creation Time - {formatt}<br>Owner - {L3}<br>Customer Name - {tenant}<br>Incident Name – {name}<br><br>Regards,<br>DemistoTeam"
+          result = demisto.executeCommand("send-mail", {"to":mail_to,"subject":subject,"htmlBody":Content,"using":"Mail Sender (New)_instance_1"})
+          demisto.results(result)
+
+
+  if magnitude == 10:
+      demisto.executeCommand("setIncident",{'sla': Response_SLA[0]  , "slaField":"cdresponsesla"})
+      demisto.executeCommand("setIncident",{'sla': Acknowledgement_SLA[0] , "slaField":"cdacknowledgementsla"})
+      demisto.executeCommand("setIncident",{'sla': Escalation_SLA[0] , "slaField":"cdescalationsla"})
+      #demisto.executeCommand("setIncident",{'sla': Resolution_SLA[0] , "slaField":"cdresolutionsla"})
+      #demisto.executeCommand("setIncident",{"snowurgency":'1 - High',"snowimpact":'1 - High'})
+      demisto.executeCommand("setIncident",{"severity":'Critical',"cdpriority":'P1'})
+      demisto.executeCommand("setIncident",{"cdexpectedresponsesla":Response_SLA[0]})
+      demisto.executeCommand("setIncident",{"cdexpectedacknowledgementsla":Acknowledgement_SLA[0]})
+      demisto.executeCommand("setIncident",{"cdexpectedescalationsla":Escalation_SLA[0]})
+      #demisto.executeCommand("setIncident",{"cdexpectedresolutionsla":Resolution_SLA[0]})
+      demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+      demisto.executeCommand('startTimer',{ 'timerField':'cdacknowledgementsla' })
+      demisto.executeCommand('startTimer',{ 'timerField':'cdescalationsla' })
+      priority = "P1"
+      #demisto.executeCommand("setIncident",{'cdnotificationslastarttime':newtime})
+      p1_p2()
+
+  elif magnitude==9 or magnitude==8:
+      demisto.executeCommand("setIncident",{'sla': Response_SLA[1]  , "slaField":"cdresponsesla"})
+      demisto.executeCommand("setIncident",{'sla': Acknowledgement_SLA[1] , "slaField":"cdacknowledgementsla"})
+      demisto.executeCommand("setIncident",{'sla': Escalation_SLA[1] , "slaField":"cdescalationsla"})
+      #demisto.executeCommand("setIncident",{'sla': Resolution_SLA[1] , "slaField":"cdresolutionsla"})
+      #demisto.executeCommand("setIncident",{"snowurgency":'1 - High',"snowimpact":'2 - Medium'})
+      demisto.executeCommand("setIncident",{"severity":'High',"cdpriority":'P2'})
+      demisto.executeCommand("setIncident",{"cdexpectedresponsesla":Response_SLA[1]})
+      demisto.executeCommand("setIncident",{"cdexpectedacknowledgementsla":Acknowledgement_SLA[1]})
+      demisto.executeCommand("setIncident",{"cdexpectedescalationsla":Escalation_SLA[1]})
+      #demisto.executeCommand("setIncident",{"cdexpectedresolutionsla":Resolution_SLA[1]})
+      demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+      demisto.executeCommand('startTimer',{ 'timerField':'cdacknowledgementsla' })
+      demisto.executeCommand('startTimer',{ 'timerField':'cdescalationsla' })
+      priority = "P2"
+      #demisto.executeCommand("setIncident",{'cdnotificationslastarttime':newtime})
+      p1_p2()
+
+  elif magnitude>=5 and magnitude<=7:
+      demisto.executeCommand("setIncident",{'sla': Response_SLA[2]  , "slaField":"cdresponsesla"})
+      demisto.executeCommand("setIncident",{'sla': Acknowledgement_SLA[2] , "slaField":"cdacknowledgementsla"})
+      demisto.executeCommand("setIncident",{'sla': Escalation_SLA[2] , "slaField":"cdescalationsla"})
+      #demisto.executeCommand("setIncident",{'sla': Resolution_SLA[2] , "slaField":"cdresolutionsla"})
+      demisto.executeCommand("setIncident",{"severity":'Medium',"cdpriority":'P3'})
+      #demisto.executeCommand("setIncident",{"snowurgency":'2 - Medium',"snowimpact":'2 - Medium'})
+      demisto.executeCommand("setIncident",{"cdexpectedresponsesla":Response_SLA[2]})
+      demisto.executeCommand("setIncident",{"cdexpectedacknowledgementsla":Acknowledgement_SLA[2]})
+      demisto.executeCommand("setIncident",{"cdexpectedescalationsla":Escalation_SLA[2]})
+      #demisto.executeCommand("setIncident",{"cdexpectedresolutionsla":Resolution_SLA[2]})
+      demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+      demisto.executeCommand('startTimer',{ 'timerField':'cdacknowledgementsla' })
+      demisto.executeCommand('startTimer',{ 'timerField':'cdescalationsla' })
+      priority = "P3"
+      p3_p4()
+
+  elif magnitude>=0 and magnitude<=4:
+      demisto.executeCommand("setIncident",{'sla': Response_SLA[3]  , "slaField":"cdresponsesla"})
+      demisto.executeCommand("setIncident",{'sla': Acknowledgement_SLA[3] , "slaField":"cdacknowledgementsla"})
+      demisto.executeCommand("setIncident",{'sla': Escalation_SLA[3] , "slaField":"cdescalationsla"})
+      #demisto.executeCommand("setIncident",{"severity":'Low',"cdpriority":'P4'})
+      demisto.executeCommand("setIncident",{"severity":'Low',"cdpriority":'P4'})
+      #demisto.executeCommand("setIncident",{"snowurgency":'3 - Low',"snowimpact":'3 - Low'})
+      #demisto.executeCommand("setIncident",{'sla': Resolution_SLA[3] , "slaField":"cdresolutionsla"})
+      demisto.executeCommand("setIncident",{"cdexpectedresponsesla":Response_SLA[3]})
+      demisto.executeCommand("setIncident",{"cdexpectedacknowledgementsla":Acknowledgement_SLA[3]})
+      demisto.executeCommand("setIncident",{"cdexpectedescalationsla":Escalation_SLA[3]})
+      #demisto.executeCommand("setIncident",{"cdexpectedresolutionsla":Resolution_SLA[3]})
+      demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+      demisto.executeCommand('startTimer',{ 'timerField':'cdacknowledgementsla' })
+      demisto.executeCommand('startTimer',{ 'timerField':'cdescalationsla' })
+      priority = "P4"
+      p3_p4()
+  else:
+      demisto.executeCommand("setIncident",{"severity":'Informational'})
+      #demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+      #demisto.executeCommand('startTimer',{ 'timerField':'cdresolvergroupnotificationsla' })
+
+
+scripttarget: 0
+subtype: python3
+tags:
+- preProcessing
+timeout: 1µs
+type: python
