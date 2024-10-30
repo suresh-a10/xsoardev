@@ -1,0 +1,80 @@
+comment: This script can be used to get user id who modified the incident lastly.
+commonfields:
+  id: 0f149187-5849-4177-8489-09741b775036
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.9.40422
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetUserOfUploadedAttachment
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+
+
+
+  ''' MAIN FUNCTION '''
+  def get_user_id(user_id):
+      if user_id == '':
+          user_id='Dbot'
+      else:
+          pass
+      return user_id
+
+
+  def main():
+
+      incident_data=demisto.incidents()[0]
+
+      entries_list = demisto.executeCommand('GetEntries',{'id':incident_data['id'],'category':'artifact'})[0]['Contents']
+      Entry_IDs=[]
+      for entry_id in entries_list:
+          if entry_id['Metadata']['file'] != '':
+              Entry_IDs.append(entry_id['Metadata']['id'])
+
+
+
+      user_name = demisto.executeCommand("getEntry", {"id":Entry_IDs[-1]})
+      user_id= user_name[0]['Metadata']['user']
+
+      userID = get_user_id(user_id)
+
+      md = tableToMarkdown('Modified User Details',userID,headers=['id'],removeNull=True)
+      entry_context = {'Modified.User(val.ID == obj.ID)':userID}
+      demisto.results({
+          'Type': entryTypes['note'],
+          "Contents" : md,
+          'ContentsFormat': formats['json'],
+          'HumanReadable': md,
+          'ReadableContentsFormat' : formats['markdown'],
+          'EntryContext':entry_context
+      })
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
