@@ -1,0 +1,83 @@
+comment: Get the username of the last entry ID
+commonfields:
+  id: 345fe646-a9fe-437b-89c3-fd7d0c02cd68
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.5.20070
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetLastEntryUserDetails
+outputs:
+- contextPath: entryid.email
+  description: Details of the entry ID
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  from typing import Dict, Any
+  import traceback
+
+
+  ''' STANDALONE FUNCTION '''
+
+  def get_entry_details(entry_id: str) -> Dict[str, str]:
+
+      entry_id_details = demisto.executeCommand("getEntries",{})
+
+      username = entry_id_details[len(entry_id_details)-2]['Metadata']['user']
+
+      user_email = demisto.executeCommand("getUserByUsername", {"username":username})
+
+      return {'email':user_email[0]['Contents']['email']}
+
+
+
+
+  ''' COMMAND FUNCTION '''
+
+
+  def get_entry_details_command(args: Dict[str, Any]) -> CommandResults:
+
+      entry_id = args.get('entryid')
+
+      result =  get_entry_details(entry_id)
+
+      return CommandResults(
+          outputs_prefix='entryid',
+          outputs_key_field='email',
+          outputs=result
+      )
+
+
+  ''' MAIN FUNCTION '''
+
+
+  def main():
+      try:
+          return_results(get_entry_details_command(demisto.args()))
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
