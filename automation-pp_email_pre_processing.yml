@@ -1,0 +1,180 @@
+commonfields:
+  id: 3f30fc10-557b-4a32-8c26-43f6aa2bfd33
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.8.24399
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: pp_email_pre_processing
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  from typing import Dict, Any
+  import traceback
+
+  import re
+  import json
+
+  # mandatory fields
+  res = True
+  inc_details = demisto.incidents()
+  incident_type = inc_details[0]['type']
+
+  '''
+    Use Case:
+      1. type=UserSubmittedEmail
+             a. if sender + subject is already existing append to the open ticket
+             b. if not existing create new
+      2. -type=UserSubmittedEmail
+             a. match based on #DMST in subject if ID exists and open append to that ticket
+             b. else create a new one
+  '''
+  if incident_type == "UserSubmittedEmail":
+
+      subject_array=inc_details[0]['rawName'].split("|")
+      subject_stripped=subject_array[4][subject_array[4].find("(") + 1 : subject_array[4].find(")")] # added new
+      sender=subject_array[3]
+      search='name:\"' + subject_stripped + '\" AND name:\"' + sender + '\" AND (type:UserSubmittedEmail OR type:CDCEmailConversation OR type:\"~Spam Email\" OR type:\"~CORP - Phishing\") AND -status:Closed'
+      search_date=execute_command("ModifyDateTime", {"value": inc_details[0]['created'], "variation" : "30 days ago"})
+      search_args= {
+              "fromDate" : search_date,
+              "query" : search
+      }
+
+
+      same_incidents = execute_command("SearchIncidentsV2", search_args)
+
+      try:
+          count = len(same_incidents[0]['Contents']['data'])
+      except TypeError:
+          count = 0
+
+      if count > 0:
+          res = False
+          existing_incident = same_incidents[0]['Contents']['data']
+          '''
+          entries = []
+          entries.append({'Contents': "Duplicate incident report with details: "+inc_details[0]['name']})
+          entries.append({"Type": 1, "ContentsFormat": "json", "Contents": json.dumps(inc_details)})
+          entries_str = json.dumps(entries)
+          execute_command("addEntries", {"id":existing_incident[0]["id"],"entries":entries_str})
+          '''
+
+          for inc in inc_details:
+              html_body = ''
+              reporter = ''
+              message_id = ''
+
+              if inc['labels']:
+                  for t in inc['labels']:
+                      if t['type'] == 'Email/html':
+                           html_body = t['value']
+                      if t['type'] == "Email/Header/Message-ID":
+                           message_id = t['value']
+                      if t['type'] == "Email/from":
+                           reporter = t['value']
+
+          comments = """ Duplicate incident report with details:
+                         Report: {inc}
+                         Reporter: {reporter}
+                         Message ID: {message_id}
+                     """.format(inc=inc_details[0]['name'],reporter=reporter,message_id=message_id)
+
+
+          comment_args = {
+                  "comments" :  comments
+          }
+
+          execute_command("executeCommandAt", {"incidents":existing_incident[0]["id"], "command":"rasterize-email", "arguments":{"htmlBody": html_body}});
+          execute_command("executeCommandAt", {"incidents":existing_incident[0]["id"], "command":"AddNote", "arguments": comment_args});
+      else:
+          res = True
+
+  # if ticket is not related to Phishing button
+  else:
+      subject=inc_details[0]['rawName']
+      regex_pattern="#DMST-(\d+)"
+      incident_id_match= re.search(regex_pattern,subject)
+
+      # if the subject contains demisto ticket reference append to open ticket else create a new one
+      if incident_id_match:
+          #res = False
+          incident_id=incident_id_match.group(1)
+          search='id:\"' + incident_id + '\" AND -status:Closed'
+          search_date=execute_command("ModifyDateTime", {"value": inc_details[0]['created'], "variation" : "30 days ago"})
+          search_args= {
+                  "fromDate" : search_date,
+                  "query" : search
+          }
+
+
+          same_incidents = execute_command("SearchIncidentsV2", search_args)
+
+          try:
+              count = len(same_incidents[0]['Contents']['data'])
+          except TypeError:
+              count = 0
+
+          if count > 0:
+              res = False
+              existing_incident = same_incidents[0]['Contents']['data']
+              '''
+              entries = []
+              entries.append({'Contents': "Duplicate incident report with details: "+inc_details[0]['name']})
+              entries.append({"Type": 1, "ContentsFormat": "json", "Contents": json.dumps(inc_details)})
+              entries_str = json.dumps(entries)
+              execute_command("addEntries", {"id":existing_incident[0]["id"],"entries":entries_str})
+              '''
+
+              for inc in inc_details:
+                  html_body = ''
+                  reporter = ''
+                  message_id = ''
+
+                  if inc['labels']:
+                      for t in inc['labels']:
+                          if t['type'] == 'Email/html':
+                               html_body = t['value']
+                          if t['type'] == "Email/Header/Message-ID":
+                               message_id = t['value']
+                          if t['type'] == "Email/from":
+                               reporter = t['value']
+
+              comments = """ Duplicate incident report with details:
+                             Report: {inc}
+                             Reporter: {reporter}
+                             Message ID: {message_id}
+                         """.format(inc=inc_details[0]['name'],reporter=reporter,message_id=message_id)
+
+
+              comment_args = {
+                      "comments" :  comments
+              }
+
+              execute_command("executeCommandAt", {"incidents":existing_incident[0]["id"], "command":"rasterize-email", "arguments":{"htmlBody": html_body}});
+              execute_command("executeCommandAt", {"incidents":existing_incident[0]["id"], "command":"AddNote", "arguments": comment_args});
+          else:
+              res = True
+
+
+  return_results(res)
+
+scripttarget: 0
+subtype: python3
+tags:
+- preProcessing
+- Threat Detection and Response
+type: python
