@@ -1,0 +1,381 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: aaf64c58-ac37-4b15-8462-5d2848574e52
+inputs: []
+name: indicatorIgnore
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8b4fe9cd-2f39-44d2-8bec-5d41b321fd53
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 8b4fe9cd-2f39-44d2-8bec-5d41b321fd53
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      text:
+        simple: "1.1.1.1, \n2.2.2.2, \n3.3.3.3, \nhttps://text.com, \nhttp://www.google.com"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: 'This is just a placeholder, the solution needs to be deployed
+        at the point "after" indicator extraction is performed. '
+      id: fd0a15d3-3910-4bfd-87a4-903629e6f664
+      iscommand: true
+      name: Extract Indicator
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: fd0a15d3-3910-4bfd-87a4-903629e6f664
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 180
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators.URL
+            operator: append
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators.Domain
+            operator: append
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators.File
+            operator: append
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: " - Combine all the extracted indicator into a single list\n -
+        Added the unique identifier incase there are duplicates\n - GetIndicatorDBotScoreFromCache
+        seems to work better :-\n    - Returns only 1 object per indicator\n    -
+        Includes weighted score\n    - Includes expiration status\n - No need to add
+        MD5 and SHA, since the ExtractIndicators.File contains all. \n**Might make
+        sense to only include MD5. Searching for SHA1, SHA256 and SHA512 might be
+        redundant for our goal of reducing API calls. **"
+      id: 5377f786-581d-43c8-8eb4-e8cc8066c4e8
+      iscommand: false
+      name: Fetch existing DBot Score information
+      script: GetIndicatorDBotScoreFromCache
+      type: regular
+      version: -1
+    taskid: 5377f786-581d-43c8-8eb4-e8cc8066c4e8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 350
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: indicatorIgnoreList
+      value:
+        complex:
+          accessor: Indicator
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScoreCache.Expired
+              operator: isNotEqualString
+              right:
+                value:
+                  simple: "true"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScoreCache.Score
+              operator: isNotEqualString
+              right:
+                value:
+                  simple: "0"
+          root: DBotScoreCache
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Set a value in context under the key you entered. If no value is entered, the script doesn't do anything.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.10/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 17372aff-5903-4241-8137-97b0c9bade5c
+      iscommand: false
+      name: Generate indicator whitelist
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: 17372aff-5903-4241-8137-97b0c9bade5c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 510
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    note: false
+    quietmode: 2
+    scriptarguments:
+      CVE:
+        complex:
+          accessor: ID
+          root: CVE
+      Domain:
+        complex:
+          accessor: Name
+          root: Domain
+          transformers:
+          - operator: uniq
+      Email:
+        complex:
+          accessor: Email.Address
+          root: Account
+          transformers:
+          - operator: uniq
+      Hostname:
+        complex:
+          accessor: Hostname
+          root: Endpoint
+          transformers:
+          - operator: uniq
+      IP:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: IP.Address
+              operator: notIn
+              right:
+                iscontext: true
+                value:
+                  simple: indicatorIgnoreList
+          root: IP.Address
+          transformers:
+          - operator: uniq
+      InternalRange:
+        simple: '** Again, please consider my recommendation for removing SHA256 and
+          SHA1'
+      MD5:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.MD5
+              operator: notIn
+              right:
+                iscontext: true
+                value:
+                  simple: indicatorIgnoreList
+          root: File.MD5
+          transformers:
+          - operator: uniq
+      ResolveIP:
+        simple: "False"
+      SHA1:
+        complex:
+          accessor: SHA1
+          root: File
+          transformers:
+          - operator: uniq
+      SHA256:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.SHA256
+              operator: notIn
+              right:
+                iscontext: true
+                value:
+                  simple: indicatorIgnoreList
+          root: File.SHA256
+          transformers:
+          - operator: uniq
+      URL:
+        complex:
+          accessor: Data
+          root: URL
+          transformers:
+          - operator: uniq
+      URLSSLVerification:
+        simple: "False"
+      UseReputationCommand:
+        simple: "False"
+      Username:
+        complex:
+          accessor: Username
+          root: Account
+          transformers:
+          - operator: uniq
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Enrich entities using one or more integrations.
+      id: dedcb520-162a-4075-827a-31c079db8b37
+      iscommand: false
+      name: Entity Enrichment - Generic v3
+      playbookId: Entity Enrichment - Generic v3
+      type: playbook
+      version: -1
+    taskid: dedcb520-162a-4075-827a-31c079db8b37
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 720
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d05bbf4f-5545-4d21-8303-aae58cd56293
+      iscommand: false
+      name: Please replace subplaybook with your own, just a example
+      type: title
+      version: -1
+    taskid: d05bbf4f-5545-4d21-8303-aae58cd56293
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 40,
+          "y": 580
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 765,
+        "width": 790,
+        "x": 40,
+        "y": 50
+      }
+    }
+  }
