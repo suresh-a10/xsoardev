@@ -1,0 +1,81 @@
+args:
+- description: The crypto address to verify.
+  isArray: true
+  name: input
+  required: true
+comment: Verifies that a crypto address is valid and only returns the address if it
+  is valid.
+commonfields:
+  id: CryptoCurrenciesFormat
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.0.0
+    itemVersion: 1.1.55
+    packID: Cryptocurrency
+    packName: Cryptocurrency
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.83255
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CryptoCurrenciesFormat
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('CryptoCurrenciesFormat', 'start', __line__())
+  ### pack version: 1.1.55
+
+  from hashlib import sha256
+
+
+  from typing import Union
+
+  DIGITS58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+
+
+  def decode_base58(address, length) -> bytes:
+      n = 0
+      for char in address:
+          n = n * 58 + DIGITS58.index(char)
+      return n.to_bytes(length, 'big')
+
+
+  def verify_is_bitcoin(address) -> Union[bytes, bool]:
+      try:
+          bitcoin_bytes = decode_base58(address, 25)
+          '''Check if the last four bytes are equal to the
+          first four bytes of a double SHA-256 digest of the previous 21 bytes.
+          Source: https://rosettacode.org/wiki/Bitcoin/address_validation#Python '''
+          return bitcoin_bytes[-4:] == sha256(sha256(bitcoin_bytes[:-4]).digest()).digest()[:4]
+      except Exception:
+          return False
+
+
+  def main():
+      address_list = argToList(demisto.args().get('input'))
+
+      list_results = [f'bitcoin:{address}' if verify_is_bitcoin(address) else '' for address in address_list]
+
+      if list_results:
+          demisto.results(list_results)
+      else:
+          demisto.results('')
+
+
+  if __name__ in ('__main__', 'builtin', 'builtins'):
+      main()
+
+  register_module_line('CryptoCurrenciesFormat', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- indicator-format
+type: python
