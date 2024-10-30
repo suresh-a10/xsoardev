@@ -1,0 +1,1277 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.10.0
+    itemVersion: 1.7.4
+    packID: PrismaCloudCompute
+    packName: Prisma Cloud Compute by Palo Alto Networks
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: |-
+  This playbook is a sub-playbook of the "Prisma Cloud Compute - Jira Compliance Issue" playbook.
+  It creates a new Jira issue or updates an existing Jira issue with an XLSX file for the given compliance ID retrieved from the parent playbook, with enriched data for each resource (host, image or container).
+id: Prisma Cloud Compute - Jira Ticket (XLSX)
+inputs:
+- description: A filter to use for extracting affected resources with a specific compliance
+    issue ID.
+  key: Filter
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The compliance issue ID to open a ServiceNow ticket for.
+  key: ComplianceIssueID
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The compliance issue description.
+  key: ComplianceIssueDescription
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The compliance issue severity.
+  key: ComplianceIssueSeverity
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: ""
+  key: JiraIssueTypeName
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: ""
+  key: JiraProjectName
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: Prisma Cloud Compute - Jira Ticket (XLSX)
+outputs:
+- contextPath: TicketAction
+  description: The ticket action - create or update.
+  type: string
+- contextPath: Ticket
+  description: The ticket object which was created or updated.
+  type: string
+quiet: true
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1394b21a-b310-4f75-8038-f41108d8884d
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 1394b21a-b310-4f75-8038-f41108d8884d
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": -90
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: JiraResources
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: incident.prismacloudcomputecontainercomplianceissues.complianceissues
+              operator: match
+              right:
+                iscontext: true
+                value:
+                  simple: inputs.Filter
+          root: incident.prismacloudcomputecontainercomplianceissues
+          transformers:
+          - args:
+              fields:
+                value:
+                  simple: complianceissues
+              json_object:
+                iscontext: true
+                value:
+                  simple: incident.prismacloudcomputecontainercomplianceissues
+            operator: IgnoreFieldsFromJson
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Set a value in context under the key you entered. If no value is entered, the script doesn't do anything.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.12/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 7699d927-189e-40ad-84d4-4c019eac805e
+      iscommand: false
+      name: Prepare compliance table for Jira (Containers XLSX)
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: 7699d927-189e-40ad-84d4-4c019eac805e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 860,
+          "y": 595
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      issue_id:
+        complex:
+          accessor: Id
+          root: Ticket
+      upload:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Name
+              operator: containsString
+              right:
+                value:
+                  simple: PCC_
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Name
+              operator: endWith
+              right:
+                value:
+                  simple: .xlsx
+          root: File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Uploads a file attachment to an issue.
+      id: d7162262-ba65-407c-870f-2714882d08ef
+      iscommand: true
+      name: Upload the XLSX file to the Jira ticket
+      script: '|||jira-issue-upload-file'
+      type: regular
+      version: -1
+    taskid: d7162262-ba65-407c-870f-2714882d08ef
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 1870
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+      - "19"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      data:
+        complex:
+          root: JiraResources
+      file_name:
+        simple: PCC_${incident.alertcategory}_ComplianceIssues_ID_${inputs.ComplianceIssueID}.xlsx
+      sheet_name:
+        simple: ComplianceIssues_ID_${inputs.ComplianceIssueID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Exports context data to a Microsoft Excel Open XML Spreadsheet
+        (XLSX) file.
+      id: 8a58c084-335f-499c-8e2c-e805825cf002
+      iscommand: false
+      name: Create XLSX file with compliance issues table
+      script: ExportToXLSX
+      type: regular
+      version: -1
+    taskid: 8a58c084-335f-499c-8e2c-e805825cf002
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 800
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      description:
+        simple: |-
+          ${JiraPrefix}
+
+          Please review the attached XLSX file to see the compliance issues.
+      issue_type_name:
+        complex:
+          root: inputs.JiraIssueTypeName
+      project_name:
+        complex:
+          root: inputs.JiraProjectName
+      summary:
+        simple: 'Prisma Cloud Compute - compliance issues ID: ${inputs.ComplianceIssueID}'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Creates a new issue in Jira.
+      id: d400bdad-2229-475e-8d28-1830b199a982
+      iscommand: true
+      name: Create a Jira ticket
+      script: '|||jira-create-issue'
+      type: regular
+      version: -1
+    taskid: d400bdad-2229-475e-8d28-1830b199a982
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 430,
+          "y": 1500
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Id
+                root: Ticket
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: Existing
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      Existing:
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: cbf30981-9ea6-41ca-85c7-18a4847ca71b
+      iscommand: false
+      name: Create a new issue or update an existing one?
+      type: condition
+      version: -1
+    taskid: cbf30981-9ea6-41ca-85c7-18a4847ca71b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 1160
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8a29ad19-7b8b-43d3-8884-aea0ad7caf99
+      iscommand: false
+      name: Create a new issue (with XLSX)
+      type: title
+      version: -1
+    taskid: 8a29ad19-7b8b-43d3-8884-aea0ad7caf99
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 430,
+          "y": 1350
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9b5357a8-dabf-4761-85ad-6a2c2a8d80ce
+      iscommand: false
+      name: Update an existing issue (with XLSX)
+      type: title
+      version: -1
+    taskid: 9b5357a8-dabf-4761-85ad-6a2c2a8d80ce
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 870,
+          "y": 1350
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachment_id:
+        complex:
+          accessor: id
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: Ticket.Attachments.filename
+              operator: startWith
+              right:
+                value:
+                  simple: PCC_
+          - - left:
+                iscontext: true
+                value:
+                  simple: Ticket.Attachments.filename
+              operator: endWith
+              right:
+                value:
+                  simple: xlsx
+          root: Ticket.Attachments
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Deletes an attachment from an issue.
+      id: 6a9d1d62-3126-4dfc-8402-2ce0de8812a6
+      iscommand: true
+      name: Delete file from existing issue
+      script: '|||jira-issue-delete-file'
+      type: regular
+      version: -1
+    taskid: 6a9d1d62-3126-4dfc-8402-2ce0de8812a6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 1670
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      description:
+        simple: |-
+          ${SNOWPrefix}
+          Please review the attached XLSX file to see the compliance issues.
+      issue_id:
+        complex:
+          accessor: Id
+          root: Ticket
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Modifies an issue in Jira. If the status or transition fields are
+        given, then the other supplied fields should appear on the transition screen.
+      id: 7687c222-3ba3-46bd-8c5d-3119ec7bdb52
+      iscommand: true
+      name: Update issue description
+      script: '|||jira-edit-issue'
+      type: regular
+      version: -1
+    taskid: 7687c222-3ba3-46bd-8c5d-3119ec7bdb52
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1090,
+          "y": 1670
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: TicketAction
+      value:
+        simple: Create
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: The action of the the ticket (create or update) will be displayed
+        in the layout under the “Ticketing Information” tab.
+      id: 0fde52cd-303b-45c1-894b-d61b3899a596
+      iscommand: false
+      name: Set "TicketAction" as "Create"
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: 0fde52cd-303b-45c1-894b-d61b3899a596
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 210,
+          "y": 1870
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: TicketAction
+      value:
+        simple: Update
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: The action of the the ticket (create or update) will be displayed
+        in the layout under the “Ticketing Information” tab.
+      id: b0aedb7b-8489-41dd-8c63-780e464235eb
+      iscommand: false
+      name: Set "TicketAction" as "Update"
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: b0aedb7b-8489-41dd-8c63-780e464235eb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1090,
+          "y": 1870
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: JiraResources
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: incident.prismacloudcomputeimagecomplianceissues.complianceissues
+              operator: match
+              right:
+                iscontext: true
+                value:
+                  simple: inputs.Filter
+          root: incident.prismacloudcomputeimagecomplianceissues
+          transformers:
+          - args:
+              fields:
+                value:
+                  simple: complianceissues
+              json_object:
+                iscontext: true
+                value:
+                  simple: incident.prismacloudcomputeimagecomplianceissues
+            operator: IgnoreFieldsFromJson
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Set a value in context under the key you entered. If no value is entered, the script doesn't do anything.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.12/Cortex-XSOAR-Administrator-Guide/Automations
+      id: b84385b7-7a74-464d-8650-8c144037c037
+      iscommand: false
+      name: Prepare compliance table for Jira (Images XLSX)
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: b84385b7-7a74-464d-8650-8c144037c037
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1710,
+          "y": 590
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: JiraResources
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: incident.prismacloudcomputehostcomplianceissues.complianceissues
+              operator: match
+              right:
+                iscontext: true
+                value:
+                  simple: inputs.Filter
+          root: incident.prismacloudcomputehostcomplianceissues
+          transformers:
+          - args:
+              fields:
+                value:
+                  simple: complianceissues
+              json_object:
+                iscontext: true
+                value:
+                  simple: incident.prismacloudcomputehostcomplianceissues
+            operator: IgnoreFieldsFromJson
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Set a value in context under the key you entered. If no value is entered, the script doesn't do anything.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.12/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 19276e95-5062-4d10-8d64-987ef28753bb
+      iscommand: false
+      name: Prepare compliance table for Jira (Hosts XLSX)
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: 19276e95-5062-4d10-8d64-987ef28753bb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 20,
+          "y": 595
+        }
+      }
+  "15":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: alertcategory
+                root: incident
+          operator: isEqualString
+          right:
+            value:
+              simple: host
+      label: Host
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: alertcategory
+                root: incident
+          operator: isEqualString
+          right:
+            value:
+              simple: container
+      label: Container
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: alertcategory
+                root: incident
+          operator: isEqualString
+          right:
+            value:
+              simple: image
+      label: Image
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      Container:
+      - "24"
+      Host:
+      - "22"
+      Image:
+      - "26"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2776056e-4e5a-4afb-8087-740d4d633501
+      iscommand: false
+      name: What is the resource type?
+      type: condition
+      version: -1
+    taskid: 2776056e-4e5a-4afb-8087-740d4d633501
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 240
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b7f400fa-0aba-40e9-829b-12b4940d8982
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: b7f400fa-0aba-40e9-829b-12b4940d8982
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 2080
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: JiraPrefix
+      value:
+        simple: |-
+          **Compliance Issue ID**: ${inputs.ComplianceIssueID}
+          **Compliance Issue Description**: ${inputs.ComplianceIssueDescription}
+          **Compliance Issue Severity**: ${inputs.ComplianceIssueSeverity}
+          **Total Hosts**: ${TotalResources}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Set a value in context under the key you entered. If no value is entered, the script doesn't do anything.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.12/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 00fec964-6d79-4b96-8b4a-ced8988a61a7
+      iscommand: false
+      name: Prepare Jira description prefix
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: 00fec964-6d79-4b96-8b4a-ced8988a61a7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 420,
+          "y": 990
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query:
+        simple: 'project = "${inputs.JiraProjectName}" AND summary ~ ''"Prisma Cloud
+          Compute - compliance issues ID: ${inputs.ComplianceIssueID}"'' AND resolution
+          = Unresolved'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Queries Jira issues.
+        This task is used in order to decide in later stages of the playbook whether it needs to create a new ticket or update an existing one.
+      id: d8e14231-021a-4796-8420-ec905dbb2987
+      iscommand: true
+      name: Search for existing open Jira issues
+      script: '|||jira-issue-query'
+      type: regular
+      version: -1
+    taskid: d8e14231-021a-4796-8420-ec905dbb2987
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 880,
+          "y": 990
+        }
+      }
+  "20":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: Ticket.Attachments.filename
+                    operator: startWith
+                    right:
+                      value:
+                        simple: PCC_
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: Ticket.Attachments.filename
+                    operator: endWith
+                    right:
+                      value:
+                        simple: .xlsx
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: Ticket.Attachments.filename
+                    operator: containsString
+                    right:
+                      value:
+                        simple: _ComplianceIssues_ID_
+                root: Ticket.Attachments.filename
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "10"
+      "yes":
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Jira V3
+      description: Creates a new issue in Jira.
+      id: 539c7a8f-64a4-4a9c-82ec-304b53878af6
+      iscommand: false
+      name: Is there an existing attachment?
+      type: condition
+      version: -1
+    taskid: 539c7a8f-64a4-4a9c-82ec-304b53878af6
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 870,
+          "y": 1500
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+      subplaybook:
+        simple: auto
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.12/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 29a6503d-189c-4ae6-8995-922abafa8b25
+      iscommand: false
+      name: Delete Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 29a6503d-189c-4ae6-8995-922abafa8b25
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 60
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 69951365-22f2-4647-8c8a-0cf0849ba6f4
+      iscommand: false
+      name: Host
+      type: title
+      version: -1
+    taskid: 69951365-22f2-4647-8c8a-0cf0849ba6f4
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -190,
+          "y": 440
+        }
+      }
+  "23":
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: TotalResources
+      value:
+        complex:
+          accessor: hostname
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: incident.prismacloudcomputehostcomplianceissues.complianceissues
+              operator: match
+              right:
+                iscontext: true
+                value:
+                  simple: inputs.Filter
+          root: incident.prismacloudcomputehostcomplianceissues
+          transformers:
+          - operator: count
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Set a value in context under the key you entered. If no value is entered, the script doesn't do anything.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.12/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 39a523ad-8b5e-46bb-8f63-9aa163866bf4
+      iscommand: false
+      name: Count hosts (to show in Jira ticket)
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: 39a523ad-8b5e-46bb-8f63-9aa163866bf4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -400,
+          "y": 595
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "25"
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 751fd1ca-3012-4500-8b16-078f4864bcde
+      iscommand: false
+      name: Container
+      type: title
+      version: -1
+    taskid: 751fd1ca-3012-4500-8b16-078f4864bcde
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 440
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: TotalResources
+      value:
+        complex:
+          accessor: containerid
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: incident.prismacloudcomputecontainercomplianceissues.complianceissues
+              operator: match
+              right:
+                iscontext: true
+                value:
+                  simple: inputs.Filter
+          root: incident.prismacloudcomputecontainercomplianceissues
+          transformers:
+          - operator: count
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Set a value in context under the key you entered. If no value is entered, the script doesn't do anything.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.12/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 43e8dd97-0f57-49fe-86f5-9f59498e8270
+      iscommand: false
+      name: Count containers (to show in Jira ticket)
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: 43e8dd97-0f57-49fe-86f5-9f59498e8270
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 440,
+          "y": 595
+        }
+      }
+  "26":
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "27"
+      - "13"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b0b5279a-8728-43e5-8efa-e95582ebee82
+      iscommand: false
+      name: Image
+      type: title
+      version: -1
+    taskid: b0b5279a-8728-43e5-8efa-e95582ebee82
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1500,
+          "y": 440
+        }
+      }
+  "27":
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: TotalResources
+      value:
+        complex:
+          accessor: imageid
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: incident.prismacloudcomputeimagecomplianceissues.complianceissues
+              operator: match
+              right:
+                iscontext: true
+                value:
+                  simple: inputs.Filter
+          root: incident.prismacloudcomputeimagecomplianceissues
+          transformers:
+          - operator: count
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Set a value in context under the key you entered. If no value is entered, the script doesn't do anything.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.12/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 34ef0e05-cf60-441f-8789-bccbc50acaf6
+      iscommand: false
+      name: Count images (to show in Jira ticket)
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: 34ef0e05-cf60-441f-8789-bccbc50acaf6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1290,
+          "y": 595
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 2235,
+        "width": 2490,
+        "x": -400,
+        "y": -90
+      }
+    }
+  }
