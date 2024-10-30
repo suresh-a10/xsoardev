@@ -1,0 +1,65 @@
+commonfields:
+  id: 109ba1e0-36cd-471b-884b-8d1cc376a7a1
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.5.21272
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: getCommandsRunPerIncident_copy
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  res = demisto.executeCommand("getEntries", {})
+  commands_run = []
+  count = {}
+
+  if res:
+      for command in res:
+          if (isinstance(command['Contents'],str)) and ("!" in command['Contents']):
+              if command['Metadata']['user']:
+                  name = command['Contents']['parentContent'].replace('!','')
+                  cmd_meta = name
+
+                  if cmd_meta not in count:
+                      count[cmd_meta] = 1
+                  elif cmd_meta in count:
+                      count[cmd_meta] += 1
+              else:
+                  name = command['Contents']['parentContent']
+                  cmd_meta = name
+
+                  if cmd_meta not in count:
+                      count[cmd_meta] = 1
+                  elif cmd_meta in count:
+                      count[cmd_meta] += 1
+
+  if len(count) > 0:
+      for cmd in count:
+          commands_run.append({"command":cmd, "count":str(count[cmd])})
+
+      md = tableToMarkdown(name="Command Execution Details", headers=["command","count"],t=commands_run)
+
+      demisto.results({
+          "Contents":commands_run,
+          "ContentsFormat":formats['markdown'],
+          "Type":entryTypes["note"],
+          "HumanReadable":md,
+          "ReadableContentsFormat":formats['markdown']
+      })
+scripttarget: 0
+subtype: python3
+tags:
+- dynamic-section
+type: python
