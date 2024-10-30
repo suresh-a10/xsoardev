@@ -1,0 +1,74 @@
+commonfields:
+  id: 9573a65d-99ec-4c16-81c0-e1d06adead3a
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Assignmentgrouphandlers
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import json
+  def main():
+
+     incident = demisto.incidents()[0]
+
+     assignment_group = incident.get('CustomFields', {}).get('snowassignmentgroup', '')
+     if not assignment_group:
+         return_error("Assignment group not found in the incident's custom fields.")
+
+     context_data = demisto.context()
+     group_members = context_data.get('GroupMembers', [])
+
+     email_list_command = demisto.executeCommand("getList", {"listName": "TempList"})
+
+     if email_list_command and isinstance(email_list_command[0], dict) and 'Contents' in email_list_command[0]:
+         try:
+             temp_list = json.loads(email_list_command[0]['Contents'])
+         except json.JSONDecodeError:
+             temp_list = {}
+     else:
+         temp_list = {}
+
+     for member in group_members:
+
+         if not isinstance(member, dict):
+             demisto.error(f"Unexpected data format in group members: {member}")
+             continue
+         group_name = member.get('name')  # Get the group name
+         email_string = member.get('emails')  # Get the email string
+
+         demisto.info(f"Processing group: {group_name}, emails: {email_string}")
+         if group_name and email_string:
+
+             if group_name not in temp_list:
+                 temp_list[group_name] = {"emails": []}
+
+             emails = [email.strip() for email in email_string.split(',') if email.strip()]
+             # Append new unique emails to the list
+             for email in emails:
+                 if email not in temp_list[group_name]["emails"]:
+                     temp_list[group_name]["emails"].append(email)
+
+     formatted_output_str = json.dumps(temp_list, indent=2)
+     #print(formatted_output_str)
+     demisto.executeCommand("setList", {"listName": "TempList", "listData": formatted_output_str})
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+     main()
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
