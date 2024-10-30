@@ -1,0 +1,179 @@
+args:
+- name: fromDate
+- name: toDate
+commonfields:
+  id: bf5e4d92-8bf6-4db6-8aac-1b33659669c3
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.7.33922
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SOC_Analyst_Report_Weekly
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import re
+  import datetime
+  from collections import OrderedDict
+  from operator import getitem
+
+  """ Standalone functions  Start """
+
+  def verbose_timedelta(delta):
+      hours, remainder = divmod(delta.seconds, 3600)
+      minutes, seconds = divmod(remainder, 60)
+      dstr = "%s day%s" % (delta.days, "s"[delta.days==1:])
+      hstr = "%s hour%s" % (hours, "s"[hours==1:])
+      mstr = "%s minute%s" % (minutes, "s"[minutes==1:])
+      sstr = "%s second%s" % (seconds, "s"[seconds==1:])
+      dhms = [dstr, hstr, mstr, sstr]
+      for x in range(len(dhms)):
+          if not dhms[x].startswith('0'):
+              dhms = dhms[x:]
+              break
+      dhms.reverse()
+      for x in range(len(dhms)):
+          if not dhms[x].startswith('0'):
+              dhms = dhms[x:]
+              break
+      dhms.reverse()
+      return ', '.join(dhms)
+
+  def getDateTimeinReqFormat(DT):
+      DateTime = re.match("\d*-\d*-\d*T\d*:\d*:\d*\.?(\d{0,6})?",DT).span()
+      DateTime = DT[DateTime[0]:DateTime[1]]
+      try:
+          return datetime.datetime.strptime(DateTime, "%Y-%m-%dT%H:%M:%S.%f")
+      except:
+          return datetime.datetime.strptime(DateTime, "%Y-%m-%dT%H:%M:%S")
+
+  def GetIncidentData(body,uri):
+      res = demisto.executeCommand("demisto-api-post",{"body":body,"uri":uri,"using":"Demisto REST API Main"})[0]["Contents"]["response"]
+      return res["data"]
+
+      """ Standalone functions  end """
+
+  """ Parameters for the query """
+
+  fromDate = demisto.args().get("fromDate")
+  toDate = demisto.args().get("toDate")
+  query = '"-sourceBrand:Manual -category:job -cdincidentowner:\\"\\""'
+  uri = "/incidents/search"
+  Date = '"fromDate": "{fromDate}", "toDate": "{toDate}"'.format(fromDate=fromDate,toDate=toDate)
+  Size = '"size":10000'
+  filt = '{"filter":{"query":'+str(query)+','+str(Date)+","+str(Size)+"}}"
+
+  """ Fetching Account List"""
+
+  res = demisto.executeCommand("demisto-api-get",{"uri":"/accounts"})[0]["Contents"]['response']
+  AccountList = set([each["displayName"] for each in res])
+
+  """ Fetching incident data via Post """
+
+  res = GetIncidentData(filt, uri)
+  #print(res)
+  if not res:
+      res = GetIncidentData(filt, uri)
+  # res = demisto.executeCommand("getIncidents", {"query":'-category:job -cdincidentowner=""',"fromdate":fromDate,"todate":toDate,"size":100})
+
+  """ Main Logic """
+  if res:
+      res_accountlist = set(re.findall("(?<='account': ')\w*(?=')", str(res), re.IGNORECASE))
+      diff_accountlist = AccountList.difference(res_accountlist)
+      for account in diff_accountlist:
+          query = f'"-sourceBrand:Manual -category:job account:{account} -cdincidentowner:\\"\\""'
+          uri = "/incidents/search"
+          Date = '"fromDate": "{fromDate}", "toDate": "{toDate}"'.format(fromDate=fromDate,toDate=toDate)
+          Size = '"size":7500'
+          filt = '{"filter":{"query":'+str(query)+','+str(Date)+","+str(Size)+"}}"
+          result = GetIncidentData(filt, uri)
+          res += result
+
+      Data = {}
+
+      for obj in res:
+          if not Data.get(obj["CustomFields"]["cdincidentowner"]):
+              Data[obj["CustomFields"]["cdincidentowner"]]={"Analyst":obj["CustomFields"]["cdincidentowner"],"Accounts":set(),"Count":0,"MTTA":{"Time":datetime.timedelta(seconds=0),"Count":0},"MTTT":{"Time":datetime.timedelta(seconds=0),"Count":0},"MTTR":{"Time":datetime.timedelta(seconds=0),"Count":0}}
+          Data[obj["CustomFields"]["cdincidentowner"]]["Accounts"].add(obj["account"])
+          Data[obj["CustomFields"]["cdincidentowner"]]["Count"] += 1
+          if Data[obj["CustomFields"]["cdincidentowner"]].get("MTTA") and obj.get("created") and  obj["CustomFields"].get("cdacknowledgementtime") and obj["CustomFields"].get("cdacknowledgementtime") !="0001-01-01T00:00:00Z":
+              created = getDateTimeinReqFormat(obj["created"])
+              acknowledged = getDateTimeinReqFormat(obj["CustomFields"]["cdacknowledgementtime"])
+              acknowlegmentTime = acknowledged - created
+              Data[obj["CustomFields"]["cdincidentowner"]]["MTTA"]["Time"] = (
+                          Data[obj["CustomFields"]["cdincidentowner"]]["MTTA"]["Time"] + acknowlegmentTime)
+              Data[obj["CustomFields"]["cdincidentowner"]]["MTTA"]["Count"] += 1
+          if Data[obj["CustomFields"]["cdincidentowner"]].get("MTTR") and obj.get("created") and  obj.get("closed") and obj.get("closed") !="0001-01-01T00:00:00Z" :
+              created = getDateTimeinReqFormat(obj["created"])
+              closed = getDateTimeinReqFormat(obj["closed"])
+              resolutionTime = closed - created
+              Data[obj["CustomFields"]["cdincidentowner"]]["MTTR"]["Time"] = (Data[obj["CustomFields"]["cdincidentowner"]]["MTTR"]["Time"] +  resolutionTime)
+              Data[obj["CustomFields"]["cdincidentowner"]]["MTTR"]["Count"]  += 1
+          if Data[obj["CustomFields"]["cdincidentowner"]].get("MTTT") and obj["CustomFields"].get("emailincidentcreationtime") and  obj["CustomFields"].get("cdacknowledgementtime") and obj["CustomFields"].get("emailincidentcreationtime") !="0001-01-01T00:00:00Z":
+              acknowledged = getDateTimeinReqFormat(obj["CustomFields"]["cdacknowledgementtime"])
+              emailincidentcreationtime = getDateTimeinReqFormat(obj["CustomFields"]["emailincidentcreationtime"])
+              if emailincidentcreationtime >= acknowledged:
+                  triageTime =emailincidentcreationtime - acknowledged
+                  Data[obj["CustomFields"]["cdincidentowner"]]["MTTT"]["Time"] = (Data[obj["CustomFields"]["cdincidentowner"]]["MTTT"]["Time"] + triageTime)
+                  Data[obj["CustomFields"]["cdincidentowner"]]["MTTT"]["Count"] += 1
+          elif obj.get("sourceBrand") not in ('ServiceNow v2', 'ServiceNow COSTA v2') and Data[obj["CustomFields"]["cdincidentowner"]].get("MTTT") and obj["CustomFields"].get("snowincidentcreationtime") and  obj["CustomFields"].get("cdacknowledgementtime") and obj["CustomFields"].get("snowincidentcreationtime") !="0001-01-01T00:00:00Z":
+              acknowledged = getDateTimeinReqFormat(obj["CustomFields"]["cdacknowledgementtime"])
+              snowincidentcreationtime = getDateTimeinReqFormat(obj["CustomFields"]["snowincidentcreationtime"])
+              if snowincidentcreationtime >= acknowledged:
+                  triageTime =snowincidentcreationtime - acknowledged
+                  Data[obj["CustomFields"]["cdincidentowner"]]["MTTT"]["Time"] = (Data[obj["CustomFields"]["cdincidentowner"]]["MTTT"]["Time"] + triageTime)
+                  Data[obj["CustomFields"]["cdincidentowner"]]["MTTT"]["Count"] += 1
+
+      for key,value in Data.items():
+          if Data[key].get("Accounts"):
+              Data[key]["Accounts"] = ", ".join(Data[key]["Accounts"])
+          if Data[key].get("MTTA"):
+              Data[key]["MTTA"]["Count"] = 1 if Data[key]["MTTA"]["Count"]==0 else Data[key]["MTTA"]["Count"]
+              x = Data[key]["MTTA"]["Time"]/Data[key]["MTTA"]["Count"]
+              Data[key]["MTTA"] = verbose_timedelta(x)
+          if Data[key].get("MTTT"):
+              Data[key]["MTTT"]["Count"] = 1 if Data[key]["MTTT"]["Count"]==0 else Data[key]["MTTT"]["Count"]
+              x = Data[key]["MTTT"]["Time"]/Data[key]["MTTT"]["Count"]
+              Data[key]["MTTT"] = verbose_timedelta(x)
+          if Data[key].get("MTTR"):
+              Data[key]["MTTR"]["Count"] = 1 if Data[key]["MTTR"]["Count"]==0 else Data[key]["MTTR"]["Count"]
+              x = Data[key]["MTTR"]["Time"]/Data[key]["MTTR"]["Count"]
+              Data[key]["MTTR"] = verbose_timedelta(x)
+
+      Data = OrderedDict(sorted(Data.items(),reverse=True,
+                           key=lambda x: getitem(x[1], 'Count')))
+
+      demisto.results({'Type': entryTypes['note'],
+                  'Contents':list(Data.values()),
+                  'ContentsFormat': formats['json'],
+                  'HumanReadable': tableToMarkdown("SOC Analyst Report Weekly: ", list(Data.values()), ["Analyst","Accounts","Count","MTTA","MTTT","MTTR"]),
+                  'ReadableContentsFormat': formats['markdown'],
+                  "EntryContext": {"Report": list(Data.values())}
+            })
+
+
+      '''demisto.results({
+      'ContentsFormat': formats["json"],
+      'Type': entryTypes["note"],
+      'Contents':list(Data.values()),
+      #"HumanReadable": list(Data.values()),
+      "EntryContext": {"Report": list(Data.values())}
+      })
+      # demisto.results({ "Total": len(Data.values()), "Data": list(Data.values())})'''
+scripttarget: 0
+subtype: python3
+tags: []
+timeout: 600ns
+type: python
