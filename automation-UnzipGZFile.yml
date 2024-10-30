@@ -1,0 +1,161 @@
+args:
+- description: CSV list of entry ids for the gzipped files to unzip.
+  isArray: true
+  name: entryID
+  required: true
+comment: Unzip a gz file and upload to war room
+commonfields:
+  id: UnzipGZFile
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.5.0
+    itemVersion: 1.0.0
+    packID: GZip
+    packName: GZip
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/py3-tools:1.0.0.47433
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: UnzipGZFile
+outputs:
+- contextPath: UnzipGZFile.UnzippedGZFiles
+  description: List of unzipped gz files
+  type: string
+- contextPath: File.Name
+  description: The full file name (including file extension).
+  type: String
+- contextPath: File.EntryID
+  description: The ID for locating the file in the War Room.
+  type: String
+- contextPath: File.Size
+  description: The size of the file in bytes.
+  type: Number
+- contextPath: File.MD5
+  description: The MD5 hash of the file.
+  type: String
+- contextPath: File.SHA1
+  description: The SHA1 hash of the file.
+  type: String
+- contextPath: File.SHA256
+  description: The SHA1 hash of the file.
+  type: String
+- contextPath: File.SHA512
+  description: The SHA512 hash of the file.
+  type: String
+- contextPath: File.SSDeep
+  description: The ssdeep hash of the file (same as displayed in file entries).
+  type: String
+- contextPath: File.Extension
+  description: 'The file extension, for example: ''xls''.'
+  type: String
+- contextPath: File.Type
+  description: The file type, as determined by libmagic (same as displayed in file
+    entries).
+  type: String
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('UnzipGZFile', 'start', __line__())
+  ### pack version: 1.0.0
+
+
+  import gzip
+  import re
+  import shutil
+  from os.path import isfile
+
+
+  ESCAPE_CHARACTERS = r'[/\<>"|?*]'
+
+
+  def escape_illegal_characters_in_file_name(file_name: str) -> str:
+      if file_name:
+          file_name = re.sub(ESCAPE_CHARACTERS, '-', file_name)
+          file_name = re.sub(r'-+', '-', file_name)  # prevent more than one consecutive dash in the file name
+
+      return file_name
+
+
+  def gzip_file(fileEntryID: str):
+      entry_ids = argToList(fileEntryID)
+      file_names = list()
+      for entry_id in entry_ids:
+          res = demisto.executeCommand('getFilePath', {'id': entry_id})
+
+          if is_error(res):
+              raise DemistoException(
+                  'Failed to get the file path for entry: ' + entry_id + ' the error message was ' + get_error(res))
+
+          filePath = res[0]['Contents']['path']
+          fileCurrentName = escape_illegal_characters_in_file_name(res[0]['Contents']['name'])
+
+          if not isfile(filePath):  # in case that the user will send a directory
+              raise DemistoException(entry_id + ' is not a file. Please recheck your input.')
+
+          # Handling duplicate names.
+          if fileCurrentName in file_names:
+              name, ext = os.path.splitext(fileCurrentName)
+              i = 0
+              while fileCurrentName in file_names:
+                  i += 1
+                  fileCurrentName = f'{name} {i}{ext}'
+          # copying the file to current location
+          shutil.copy(filePath, fileCurrentName)
+          file_names.append(fileCurrentName)
+
+      unzippedgzFileNames = []
+      for file_name in file_names:
+          with gzip.open(file_name, 'r') as f_in, open(file_name[:-3], 'wb') as f_out:
+              shutil.copyfileobj(f_in, f_out)
+          with open(file_name[:-3], 'rb') as f:
+              file_data = f.read()
+          demisto.results(fileResult(file_name[:-3], file_data))
+          unzippedgzFileNames.append(file_name[:-3])
+
+      readable_output = tableToMarkdown(name="Unzipped GZ Files",
+                                        t=[{'Unzipped GZ File Names': unzippedgzFileNames, 'Original File Names': file_names}],
+                                        removeNull=True)
+
+      return CommandResults(
+          outputs_prefix="UnzipGZFile.UnzippedGZFiles",
+          outputs_key_field="UnzippedGZFiles",
+          outputs=unzippedgzFileNames,
+          readable_output=readable_output,
+          raw_response={'UnzippedGZFiles': unzippedgzFileNames},
+      )
+
+
+  def main():
+      try:
+          args = demisto.args()
+          entryID = args.get('entryID')
+
+          if not entryID:
+              raise DemistoException('You must set an entryID when using the unzip GZ script')
+
+          result = gzip_file(fileEntryID=entryID)
+          return_results(result)
+
+      except Exception as exc:
+          return_error(exc)
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+  register_module_line('UnzipGZFile', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- Utility
+- file
+type: python
