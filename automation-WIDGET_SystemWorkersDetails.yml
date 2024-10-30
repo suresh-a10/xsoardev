@@ -1,0 +1,50 @@
+args:
+- name: from
+commonfields:
+  id: ff45c0e0-d601-44a8-8df6-975a0fc89e56
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: WIDGET_SystemWorkersDetails
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  var date = getFrom(args.from);
+  var res = executeCommand("getWorkersStatistics", {});
+  if (isError(res[0])) {
+      return res;
+  }
+
+  var table = [];
+
+  res[0].Contents.ProcessInfo.forEach(function(worker){
+
+      details = worker.Details.match(/task \[(.+)\] \[(.+)\], playbook \[(.+)\], investigation \[(.+)\]/);
+
+      table.push({
+          'Task ID': '#' + details[1],
+          'Task Name': details[2],
+          'Playbook Name': details[3],
+          'Incident ID': '#' + details[4],
+          Duration: parseInt(worker.Duration / 1000000000) + 's'
+      });
+  });
+
+  return JSON.stringify({total: table.length, data:table});
+scripttarget: 0
+tags:
+- widget
+type: javascript
