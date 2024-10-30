@@ -1,0 +1,171 @@
+args:
+- defaultValue: "-5"
+  description: The display limit for the incident IDs. Python slice value. Negative
+    number is the end of the list.
+  name: MAX_DISPLAYED_IDS
+  required: true
+- description: Replacement text for blank cell. Can be left blank.
+  name: BLANK_ROW_TEXT
+- defaultValue: https://<IPAddress/#/incident/
+  description: Server URL when incident IDs are displayed in MD. Should be the server
+    URL + layout URI.
+  name: INCIDENT_LINK
+  required: true
+- defaultValue: "600"
+  description: 'Safe guard to prevent negative performance. '
+  name: MAX_INDICATOR_FETCH
+  required: true
+- auto: PREDEFINED
+  default: true
+  description: Order the columns are displayed in. Also controls if the columns is
+    displyed.
+  isArray: true
+  name: COLUMN_ORDER
+  predefined:
+  - Reconnaissance
+  - Resource Development
+  - Initial Access
+  - Execution
+  - Persistence
+  - Privilege Escalation
+  - Defense Evasion
+  - Credential Access
+  - Discovery
+  - Lateral Movement
+  - Collection
+  - Command and Control
+  - Exfiltration
+  - Impact
+  - "null"
+  type: textArea
+- description: Replacement text if no incidents are found.
+  name: NO_ID_TEXT
+- auto: PREDEFINED
+  description: Choose the output format of the script.
+  name: DISPLAY_FORMAT
+  predefined:
+  - MARKDOWN
+  - TABLE
+  required: true
+- auto: PREDEFINED
+  description: Format of the incident list. Can be either COUNT or LIST. If you choose
+    list then the MAX_DISPLAYED_IDS is used to limit the output.
+  name: INCIDENT_FORMAT
+  predefined:
+  - LIST
+  - COUNT
+  required: true
+commonfields:
+  id: a581a47e-42b6-4ec1-85b7-ba2df12e6342
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.4.27798
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: makeMITRETable
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  # Script Variable Set
+  MAX_DISPLAYED_IDS = int(demisto.args()['MAX_DISPLAYED_IDS'])
+  BLANK_ROW_TEXT = demisto.args().get('BLANK_ROW_TEXT',"")
+  INCIDENT_LINK = demisto.args()['INCIDENT_LINK']
+  INDICATOR_QUERY = 'type:"Attack Pattern" and sourceBrands:"MITRE ATT&CK v2"'
+  MAX_INDICATOR_FETCH = int(demisto.args().get('MAX_INDICATOR_FETCH',600))
+  COLUMN_ORDER = demisto.args()['COLUMN_ORDER'].split(",")
+  NO_ID_TEXT = ""
+  DISPLAY_FORMAT = demisto.args()['DISPLAY_FORMAT']
+  INCIDENT_FORMAT = demisto.args()['INCIDENT_FORMAT']
+  # End of Script variable set
+
+  import json
+  # Variables
+  incidentLink = "[{id}]({link}{id})"
+  output = {}
+  outputTable = []
+
+  fetchIndicators = IndicatorsSearcher(size=MAX_INDICATOR_FETCH)
+  indicators = fetchIndicators.search_indicators_by_version(query=INDICATOR_QUERY, size=MAX_INDICATOR_FETCH).get('iocs')
+  for indicator_data in indicators:
+      if indicator_data['CustomFields'].get('killchainphases'):
+          if indicator_data['CustomFields']['killchainphases'][0] not in output.keys():
+              output[indicator_data['CustomFields']['killchainphases'][0]] = [{(indicator_data['value']).split(': ')[0] : indicator_data.get('investigationIDs', [])}]
+          else:
+              match = 0
+              for item in output[indicator_data['CustomFields']['killchainphases'][0]]:
+                  if indicator_data['value'].split(": ")[0] in item.keys():
+                      match = 1
+              if match == 0:
+                  output[indicator_data['CustomFields']['killchainphases'][0]].append({(indicator_data['value']).split(': ')[0] : indicator_data.get('investigationIDs', [])})
+
+  # Get the oldest incident for the current date range
+  lastIncidentID = 0
+  if demisto.args().get('from'):
+      res = demisto.executeCommand("getIncidents", {"page" : 0, "size" : 1, "fromdate" : str(demisto.args()['from']), "query" : "-category:job", "sort" : "id.asc"})[0]['Contents']['data']
+      if res:
+          lastIncidentID = int(res[0]['id'])
+  header = list(output.keys())
+  rowIndex = 0
+  while rowIndex <= 100: # Safe guardadded 2 new option
+      rowData = {}
+      columnIndex = 0
+      # Below variable is used to check if an entire row is printed with no data, loop will end
+      anyData = False
+      for item in output:
+          if rowIndex >= len(output[item]):
+              rowData[header[columnIndex]] = BLANK_ROW_TEXT
+              columnIndex += 1
+          else:
+              anyData = True
+              # Build the incident list
+              incidentList = output[item][rowIndex].get(list(output[item][rowIndex].keys())[0])
+              incidentList = [inc for inc in incidentList if (isinstance(inc, int) and int(inc) >= lastIncidentID)]
+              if INCIDENT_FORMAT == "COUNT":
+                  incResult = f"({len(incidentList)})"
+              else:
+                  if len(incidentList) == 0:
+                      incResult = NO_ID_TEXT
+                  else:
+                      if DISPLAY_FORMAT == "MARKDOWN":
+                          incidentList = [f"{incidentLink.format(id=ids,link=INCIDENT_LINK)}" for ids in incidentList][MAX_DISPLAYED_IDS:]
+                          incResult = f"{str(', '.join(incidentList))}"
+                      else:
+                          incResult = f"{str(', '.join(incidentList[MAX_DISPLAYED_IDS:]))}"
+              incResult = str(list(output[item][rowIndex].keys())[0]).replace("\r","") + f"\r{incResult}"
+              rowData[header[columnIndex]] = incResult
+              columnIndex += 1
+      if not anyData:
+          break
+      else:
+          outputTable.append(rowData)
+      rowIndex += 1
+
+  if DISPLAY_FORMAT == 'MARKDOWN':
+      return_results({
+      'Type': entryTypes['note'],
+      'ContentsFormat': formats['markdown'],
+      'Contents': tableToMarkdown("Mitre - Att&ck Navigator", outputTable, COLUMN_ORDER)
+      })
+  else:
+      demisto.results(
+          { "total": 3,
+          "data": outputTable
+          })
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+timeout: 300ns
+type: python
