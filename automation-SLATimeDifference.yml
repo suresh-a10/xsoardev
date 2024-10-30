@@ -1,0 +1,79 @@
+args:
+- name: start_time
+  required: true
+- name: end_time
+  required: true
+commonfields:
+  id: bc02e6b6-04df-49db-866d-f9a1d66a2e3f
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SLATimeDifference
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import dateparser
+  import pytz
+  from datetime import datetime
+  def convert_to_ist(time_str):
+     # Convert any given time to Asia/Kolkata timezone
+     date = dateparser.parse(time_str)
+     if date is None:
+         raise ValueError(f"Could not parse time: {time_str}")
+     ist_timezone = pytz.timezone('Asia/Kolkata')
+     return date.astimezone(ist_timezone)
+  def calculate_time_difference(start_time_str, end_time_str):
+     # Convert start and end times to IST
+     start_time = convert_to_ist(start_time_str)
+     end_time = convert_to_ist(end_time_str)
+     # Calculate the difference
+     time_difference = end_time - start_time
+     # Get the difference in days, hours, minutes, and seconds
+     days_difference = time_difference.days
+     remaining_seconds = time_difference.seconds
+     hours_difference = remaining_seconds // 3600
+     minutes_difference = (remaining_seconds % 3600) // 60
+     seconds_difference = remaining_seconds % 60
+     # Format the result string
+     result_string = (f"{days_difference} day{'s' if days_difference != 1 else ''}, "
+                      f"{hours_difference} hour{'s' if hours_difference != 1 else ''}, "
+                      f"{minutes_difference} minute{'s' if minutes_difference != 1 else ''}, "
+                      f"and {seconds_difference} second{'s' if seconds_difference != 1 else ''}")
+     return {
+         "formatted_difference": result_string
+
+     }
+  def main():
+     # Fetch the arguments
+     start_time_str = demisto.args().get('start_time')
+     end_time_str = demisto.args().get('end_time')
+     if not start_time_str or not end_time_str:
+         return_error("Both 'start_time' and 'end_time' arguments are required")
+     try:
+         result = calculate_time_difference(start_time_str, end_time_str)
+         # Store the result in the context
+         demisto.setContext("TimeDifference", result)
+         # Optionally, return the result for visibility
+         return_results(result)
+     except Exception as e:
+         return_error(f"Failed to calculate time difference: {str(e)}")
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+     main()
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
