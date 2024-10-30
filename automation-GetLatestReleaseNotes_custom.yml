@@ -1,0 +1,76 @@
+args:
+- default: true
+  description: The content data path from the context, for example "${ContentData}".
+  isArray: true
+  name: content_data
+  required: true
+comment: This script retrieves the latest release notes for selected packs.
+commonfields:
+  id: c50fbfb9-2c6d-48e7-80e1-3703a6df58f0
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.12.63474
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetLatestReleaseNotes_custom
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('GetLatestReleaseNotes', 'start', __line__())
+  ### pack version: 1.0.6
+
+
+  from distutils.version import LooseVersion
+
+
+  def get_relevant_versions(changelog, current_version):
+      data = {}
+      for version, version_info in changelog.items():
+          if LooseVersion(version) > current_version:
+              data[version] = version_info
+
+      return data
+
+
+  def update_pack_info(pack_info):
+      current_version = LooseVersion(pack_info.get('currentVersion', '1.0.0'))
+      changelog = pack_info.get('changelog', {})
+      pack_info['changelog'] = get_relevant_versions(changelog, current_version)
+
+
+  def main(args):
+      content_data = args.get('content_data', [])
+      if not isinstance(content_data, list):
+          content_data = [content_data]
+
+      for pack_info in content_data:
+          update_pack_info(pack_info)
+
+      return_results(CommandResults(
+          readable_output='ContentData was modified.',
+          outputs_prefix='ContentDataUpdated',
+          outputs_key_field='packID',
+          outputs=content_data,
+      ))
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):  # pragma: no cover
+      main(demisto.args())
+
+  register_module_line('GetLatestReleaseNotes', 'end', __line__())
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
