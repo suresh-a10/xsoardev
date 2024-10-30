@@ -1,0 +1,68 @@
+comment: |-
+  Dynamic display script to display a list of useful Analyst Tools on an Incident layout.
+
+  Create an XSOAR list called "Case Management Analyst Tools", and add a markdown table to provide your own list.
+commonfields:
+  id: CaseMgmtAnalystTools
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.2.0
+    itemVersion: 1.4.8
+    packID: CaseManagement-Generic
+    packName: CaseManagement-Generic
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.14.100715
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CaseMgmtAnalystTools
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('CaseMgmtAnalystTools', 'start', __line__())
+  ### pack version: 1.4.8
+
+
+
+
+  # requires an XSOAR list that contains a markdown table with links to important Analyst Tools (wikis, google, etc)
+
+  # get the Case Management Analyst Tools list
+  tools = demisto.executeCommand("getList", {"listName": "Case Management Analyst Tools"})[0]['Contents']
+
+  # default tools, if the above list does not exist.
+  default_tools = """
+  | Link | Description |
+  | --- | --- |
+  | [Palo Alto Networks URL Filtering](https://urlfiltering.paloaltonetworks.com/) | Check a URL Category via Palo Altos Test a Site utility |
+  | [Cortex XSOAR Admin Guide](https://docs-cortex.paloaltonetworks.com/p/XSOAR) | Cortex XSOAR Admin Guide |
+  | [Cortex XSOAR Developer Guide](https://xsoar.pan.dev/) | The XSOAR Developer Guide |
+  | [Cortex XSOAR Integration Reference](https://xsoar.pan.dev/docs/reference/index) | Reference documentation for Cortex XSOAR Integrations |
+  | [Palo Alto Networks Live Community](https://live.paloaltonetworks.com/) | Palo Alto Networks Live Community, which includes training and how-to blog posts! |
+  | [Palo Alto Networks Support Portal](https://support.paloaltonetworks.com/) | Palo Alto Networks Support Portal |
+
+  **To create your own list, create an XSOAR list called "+Case Management Analyst Tools+", and add a Markdown Table with your own list.**
+  """  # noqa: E501
+
+  # check if the list exists, if not, display the default_tools
+  if "Item not found" in tools:
+      tools = default_tools
+
+  # return markdown in results.
+  result = CommandResults(readable_output=tools, ignore_auto_extract=True)
+  return_results(result)
+
+  register_module_line('CaseMgmtAnalystTools', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- dynamic-section
+type: python
