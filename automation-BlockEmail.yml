@@ -1,0 +1,86 @@
+commonfields:
+  id: 584c9e42-2e4b-4446-87b5-9c88745a645a
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.87159
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: BlockEmail
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  from typing import Dict, Any
+  import traceback
+  import requests
+
+
+  ''' MAIN FUNCTION '''
+
+  def blocking_action():
+
+      block_url = f"api/v1/emailProtection/modules/spam/orgBlockList?clusterId={clusterId}"
+      block_url = BASE_URL + block_url
+      block_access = get_access_token()
+      header = {'Authorization': f'Bearer {block_access}','Content-Type': 'application/json'}
+
+      #command input parameters
+      block_action = demisto.args().get('action')
+      block_attribute = demisto.args().get('attribute')
+      block_attribute = '$' + block_attribute
+      block_operator = demisto.args().get('operator')
+      block_value = demisto.args().get('value')
+      leg_value = block_value.split(",")
+      leg = len(leg_value)
+      block_comment = demisto.args().get('comment')
+
+      header = {
+          'Authorization': f'Bearer {block_access}',
+          'Content-Type': 'application/json'
+      }
+
+      data = []
+
+      for i in range(leg):
+          val = leg_value[i]
+          body = {
+              'action': block_action,
+              'attribute': block_attribute,
+              'operator': block_operator,
+              'value': val,
+              'comment': block_comment
+          }
+          block_request = requests.post(block_url,headers=header,proxies=proxy,json=body)
+          context_data = block_request_body_process(block_request,block_action,val)
+          data.append(context_data)
+  def main():
+      try:
+          # TODO: replace the invoked command function with yours
+          return_results(basescript_dummy_command(demisto.args()))
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
