@@ -1,0 +1,343 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 8376d6df-a38f-4a2a-8b70-f4e43db50042
+inputs:
+- description: ""
+  key: hoursago
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "1000"
+name: MSSentinelIncidentValidator
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2094a485-1bf1-4535-8b38-010ca32fb55e
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 2094a485-1bf1-4535-8b38-010ca32fb55e
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      contextKey:
+        simple: refDate
+      dateFormat:
+        simple: ISO
+      hoursAgo:
+        simple: ${inputs.hoursago}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        Retrieves the current date and time.
+      id: b1d2bc4b-72aa-4a5a-8cbb-8bd2d89563d6
+      iscommand: false
+      name: AddDateTimetoContext
+      script: GetTime
+      type: regular
+      version: -1
+    taskid: b1d2bc4b-72aa-4a5a-8cbb-8bd2d89563d6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 195
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      filter:
+        complex:
+          root: refDateTimeNow
+          transformers:
+          - args:
+              prefix:
+                value:
+                  simple: 'properties/createdTimeUtc gt '
+              suffix: {}
+            operator: concat
+      limit:
+        simple: "100"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Azure Sentinel
+      description: Gets a list of incidents from Azure Sentinel.
+      id: 8bf83eaa-bbb9-4054-8b65-1743c4fe5be0
+      iscommand: true
+      name: Get Sentinel ID from reference Time
+      script: Azure Sentinel|||azure-sentinel-list-incidents
+      type: regular
+      version: -1
+    taskid: 8bf83eaa-bbb9-4054-8b65-1743c4fe5be0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 370
+        }
+      }
+  "4":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: AzureSentinel.Incident.ID
+          operator: isExists
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "8"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4c3fadbf-979b-4b7e-8a62-f6eebded7787
+      iscommand: false
+      name: Are there results
+      type: condition
+      version: -1
+    taskid: 4c3fadbf-979b-4b7e-8a62-f6eebded7787
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 545
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: |
+          These are the Sentinel Incident Number that were missed.
+
+          ${missingSentinelIncident}
+      subject:
+        simple: MIssed Sentinel Incident
+      to:
+        simple: sramesh1@paloaltonetworks.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sends an email.
+      id: 001a156b-725b-49f2-818f-c0b83578ec98
+      iscommand: true
+      name: Send Email with missing incident
+      script: '|||send-mail'
+      type: regular
+      version: -1
+    taskid: 001a156b-725b-49f2-818f-c0b83578ec98
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1070
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      id:
+        simple: ${AzureSentinel.Incident.IncidentNumber}
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b4a286b8-29a2-4b23-8941-485e9d535e4c
+      iscommand: false
+      name: searchRelevantXSOARIncident
+      playbookId: a568e71f-82fd-4589-848e-f61e09c86222
+      type: playbook
+      version: -1
+    taskid: b4a286b8-29a2-4b23-8941-485e9d535e4c
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 720
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 7eb6813d-60ae-44e8-886e-f30dda9f87a1
+      iscommand: true
+      name: CloseIncident
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 7eb6813d-60ae-44e8-886e-f30dda9f87a1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1245
+        }
+      }
+  "9":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${missingSentinelIncident}
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "8"
+      "yes":
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1f08541d-4291-4990-8b30-de9ef333936d
+      iscommand: false
+      name: Are there missing Sentinel Incident
+      type: condition
+      version: -1
+    taskid: 1f08541d-4291-4990-8b30-de9ef333936d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 895
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1290,
+        "width": 492.5,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
