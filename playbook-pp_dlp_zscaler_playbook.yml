@@ -1,0 +1,851 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: ee1185fc-25a5-4048-861b-499bbdc3b4c6
+inputs: []
+name: pp_dlp_zscaler_playbook
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 72f65786-f310-4a20-87b8-53bab3574f89
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 72f65786-f310-4a20-87b8-53bab3574f89
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 65
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      earliest_time:
+        simple: -24h
+      execution-timeout:
+        simple: "900"
+      query:
+        simple: "index=corp_security_zscaler sourcetype=zscaler_web NOT action=\"Allowed\"
+          NOT dlpengine=\"None\" AND dlpengine=\"DLP*\" \n| stats count(dlpidentifier)
+          as Total_Events by dlpengine \n| search dlpengine IN (\"DLP Auth Answers
+          Engine\",\"DLP Auth Passwords Engine\",\"DLP Company Confidential Documents
+          Engine\",\"DLP Compliance Blacklist Engine\",\"DLP PPC Engine\",\"DLP Passport
+          Engine\",\"DLP US Drivers License Engine\",\"DLP US SSN Engine\", \"DLP
+          PCI DSS Engine\", \"DLP US Tax ID Engine\", \"DLP CCN Engine\", \"DLP Swift
+          Codes Engine\", \"DLP Regex for Hostnames Engine\", \"DLP Regex for Passwords
+          Engine\") \n| sort -Total_Events \n| eval result=dlpengine+\": \"+Total_Events
+          \n| table result \n| stats values(result) as result"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 541ee428-d764-4303-8990-42d428dc9fbd
+      iscommand: false
+      name: Splunk query for zscaler policy engine
+      script: pp_splunk_search_v2
+      type: regular
+      version: -1
+    taskid: 541ee428-d764-4303-8990-42d428dc9fbd
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1390
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      channel:
+        simple: ${slack_channel_name}
+      message:
+        simple: |-
+          Monitoring Alert for Block Policies with ZIR turned on:
+
+          ${slack_message}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: SlackV2
+      description: Sends a message to a user, group, or channel.
+      id: b8d7a617-c94e-41d6-8f2b-1e2328d6170f
+      iscommand: true
+      name: Send splunk results to slack
+      script: SlackV2|||send-notification
+      type: regular
+      version: -1
+    taskid: b8d7a617-c94e-41d6-8f2b-1e2328d6170f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1915
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      resolution:
+        simple: Auto-closed
+      resolutionsummary:
+        simple: Auto-closed
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: fa0acd13-f07f-425d-8aa2-1c438f165223
+      iscommand: false
+      name: Close investigation
+      script: pp_CloseInvestigation_v2
+      type: regular
+      version: -1
+    taskid: fa0acd13-f07f-425d-8aa2-1c438f165223
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 2440
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Splunk
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Delete field from context
+      id: 39c35143-c8a0-48c7-8569-68514cb31698
+      iscommand: false
+      name: Delete Splunk context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 39c35143-c8a0-48c7-8569-68514cb31698
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 2090
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Splunk
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Delete field from context
+      id: af79bd01-79ac-484d-8cfe-e705e874ddff
+      iscommand: false
+      name: Delete Splunk context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: af79bd01-79ac-484d-8cfe-e705e874ddff
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 400
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      earliest_time:
+        simple: -24h
+      execution-timeout:
+        simple: "900"
+      query:
+        simple: "index=corp_security_zscaler sourcetype=zscaler_web NOT action=\"Allowed\"NOT
+          dlpengine=\"None\"AND dlpengine IN (\"DLP Auth Answers Engine\",\"DLP Auth
+          Passwords Engine\",\"DLP Company Confidential Documents Engine\",\"DLP Compliance
+          Blacklist Engine\",\"DLP PPC Engine\",\"DLP Passport Engine\",\"DLP US Drivers
+          License Engine\",\"DLP US Drivers License Engine\",\"DLP US SSN Engine\",
+          \"DLP PCI DSS Engine\", \"DLP US Tax ID Engine\", \"DLP CCN Engine\", \"DLP
+          Swift Codes Engine\", \"DLP Regex for Hostnames Engine\", \"DLP Regex for
+          Passwords Engine\") \n| stats count(dlpidentifier) as Total_Events | head
+          1"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 989b8e41-dfae-4a76-83af-9621c590d621
+      iscommand: false
+      name: Splunk query for zscaler policy engine (total volume)
+      script: pp_splunk_search_v2
+      type: regular
+      version: -1
+    taskid: 989b8e41-dfae-4a76-83af-9621c590d621
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 720
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      channel:
+        simple: ${slack_channel_name}
+      message:
+        simple: |-
+          -------------------------------------------------------------------------------------
+
+          Total Volume of Blocked Events in Last 24 Hour: ${Splunk.Result.[0].Total_Events}
+
+          -------------------------------------------------------------------------------------
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: SlackV2
+      description: Sends a message to a user, group, or channel.
+      id: 62c880c1-5d95-4b24-8094-da75b0333345
+      iscommand: true
+      name: Send splunk results to slack
+      script: SlackV2|||send-notification
+      type: regular
+      version: -1
+    taskid: 62c880c1-5d95-4b24-8094-da75b0333345
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 895
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: slack_message
+      stringify:
+        simple: "true"
+      value:
+        simple: ${Splunk.Result.result}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 574eea68-f2c9-47bd-8c28-c5fa32231546
+      iscommand: false
+      name: Move splunk results to slack_message context data
+      script: Set
+      type: regular
+      version: -1
+    taskid: 574eea68-f2c9-47bd-8c28-c5fa32231546
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1565
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "false"
+      key:
+        simple: slack_message
+      value:
+        complex:
+          root: ${slack_message}
+          transformers:
+          - args:
+              regex:
+                value:
+                  simple: \["
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              regex:
+                value:
+                  simple: '","'
+              replaceWith:
+                value:
+                  simple: |2+
+
+            operator: replaceMatch
+          - args:
+              regex:
+                value:
+                  simple: '"\]'
+              replaceWith: {}
+            operator: replaceMatch
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 358b7615-1824-4eeb-8fc2-22e097c2c558
+      iscommand: false
+      name: Replace characters in slack_message
+      script: Set
+      type: regular
+      version: -1
+    taskid: 358b7615-1824-4eeb-8fc2-22e097c2c558
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1740
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: slack_channel_name
+      value:
+        simple: dlp_alerts_monitoring
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 74d479dc-b721-4fcc-84e1-fbe08b8ddd80
+      iscommand: false
+      name: Set slack channel name
+      script: Set
+      type: regular
+      version: -1
+    taskid: 74d479dc-b721-4fcc-84e1-fbe08b8ddd80
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 225
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      earliest_time:
+        simple: -24h
+      execution-timeout:
+        simple: "900"
+      query:
+        simple: "index=corp_security_zscaler appname=\"OneDrive (Personal)\" NOT dlpengine=\"None\"
+          dlpengine=\"DLP*\" \n| stats count(dlpidentifier) as Total_Events by action
+          \n| eval result=action+\": \"+Total_Events \n| stats values(result) as result"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d61b5d01-1c09-4302-86e4-a1e7a7a80ead
+      iscommand: false
+      name: Splunk query for zscaler policy engine (total volume)
+      script: pp_splunk_search_v2
+      type: regular
+      version: -1
+    taskid: d61b5d01-1c09-4302-86e4-a1e7a7a80ead
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1565
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 73832017-cd7a-408c-8326-80b1f3a17e2a
+      iscommand: false
+      name: Zscaler DLP policies total volume
+      type: title
+      version: -1
+    taskid: 73832017-cd7a-408c-8326-80b1f3a17e2a
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 575
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 63af5da7-9058-4654-8373-19c73a50f14c
+      iscommand: false
+      name: Zscaler volume by DLP policy
+      type: title
+      version: -1
+    taskid: 63af5da7-9058-4654-8373-19c73a50f14c
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1245
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c319f786-e0f1-450b-8767-49e0845ad230
+      iscommand: false
+      name: OneDrive Personal traffic volume
+      type: title
+      version: -1
+    taskid: c319f786-e0f1-450b-8767-49e0845ad230
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1405
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Splunk
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Delete field from context
+      id: 02f21a30-5e54-4fc3-8864-5b0c61003884
+      iscommand: false
+      name: Delete Splunk context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 02f21a30-5e54-4fc3-8864-5b0c61003884
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1070
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Splunk
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Delete field from context
+      id: 625659d5-bea9-4f6c-8efa-380bdeaaeb43
+      iscommand: false
+      name: Delete Splunk context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 625659d5-bea9-4f6c-8efa-380bdeaaeb43
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 2265
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: slack_message
+      stringify:
+        simple: "true"
+      value:
+        simple: ${Splunk.Result.result}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: ebdd130d-2f36-4131-881c-f120feba9b27
+      iscommand: false
+      name: Move splunk results to slack_message context data
+      script: Set
+      type: regular
+      version: -1
+    taskid: ebdd130d-2f36-4131-881c-f120feba9b27
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1740
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      name:
+        simple: test_20211202_1
+      type:
+        simple: private
+      users:
+        simple: CDC Bot, lihlim
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: SlackV2
+      description: Creates a channel in Slack.
+      id: cc76f143-8789-4afe-8fe6-34d3fc7040b6
+      iscommand: true
+      name: Create channel
+      script: SlackV2|||slack-create-channel
+      type: regular
+      version: -1
+    taskid: cc76f143-8789-4afe-8fe6-34d3fc7040b6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 50
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      channel:
+        simple: ${slack_channel_name}
+      message:
+        simple: |-
+          ===OneDrive Personal traffic volume===
+          ${slack_message}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: SlackV2
+      description: Sends a message to a user, group, or channel.
+      id: d22cfd2c-7158-41c6-8057-19de338828c7
+      iscommand: true
+      name: Send splunk results to slack
+      script: SlackV2|||send-notification
+      type: regular
+      version: -1
+    taskid: d22cfd2c-7158-41c6-8057-19de338828c7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 2090
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "false"
+      key:
+        simple: slack_message
+      value:
+        complex:
+          root: ${slack_message}
+          transformers:
+          - args:
+              regex:
+                value:
+                  simple: \["
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              regex:
+                value:
+                  simple: '","'
+              replaceWith:
+                value:
+                  simple: |2+
+
+            operator: replaceMatch
+          - args:
+              regex:
+                value:
+                  simple: '"\]'
+              replaceWith: {}
+            operator: replaceMatch
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: a6a25fcd-e98b-4bb5-8b50-7d7d49f87b4e
+      iscommand: false
+      name: Replace characters in slack_message
+      script: Set
+      type: regular
+      version: -1
+    taskid: a6a25fcd-e98b-4bb5-8b50-7d7d49f87b4e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1915
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 2485,
+        "width": 1240,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
