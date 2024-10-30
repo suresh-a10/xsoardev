@@ -1,0 +1,126 @@
+args:
+- description: CSV file path
+  name: twitter_feed_path
+commonfields:
+  id: e58b486a-a31b-4566-8d85-bed26e2adb5e
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.8.24399
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: pp_threatintel_fetch_twitter_feed
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  import time
+
+  twitter_feed_path =  demisto.args()['twitter_feed_path']
+
+  '''
+  def is_indicator_in_splunk(indicator):
+      return_results("in is_indicator_in_splunk")
+      query="""| inputlookup ecscti_feed_raw_twitter_via_demisto.csv
+      | search indicator=\""""+indicator+"""\"
+      """
+      ##need to use splunk-search native automation as it will directly fetch the data into splunk_request[0]['Contents']
+      splunk_request=demisto.executeCommand("splunk-search",{"query":query,"earliest_time":"-24h","using":"Splunk_API_int","execution-timeout":"600"})
+      return_results(query)
+      return_results(str(splunk_request[0]['Contents']))
+      if str(splunk_request[0]['Contents']) == "No result returned":
+          return False
+      else:
+          return True
+  '''
+
+  def add_indicator_to_lookup_file(uniqueKey,append_statement):
+      return_results("in add_indicator_to_lookup_file")
+      ##build indicator data
+      unique_data="| where NOT sourceURL IN ("
+      for unique in uniqueKey:
+          unique_data=unique_data+"\""+unique+"\","
+      unique_data=unique_data[:-1]+")"
+      ##if dedup:
+      query="""| inputlookup ecscti_feed_raw_twitter_via_demisto.csv
+      """+unique_data+"""
+      """+append_statement+"""
+      |fields - _time
+      | outputlookup ecscti_feed_raw_twitter_via_demisto.csv
+      """
+      ##need to use splunk-search native automation as it will directly fetch the data into splunk_request[0]['Contents']
+      return_results(query)
+      return_results(demisto.executeCommand("Set",{"key":"queries","value":str(query),"append":True}))
+      splunk_request=demisto.executeCommand("splunk-search",{"query":query,"earliest_time":"-24h","using":"Splunk_API_int","execution-timeout":"600"})
+      ##return_results(splunk_request)
+      return
+
+  ##########################################################################################
+  http_request=demisto.executeCommand("http",{"method":"GET", "url":twitter_feed_path,"proxy":True})
+  if 'Body' in http_request[0]['Contents']:
+      twitter_results=http_request[0]['Contents']['Body']
+      twitter_results=twitter_results.split("\r\n")
+      num_of_indicators=len(twitter_results)-1
+      return_results(str(num_of_indicators)+" number of indicators to be loaded")
+      if num_of_indicators == 0:
+          ##retry to confirm it
+          return_results("retrying the http request again")
+          http_request=demisto.executeCommand("http",{"method":"GET", "url":twitter_feed_path,"proxy":True})
+          twitter_results=http_request[0]['Contents']['Body']
+          twitter_results=twitter_results.split("\r\n")
+          num_of_indicators=len(twitter_results)-1
+          return_results(str(num_of_indicators)+" number of indicators to be loaded")
+      ##directly load the results into the splunk lookup in batches of batch_indicator_load_limit
+      indicator_loaded_count=0
+      total_indicator_loaded_count=0
+      batch_indicator_load_limit=50
+      append_statement=""
+      uniqueKey=[]
+      for i in range(num_of_indicators):
+          if indicator_loaded_count<batch_indicator_load_limit:
+              indicator_loaded_count=indicator_loaded_count+1
+              total_indicator_loaded_count=total_indicator_loaded_count+1
+              result=twitter_results[i]
+              result=result.split(",")
+
+              timePublished=result[0]
+              sourceHandle=result[1]
+              indicator_type=result[2]
+              indicator=result[3]
+              hashtag=result[4]
+              sourceURL=result[5]
+              ##if is_indicator_in_splunk(indicator):
+              ##indicator is not found in lookup file or load the indicator into the file
+              #return_results("create splunk append statement for indicator "+str(indicator))
+              uniqueKey.append(sourceURL)
+              temp="timePublished=\""+timePublished+"\", sourceHandle=\""+sourceHandle+"\", indicator_type=\""+indicator_type+"\", indicator=\""+indicator+"\", hashtag=\""+hashtag+"\", sourceURL=\""+sourceURL+"\""
+              append_statement=append_statement+"| append [| makeresults | eval "+temp+"]"
+
+
+          if indicator_loaded_count == batch_indicator_load_limit or total_indicator_loaded_count == num_of_indicators:
+              return_results(i)
+              return_results("Load "+str(batch_indicator_load_limit)+" indicators into splunk")
+              for j in range(2):##try to add the indicators 2 times just in case the first time didn't load to splunk successfully
+                  add_indicator_to_lookup_file(uniqueKey,append_statement)
+              uniqueKey=[]
+              append_statement=""
+              indicator_loaded_count=0
+
+
+
+
+scripttarget: 0
+subtype: python3
+tags: []
+timeout: 900ns
+type: python
