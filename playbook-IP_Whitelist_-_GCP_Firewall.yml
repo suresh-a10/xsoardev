@@ -1,0 +1,601 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.5.0
+    itemVersion: 1.1.10
+    packID: GoogleCloudCompute
+    packName: Google Cloud Compute
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: Set a list of IP addresses in GCP firewall.
+id: IP Whitelist - GCP Firewall
+inputs:
+- description: Indicators to trigger the playbook
+  key: ""
+  playbookInputQuery:
+    daterange:
+      fromdate: "0001-01-01T00:00:00Z"
+      fromdatelicenseval: "0001-01-01T00:00:00Z"
+      period:
+        by: ""
+        byfrom: ""
+        byto: ""
+        field: ""
+        fromvalue: null
+        tovalue: null
+      todate: "0001-01-01T00:00:00Z"
+    query: ""
+    queryEntity: indicators
+    results: null
+    runFromLastJobTime: false
+  required: false
+  value: {}
+- description: IP addresses to allow in GCP Firewall
+  key: IP
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: Name of the GCP Firewall where the playbook should set the IPs
+  key: GCPFirewallName
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: Name of the Indicator Tag to apply to any IPs allowed by this playbook.
+  key: IndicatorTagName
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: GCP_IP_Whitelist
+name: IP Whitelist - GCP Firewall
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 47e23614-efcb-415a-88bc-840e27c44ecb
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 47e23614-efcb-415a-88bc-840e27c44ecb
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 50
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1873652b-4672-4413-874b-2294a66dc221
+      iscommand: false
+      name: Allow IPs on GCP (Firewall)
+      type: title
+      version: -1
+    taskid: 1873652b-4672-4413-874b-2294a66dc221
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 195
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      tags:
+        simple: ${inputs.IndicatorTagName}
+      value:
+        complex:
+          accessor: LeftOnly}
+          root: ${ListCompare
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Add the tag defined in inputs.IndicatorTagName.
+      id: 08f244c8-d3c9-4aeb-82c7-7ddfebd9770c
+      iscommand: true
+      name: Add allowed Tag
+      script: Builtin|||setIndicator
+      type: regular
+      version: -1
+    taskid: 08f244c8-d3c9-4aeb-82c7-7ddfebd9770c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -30,
+          "y": 1610
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "35"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      name:
+        simple: ${inputs.GCPFirewallName}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns the specified firewall.
+      id: 6c513842-992f-40d1-8fd1-528d5ad9023d
+      iscommand: true
+      name: Get GCP Firewall
+      script: '|||gcp-compute-get-firewall'
+      type: regular
+      version: -1
+    taskid: 6c513842-992f-40d1-8fd1-528d5ad9023d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -30,
+          "y": 535
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "41"
+      - "42"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      name:
+        simple: ${inputs.GCPFirewallName}
+      sourceRanges:
+        complex:
+          root: inputs.IP
+          transformers:
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Updates the specified firewall rule with the data included in the
+        request.
+      id: 743438bc-b132-4bc8-8bd5-094e7f7d55b9
+      iscommand: true
+      name: Set and replace IP list on GCP Security Firewall
+      script: '|||gcp-compute-patch-firewall'
+      type: regular
+      version: -1
+    taskid: 743438bc-b132-4bc8-8bd5-094e7f7d55b9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -30,
+          "y": 1090
+        }
+      }
+  "29":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: brand
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Google Cloud Compute
+                root: modules
+          operator: isEqualString
+          right:
+            value:
+              simple: Google Cloud Compute
+      label: "yes"
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "34"
+      "yes":
+      - "22"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 159b97e1-3e77-41e7-8ca4-c527d5dd1f70
+      iscommand: false
+      name: Is Google Cloud Compute integration enabled?
+      type: condition
+      version: -1
+    taskid: 159b97e1-3e77-41e7-8ca4-c527d5dd1f70
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 340
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2df8faef-60a9-4afb-8a87-c65bf5249a57
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 2df8faef-60a9-4afb-8a87-c65bf5249a57
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 350,
+          "y": 1870
+        }
+      }
+  "35":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: GoogleCloudCompute.Firewalls.name
+          operator: isEqualString
+          right:
+            iscontext: true
+            value:
+              simple: inputs.GCPFirewallName
+      label: "yes"
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "37"
+      "yes":
+      - "36"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c13cf7aa-46e0-4d71-8501-c756b69e268c
+      iscommand: false
+      name: GCP Firewall found?
+      type: condition
+      version: -1
+    taskid: c13cf7aa-46e0-4d71-8501-c756b69e268c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -30,
+          "y": 700
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "24"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      left:
+        simple: ${inputs.IP}
+      right:
+        simple: ${GoogleCloudCompute.Firewalls.sourceRanges}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 94f1c3d0-b79a-4a37-828b-a3f2b6683c3e
+      iscommand: false
+      name: Compare IPs with current list
+      script: CompareLists
+      type: regular
+      version: -1
+    taskid: 94f1c3d0-b79a-4a37-828b-a3f2b6683c3e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -30,
+          "y": 915
+        }
+      }
+  "37":
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "38"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b834cad2-8f3f-4de0-8da2-4d51c6f5dfa2
+      iscommand: false
+      name: GCP Firewall Name Not Found
+      type: title
+      version: -1
+    taskid: b834cad2-8f3f-4de0-8da2-4d51c6f5dfa2
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -650,
+          "y": 870
+        }
+      }
+  "38":
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f37607b7-3163-49b1-8e70-4f65e5af5635
+      iscommand: false
+      name: Engineer - Fix Firewall name and rerun
+      type: regular
+      version: -1
+    taskid: f37607b7-3163-49b1-8e70-4f65e5af5635
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -650,
+          "y": 1010
+        }
+      }
+  "40":
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      field:
+        simple: tags
+      fieldValue:
+        simple: ${inputs.IndicatorTagName}
+      indicatorsValues:
+        complex:
+          accessor: RightOnly
+          root: ListCompare
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Remove the tag defined in inputs.IndicatorTagName.
+      id: 08d094f2-d55a-4865-8a9b-1b48e6c494c5
+      iscommand: true
+      name: Remove blocked Tag
+      script: Builtin|||removeIndicatorField
+      type: regular
+      version: -1
+    taskid: 08d094f2-d55a-4865-8a9b-1b48e6c494c5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -460,
+          "y": 1610
+        }
+      }
+  "41":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ListCompare.RightOnly
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "34"
+      "yes":
+      - "40"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ebe68b52-f1cb-4a7d-87a3-f019ce6a048d
+      iscommand: false
+      name: Any IPs in GCP allowed that should be removed?
+      type: condition
+      version: -1
+    taskid: ebe68b52-f1cb-4a7d-87a3-f019ce6a048d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -460,
+          "y": 1270
+        }
+      }
+  "42":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ListCompare.LeftOnly
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "34"
+      "yes":
+      - "8"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2abed310-7d92-4322-885d-6c85c23464e3
+      iscommand: false
+      name: Any IPs to allow that are not already in GCP?
+      type: condition
+      version: -1
+    taskid: 2abed310-7d92-4322-885d-6c85c23464e3
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -30,
+          "y": 1270
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "29_22_yes": 0.3,
+      "29_34_#default#": 0.59,
+      "35_37_#default#": 0.36,
+      "41_34_#default#": 0.1,
+      "42_34_#default#": 0.13
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1885,
+        "width": 1380,
+        "x": -650,
+        "y": 50
+      }
+    }
+  }
