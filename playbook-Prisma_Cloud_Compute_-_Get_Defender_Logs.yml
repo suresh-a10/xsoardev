@@ -1,0 +1,350 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.10.0
+    itemVersion: 1.7.4
+    packID: PrismaCloudCompute
+    packName: Prisma Cloud Compute by Palo Alto Networks
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: |-
+  This is a sub-playbook of the “Prisma Cloud Compute - Audit Alert v2” playbook.
+  - Gets defender logs and sets them to layout
+  - Downloads defender logs
+  - Gets defender backups
+id: Prisma Cloud Compute - Get Defender Logs
+inputs:
+- description: The Defender hostname. Can be retrieved from the "prisma-cloud-compute-defenders-list"
+    command.
+  key: Hostname
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The project to retrieve the backups from.
+  key: Project
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: Prisma Cloud Compute - Get Defender Logs
+outputs: []
+quiet: true
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 15b5975b-d722-4af0-8935-0eebe22e7014
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 15b5975b-d722-4af0-8935-0eebe22e7014
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 452.5,
+          "y": 90
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      execution-timeout:
+        simple: "120"
+      hostname:
+        complex:
+          root: inputs.Hostname
+      lines:
+        simple: "20"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: DefenderLogs returns the last Defender logs.
+      id: 2ecb9f9b-8bc9-4cf7-84f7-a6674384a80b
+      iscommand: true
+      name: Get Defender Logs
+      script: '|||prisma-cloud-compute-logs-defender'
+      type: regular
+      version: -1
+    taskid: 2ecb9f9b-8bc9-4cf7-84f7-a6674384a80b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 452.5,
+          "y": 250
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      project:
+        complex:
+          root: inputs.Project
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: List returns the available backups.
+      id: db5d2eb5-22a0-4b52-8d3f-821a9fd06138
+      iscommand: true
+      name: List Defender Backups
+      script: '|||prisma-cloud-compute-get-backups'
+      tags:
+      - backups
+      type: regular
+      version: -1
+    taskid: db5d2eb5-22a0-4b52-8d3f-821a9fd06138
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 452.5,
+          "y": 920
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hostname:
+        complex:
+          root: inputs.Hostname
+      ignore-outputs:
+        simple: "true"
+      lines:
+        simple: "50"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: DownloadDefenderLogs downloads all defender logs and metadata.
+      id: d38954de-5b85-44d2-84c1-e0be1eccaac7
+      iscommand: true
+      name: Download Defender Logs
+      script: '|||prisma-cloud-compute-logs-defender-download'
+      type: regular
+      version: -1
+    taskid: d38954de-5b85-44d2-84c1-e0be1eccaac7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 452.5,
+          "y": 755
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Prisma Cloud Compute Defender Logs
+      output:
+        simple: ${LogsTable}
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      data:
+        complex:
+          accessor: Logs
+          root: PrismaCloudCompute.Defenders
+      extend-context:
+        simple: LogsTable=.
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Convert an array to a nice table display (usually from the context).
+      id: 9192440f-f7aa-42b9-8ec9-84bb84f7d3cb
+      iscommand: false
+      name: Set Logs to Layout
+      script: ToTable
+      type: regular
+      version: -1
+    taskid: 9192440f-f7aa-42b9-8ec9-84bb84f7d3cb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 452.5,
+          "y": 590
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: 'Indicators=.={"Value": val.value, "Description": val.CustomFields.description,
+          "CVSS": val.CustomFields.cvss}'
+      ignore-outputs:
+        simple: "true"
+      query:
+        simple: id:${incident.id} and type:CVE
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.find.indicators
+      id: 6c4b6aff-1edd-416c-833f-64c5779a4d01
+      iscommand: true
+      name: Create Indicator Table
+      script: Builtin|||findIndicators
+      type: regular
+      version: -1
+    taskid: 6c4b6aff-1edd-416c-833f-64c5779a4d01
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 452.5,
+          "y": 1095
+        }
+      }
+  "6":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Logs
+                root: PrismaCloudCompute.Defenders
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "7"
+      "yes":
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 360a2324-a6a6-4b9d-8399-e5f4a4366776
+      iscommand: false
+      name: Any logs found?
+      type: condition
+      version: -1
+    taskid: 360a2324-a6a6-4b9d-8399-e5f4a4366776
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 452.5,
+          "y": 410
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 25eaab9a-d974-46b1-862c-400a47489106
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 25eaab9a-d974-46b1-862c-400a47489106
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 452.5,
+          "y": 1280
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "6_4_yes": 0.54
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1255,
+        "width": 380,
+        "x": 452.5,
+        "y": 90
+      }
+    }
+  }
