@@ -1,0 +1,309 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 8b5e7711-66c8-44f8-880d-aeea2f4a5e18
+inputs: []
+name: Test_countSplunk_notable_v2
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 0f0ceaee-3c23-4539-888b-570deef6d0bc
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 0f0ceaee-3c23-4539-888b-570deef6d0bc
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      query:
+        simple: index=notable | stats count by index
+      using:
+        simple: SplunkPy_instance_MVTL_2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: SplunkPy
+      description: Searches Splunk for events.
+      id: 570b9c11-48c9-4fc5-8977-ae5897c99e80
+      iscommand: true
+      name: get count notable number on Splunk
+      script: SplunkPy|||splunk-search
+      type: regular
+      version: -1
+    taskid: 570b9c11-48c9-4fc5-8977-ae5897c99e80
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 200
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      query:
+        simple: ' created:>=${deltatime} sourceinstance:'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Searches Demisto incidents.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-2/cortex-xsoar-admin/playbooks/automations.html
+      id: 1f3b2fb6-fa94-43c6-8c91-c5c23051518a
+      iscommand: false
+      name: Search incidents in XSOAR
+      script: SearchIncidentsV2
+      type: regular
+      version: -1
+    taskid: 1f3b2fb6-fa94-43c6-8c91-c5c23051518a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 540
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: deltatime
+      value:
+        complex:
+          accessor: created
+          root: incident
+          transformers:
+          - args:
+              variation:
+                value:
+                  simple: 1 hour ago
+            operator: ModifyDateTime
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Set a value in context under the key you entered.
+      id: 20a70ef1-53c1-4005-8218-998157ae107c
+      iscommand: false
+      name: set last 1 hour time frame
+      script: Set
+      type: regular
+      version: -1
+    taskid: 20a70ef1-53c1-4005-8218-998157ae107c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 365
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      listData:
+        complex:
+          root: foundIncidents
+          transformers:
+          - operator: count
+          - args:
+              prefix:
+                value:
+                  simple: 'XSOAR_incidents_count - '
+              suffix: {}
+            operator: concat
+      listName:
+        simple: test_splunk
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.add
+      id: 23e68550-1d27-4d58-81c9-c7aa84e703cf
+      iscommand: true
+      name: update list with xsoar incidents count
+      script: Builtin|||addToList
+      type: regular
+      version: -1
+    taskid: 23e68550-1d27-4d58-81c9-c7aa84e703cf
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 870
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      listData:
+        simple: ${incident.created}
+      listName:
+        simple: test_splunk
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.add
+      id: 82263e84-0617-41fa-850d-9fa45a2d52f4
+      iscommand: true
+      name: update list with the timestamp
+      script: Builtin|||addToList
+      type: regular
+      version: -1
+    taskid: 82263e84-0617-41fa-850d-9fa45a2d52f4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 700
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      listData:
+        complex:
+          accessor: count}
+          root: ${Splunk.Result[0]
+          transformers:
+          - args:
+              prefix:
+                value:
+                  simple: 'Splunk_notables_count - '
+              suffix: {}
+            operator: concat
+      listName:
+        simple: test_splunk
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.add
+      id: 69d89525-8d46-4484-85c1-b2e440d8104e
+      iscommand: true
+      name: update list with splunk notables count
+      script: Builtin|||addToList
+      type: regular
+      version: -1
+    taskid: 69d89525-8d46-4484-85c1-b2e440d8104e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1040
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1085,
+        "width": 380,
+        "x": 450,
+        "y": 50
+      }
+    }
+  }
