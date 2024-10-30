@@ -1,0 +1,60 @@
+args:
+- isArray: true
+  name: TechnologyStackList
+  required: true
+commonfields:
+  id: 8e1bd1ce-5a35-47dd-8d19-dbcf91272ba2
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetStackList
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  from typing import Dict, Any
+  import traceback
+
+
+
+  ''' MAIN FUNCTION '''
+  def convert_to_html(stack_list):
+      html_string="<html></body><table class=\"table table-bordered\"><thead><tr><th scope=\"col\">Solution Name</th><th scope=\"col\">Status</th><th scope=\"col\">Type</th></tr></thead><tbody>"
+      for i in range(len(stack_list)):
+          html_string+="<tr><td>"+stack_list[i].get('solutionname')+"</td><td>"+stack_list[i].get('status')+"</td><td>"+(','.join([str(element) for element in (stack_list[i].get('type'))]))+"</td></tr>"
+      html_string+="</tbody></table></body></html>"
+      return html_string
+  def main():
+      try:
+          stack_list = demisto.args()['TechnologyStackList']
+          string_data=convert_to_html(stack_list)
+          demisto.results(fileResult("Table.html",string_data))
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
