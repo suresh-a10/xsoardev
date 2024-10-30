@@ -1,0 +1,109 @@
+commonfields:
+  id: 02088265-1b59-4fd0-8567-91a59f50edf6
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.11.61265
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CD_Incidentclosure_PROD_V1
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  from datetime import datetime
+  import pytz
+  import time
+  inc_data = demisto.incidents()[0]
+  custom_fields = inc_data.get("CustomFields",{})
+  new_time = demisto.args()['new']
+  def convert_datetime_timezone(dt, tz1, tz2):
+      tz1 = pytz.timezone(tz1)
+      tz2 = pytz.timezone(tz2)
+      dt = datetime.strptime(dt,"%Y-%m-%d %H:%M:%S")
+      dt = tz1.localize(dt)
+      dt = dt.astimezone(tz2)
+      dt = dt.strftime("%Y-%m-%d %H:%M:%S")
+      dt = datetime.strptime(dt,"%Y-%m-%d %H:%M:%S")
+
+      return dt
+
+  #custom_fields = inc_data.get("CustomFields",{})
+
+  #resolution_code = "Solved (Work Around)"
+  resolution_code = custom_fields.get("snowresolutioncode")
+  resolution_notes = custom_fields.get('cdclosednotes')
+  sys_id = custom_fields.get("snowincidentsysid")
+  onhold_reason = custom_fields.get("snowonholdreason")
+  #demisto.results("Post-Processing")
+  #snow_id = custom_fields.get("cdsnowincidentnumber")
+  #query = "number="+str(snow_id)
+  source_brand = inc_data.get("sourceBrand")
+  cd_close_reason = custom_fields.get("cdclosereason")
+  #cd_investigation_remark = custom_fields.get("cdinvestigationremark")
+  demisto.executeCommand('stopTimer',{ 'timerField':'cdresolutionsla' })
+
+  demisto.executeCommand("setIncident",{"cdincidentstate":"Closed"})
+
+
+  #demisto.executeCommand('stopTimer',{ 'timerField':'cdresolutionsla' })
+  #demisto.executeCommand("setIncident",{"cdincidentstate":"Closed"})
+  res = ""
+
+  if new_time == 'Yes':
+      #demisto.executeCommand("setIncident",{"snowincidentresolutiontime":resolved_time_utc, "snowonholdreason":"", "snowstate":content["incident_state"], "snowresolutioncode":resolution_code, "snowresolutionnotes":content["close_notes"], "snowonholdreason":"", "cdincidentstate":"Closed"})
+
+      #demisto.executeCommand("setIncident",{"snowresolutioncode":resolution_code, "snowresolutionnotes":resolution_notes})
+
+      if source_brand == "ServiceNow v2" or source_brand == "ServiceNow COSTA v2":
+          snow_id = custom_fields.get("cdsnowincidentnumber")
+          query = "number="+str(snow_id)
+
+          try:
+
+              demisto.executeCommand("setIncident",{"snowstate":"Resolved","snowresolutionnotes":resolution_notes,"snowresolutioncode":resolution_code})
+
+              res = demisto.executeCommand("servicenow-update-ticket", {"id":sys_id,"close_code":custom_fields.get("snowresolutioncode"),"close_notes":custom_fields.get("snowresolutionnotes"),"incident_state":6,"work_notes":resolution_notes,"using":"COSTA_ServiceNow _v2_Instance"})
+              resa = demisto.executeCommand('servicenow-query-tickets',{'query':query, "system_params":"sysparm_display_value=true", "using":"COSTA_ServiceNow _v2_Instance"})
+              content = resa[0]["Contents"]["result"][0]
+              if content["incident_state"] != "Resolved":
+                  res = demisto.executeCommand("servicenow-update-ticket", {"id":sys_id,"close_code":resolution_code,"close_notes":resolution_notes,"incident_state":6,"work_notes":resolution_notes,"using":"COSTA_ServiceNow _v2_Instance"})
+                  resa = demisto.executeCommand('servicenow-query-tickets',{'query':query, "system_params":"sysparm_display_value=true", "using":"COSTA_ServiceNow _v2_Instance"})
+                  content = resa[0]["Contents"]["result"][0]
+
+                  if content["incident_state"] == "Resolved":
+                      resolved_time = datetime.strptime(content["resolved_at"],"%Y-%m-%d %H:%M:%S")
+                      resolved_time = resolved_time.strftime('%Y-%m-%d %H:%M:%S')
+                      resolved_time_utc = convert_datetime_timezone(resolved_time, "US/Pacific", "Etc/UTC")
+                      resolved_time_utc = resolved_time_utc.strftime('%Y-%m-%dT%H:%M:%S+00:00')
+                      demisto.executeCommand("setIncident",{"snowincidentresolutiontime":resolved_time_utc, "snowonholdreason":""})
+                  else:
+                      return_error("ITSM Ticket is not closed. Please try again.")
+
+          except:
+              return_error(res)
+  else:
+      pass
+
+
+
+
+
+
+
+
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
