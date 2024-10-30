@@ -1,0 +1,83 @@
+args:
+- description: provide the comma separated list
+  isArray: true
+  name: KeysToDelete
+  required: true
+- description: JSON Data where keys to be deleted
+  name: value
+comment: "The script can be used to delete keys in JSON data.Example Data as shown
+  below\n{\n\n\t\"iocs\": {\n\t\t\"key1\": \"value1\",\n\t\t\"key2\": \"value2\",\n\t\t\"key3\":
+  \"value4\",\n\t\t\"key4\": \"value2\"\n\t}\n}"
+commonfields:
+  id: c934b96c-0aac-4fed-82bc-3bf0e024ec2e
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.7.35188
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: JsonKeyDeletion
+outputs:
+- contextPath: NewJsonData
+  type: string
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  from typing import Dict, Any
+  import traceback
+
+
+  ''' TO DO FUNCTION '''
+  Updated_json_data={}
+  def delete_keys(keys_to_delete,json_data):
+      for key,value in json_data.items():
+          if key not in keys_to_delete:
+              Updated_json_data[key] = value
+          else:
+              pass
+      md = tableToMarkdown("Updated Data",Updated_json_data)
+      demisto.results({
+          'Type': entryTypes['note'],
+          'Contents': Updated_json_data,
+          'ContentsFormat': formats['json'],
+          'HumanReadable': md,
+          'ReadableContentsFormat' : formats['markdown'],
+          'EntryContext':{'NewJsonData':Updated_json_data}
+      })
+
+  ''' MAIN FUNCTION '''
+
+  def main():
+      try:
+          keys_to_delete = argToList(demisto.args()['KeysToDelete'])
+          json_data = demisto.args()['value']
+          return delete_keys(keys_to_delete,json_data)
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags:
+- transformer
+- Utility
+type: python
