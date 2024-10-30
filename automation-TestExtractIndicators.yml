@@ -1,0 +1,64 @@
+commonfields:
+  id: c800ea49-1e37-4e48-8e40-ae24d6880519
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.14.90585
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: TestExtractIndicators
+outputs:
+- contextPath: ExtractedIndicators.IP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback,json
+
+
+
+  ''' MAIN FUNCTION '''
+
+
+  def main():
+      try:
+
+          inc_data = demisto.incidents()[0]
+
+          res=demisto.executeCommand("extractIndicators", {"text":inc_data.get('details')})[0]['Contents']
+          indicator_data=json.loads(res)
+          md = tableToMarkdown(name="IPAddress",t=indicator_data['IP'],headers="IP")
+          demisto.results({'Type' : entryTypes['note'],
+                          'Contents': indicator_data['IP'],
+                          'ContentsFormat' : formats['json'],
+                          'HumanReadable':md,
+                          'ReadableContentsFormat':formats['markdown'],
+                          'EntryContext' : {"ExtractedIndicators.IP":indicator_data['IP']}})
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
