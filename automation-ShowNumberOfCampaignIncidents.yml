@@ -1,0 +1,59 @@
+comment: Displays the number of phishing incidents that make up the phishing campaign.
+commonfields:
+  id: ShowNumberOfCampaignIncidents
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 3.4.7
+    packID: Campaign
+    packName: Phishing Campaign
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.86272
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ShowNumberOfCampaignIncidents
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('ShowNumberOfCampaignIncidents', 'start', __line__())
+  ### pack version: 3.4.7
+
+
+
+  # Variable initialization:
+  html = ""
+  campaign_incidents = ""
+
+  try:
+      # Getting incident context:
+      incident_id = demisto.incidents()[0].get('id', {})
+      context = demisto.executeCommand("getContext", {'id': incident_id})
+      campaign_incidents = context[0]['Contents'].get('context', {}).get('EmailCampaign', {}).get('incidents', {})
+      html = f"<div style='font-size:17px; text-align:center; padding: 15px;'> " \
+             f"Number of Incidents <div style='font-size:32px;'> <div> {len(campaign_incidents)} </div></div>"
+
+  except Exception:
+      html = "<div style='text-align:center; font-size:32px;'> <div> No Campaign </div> <div style='font-size:17px;'> </div>"
+
+  # Return the data to the layout:
+  demisto.results({
+      'ContentsFormat': EntryFormat.HTML,
+      'Type': EntryType.NOTE,
+      'Contents': html
+  })
+
+  register_module_line('ShowNumberOfCampaignIncidents', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- dynamic-section
+type: python
