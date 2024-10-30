@@ -1,0 +1,69 @@
+commonfields:
+  id: 6162bf44-9316-49ab-8d2c-4f0c85258222
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SNOWCategoryTierValues
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import json
+  def get_custom_field_values():
+     incident = demisto.incidents()[0]
+     tier2_value = incident.get('CustomFields', {}).get('snowcategorytier2', '')
+     tier3_value = incident.get('CustomFields', {}).get('snowcategorytier3', '')
+     return tier2_value, tier3_value
+
+  def find_matching_key(tier2_value, tier3_value, snowcategories_list):
+     """Compare the custom field values with the list and find the matching key."""
+     for key, values in snowcategories_list.items():
+         if values.get('tier2') == tier2_value and values.get('tier3') == tier3_value:
+             return key
+     return None
+  def main():
+     try:
+         # Fetch the custom field values
+         tier2_value, tier3_value = get_custom_field_values()
+
+         snowcategories_response = demisto.executeCommand('getList', {'listName': 'SNOWCategories'})
+         snowcategories_content = snowcategories_response[0]['Contents']
+
+         if isinstance(snowcategories_content, str):
+             try:
+                 snowcategories_list = json.loads(snowcategories_content)
+
+             except json.JSONDecodeError:
+                 return_error("Failed to parse SNOWcategories list. Ensure it is properly formatted JSON.")
+         else:
+             snowcategories_list = snowcategories_content
+         # Find the matching key
+         matching_key = find_matching_key(tier2_value, tier3_value, snowcategories_list)
+
+         # Return the output
+         if matching_key:
+             demisto.setContext('TierValues', matching_key)
+         else:
+             demisto.results("No matching key found for the provided tier2 and tier3 values.")
+     except Exception as e:
+         return_error(f"An error occurred: {str(e)}")
+  # Entry point for the script
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+     main()
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
