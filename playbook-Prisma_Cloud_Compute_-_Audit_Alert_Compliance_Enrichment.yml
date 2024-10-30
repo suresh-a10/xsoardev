@@ -1,0 +1,321 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.10.0
+    itemVersion: 1.7.4
+    packID: PrismaCloudCompute
+    packName: Prisma Cloud Compute by Palo Alto Networks
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: |-
+  This is a sub-playbook of the "Prisma Cloud Compute - Audit Alert v2" playbook.
+  Retrieves the following information:
+  - Alert profiles.
+  - Container WAAS policies.
+  - Image compliance issues.
+id: Prisma Cloud Compute - Audit Alert Compliance Enrichment
+inputs:
+- description: The project to get the alert profiles for.
+  key: Project
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Compliance issues for creating the compliance table in the layout.
+  key: ComplianceIssues
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: Prisma Cloud Compute - Audit Alert Compliance Enrichment
+outputs:
+- contextPath: ComplianceTable
+  description: Table with compliance issues.
+quiet: true
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+      - "5"
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d9c2f785-c566-4154-8a79-a85e7af9faf0
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: d9c2f785-c566-4154-8a79-a85e7af9faf0
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 452.5,
+          "y": 140
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Prisma Cloud Compute Markdown
+      output:
+        simple: ${ComplianceTable}
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      columns:
+        simple: severity,title,description
+      data:
+        complex:
+          root: inputs.ComplianceIssues
+      extend-context:
+        simple: ComplianceTable=.
+      title:
+        simple: Prisma Cloud Compute Image Compliance
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Grab the compliance issues under the image details from PCC.
+      id: df74c260-ffc5-41d5-86a3-92b4b7c25735
+      iscommand: false
+      name: Gather Image Compliance Issues
+      script: ToTable
+      tags:
+      - compliance
+      type: regular
+      version: -1
+    taskid: df74c260-ffc5-41d5-86a3-92b4b7c25735
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 892.5,
+          "y": 510
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      project:
+        complex:
+          root: inputs.Project
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: AlertProfiles returns all the alert profiles.
+      id: d2405791-2ceb-4ffe-8d30-fa6a2ee56468
+      iscommand: true
+      name: Get Alert Profiles
+      script: '|||prisma-cloud-compute-get-alert-profiles'
+      tags:
+      - policy
+      type: regular
+      version: -1
+    taskid: d2405791-2ceb-4ffe-8d30-fa6a2ee56468
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 10,
+          "y": 510
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: PCC=.
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Get the Waas container policies from Defend >> WAAS >> Containers.
+      id: e8764c19-dde5-4741-88d3-db3680739722
+      iscommand: true
+      name: Get Container WaaS Policies
+      script: '|||prisma-cloud-compute-get-waas-policies'
+      tags:
+      - policy
+      type: regular
+      version: -1
+    taskid: e8764c19-dde5-4741-88d3-db3680739722
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 452.5,
+          "y": 310
+        }
+      }
+  "4":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.ComplianceIssues
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      "yes":
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d64f427f-9fe9-4614-8fcf-e78da00cf841
+      iscommand: false
+      name: Check if Image Compliance Issues Exist
+      type: condition
+      version: -1
+    taskid: d64f427f-9fe9-4614-8fcf-e78da00cf841
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 892.5,
+          "y": 310
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.Project
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: dc75e73d-a993-40c9-895a-81cfa2a720c0
+      iscommand: false
+      name: Check if project name exist
+      type: condition
+      version: -1
+    taskid: dc75e73d-a993-40c9-895a-81cfa2a720c0
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 10,
+          "y": 310
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 77fed789-b2aa-4e1b-88d0-9a0861546677
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 77fed789-b2aa-4e1b-88d0-9a0861546677
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 452.5,
+          "y": 710
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "4_1_yes": 0.46,
+      "5_2_yes": 0.56
+    },
+    "paper": {
+      "dimensions": {
+        "height": 635,
+        "width": 1262.5,
+        "x": 10,
+        "y": 140
+      }
+    }
+  }
