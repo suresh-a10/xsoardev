@@ -1,0 +1,41 @@
+commonfields:
+  id: 9961dd57-1279-4e6c-8e1b-d1a600d207e7
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.9.44472
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: MultiThreadScript
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  watchlistname=demisto.args()['Watchlist_alias'] #using=demisto.args()['instance']
+  res=demisto.executeCommand('azure-sentinel-list-watchlist-items', { "watchlist_alias" : watchlistname, "using":'IIntegration_name' })
+  valuelist=res[0]['Contents']['value'] #print(valuelist)
+
+  #print("All watchlist items deleted")
+  count=0
+  while(len(valuelist)!=0):
+      for e in valuelist:
+          count=count+1
+          demisto.executeCommand('azure-sentinel-delete-watchlist-item', { "watchlist_alias" : watchlistname,"watchlist_item_id":e['properties']['watchlistItemId'], "using":'Integration_name' })
+
+  res=demisto.executeCommand('azure-sentinel-list-watchlist-items', { "watchlist_alias" : watchlistname, "using":'Integration_name' })
+  valuelist=res[0]['Contents']['value']
+  print("All watchlist items deleted and total count was ",count)
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
