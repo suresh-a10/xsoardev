@@ -1,0 +1,114 @@
+args:
+- name: snowassignmentgroup
+  required: true
+commonfields:
+  id: 08d4a6ba-b9fd-40ac-81ea-bf6be49931bc
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetAssignmentgroupmembers
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  import json
+  import requests
+
+
+  list_name ="AssignmentGroupIDs"
+  snow_assignment_group_id = demisto.args().get('snowassignmentgroup')
+
+  if not snow_assignment_group_id:
+      demisto.results("snowassignmentgroup field not found in the incident.")
+      sys.exit(1)
+
+
+  response = demisto.executeCommand("getList", {"listName": list_name})
+
+  if not response or not response[0].get("Contents"):
+      demisto.results(f"List '{list_name}' not found or is empty.")
+
+  try:
+      assignment_groups = json.loads(response[0]["Contents"])
+  except Exception as e:
+      demisto.results("Failed to parse the list '{list_name}': {str(e)}")
+
+
+  sys_id = assignment_groups.get(snow_assignment_group_id)
+
+
+  if not sys_id:
+      demisto.results(f"Group ID '{snow_assignment_group_id}' not found in list '{list_name}'.")
+
+
+  #servicenow creds
+
+  client_id = '6f3d686719b34910686e5a1b4f965de8'
+  client_secret = 'p,VVi&?Nfd'
+  snow_username = 'xsoar.user'
+  snow_password = 'Xsoar'
+  token_url = f'https://idfcfirstbanktest.service-now.com/oauth_token.do'
+
+
+  payload = {
+      'grant_type': 'password',
+      'client_id': client_id,
+      'client_secret': client_secret,
+      'username': snow_username,
+      'password': snow_password
+  }
+
+  headers = {
+      'Content-Type': "application/x-www-form-urlencoded",
+      'Cache-Control': "no-cache"
+  }
+
+  response = requests.post(token_url, data=payload, headers=headers, verify=False)
+
+  if response.status_code !=200:
+      demisto.results("Failed to get Oauth token: {response.text}")
+      sys.exit(1)
+
+  if response.status_code == 200:
+      access_token = response.json().get('access_token')
+
+  group_members_url = f"https://idfcfirstbanktest.service-now.com/api/idfcf/get_group_details/{sys_id}"
+
+  headers = {
+      "Authorization": f"Bearer {access_token}",
+      "Accept": "application/json"
+      }
+
+  response = requests.get(group_members_url, headers=headers, verify=False)
+  response.raise_for_status()
+
+  group_members = response.json().get("result", [])
+  demisto.results({
+      'Type': 1,
+      'Contents': {
+          'GroupMembers': group_members
+      },
+      'ContentsFormat': formats['json'],
+      'EntryContext':{
+          'GroupMembers': group_members
+      }
+  })
+scripttarget: 0
+subtype: python3
+tags:
+- field-display
+- field-change-triggered
+type: python
