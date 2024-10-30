@@ -1,0 +1,55 @@
+commonfields:
+  id: 6fed309f-da43-4024-837e-727fcba8b41c
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.9.25564
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: pp_drop_incidents_with_safebreach_ip
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import re
+
+  def find_safebreach_ip_incidents():
+      incident_details=str(demisto.incidents()[0]['details'])
+      splunk_results=demisto.executeCommand("pp_splunk_search_v2",{"query":"| inputlookup safebreach_ip | stats count by src | table src","earliest_time":"-1h","event_limit":1000})
+      splunk_results1=splunk_results[1]['Contents']
+      list_of_safebreach_ips=[]
+      for i in splunk_results1:
+          list_of_safebreach_ips.append(i['src'])
+
+      ##extract IPs in incident_details
+      incident_details=incident_details.replace("\n","")
+      demisto.results(incident_details)
+      list_of_ips = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', incident_details)
+
+      demisto.results(str(list_of_ips))
+      demisto.results(str(list_of_safebreach_ips))
+      for i in list_of_ips:
+          ##scan for safebreach IPs
+          if i in list_of_safebreach_ips:
+              return_results(False)
+              #return_results(i)
+              #return_results("False")
+              #return_results(demisto.executeCommand("setIncident", {"paypalseverity":"P5"}))
+      return_results(True)
+
+  find_safebreach_ip_incidents()
+scripttarget: 0
+subtype: python3
+tags:
+- preProcessing
+type: python
