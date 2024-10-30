@@ -1,0 +1,118 @@
+args:
+- default: true
+  description: War room entryID of the file to read.
+  name: entryID
+  required: true
+comment: Read the license_data.log file extracted from the log bundle
+commonfields:
+  id: HealthCheckLicenseData
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 2.1.3
+    packID: HealthCheck
+    packName: System Diagnostics and Health Check
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.14.100715
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: HealthCheckLicenseData
+outputs:
+- contextPath: FileData
+  description: Data read from war room file
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('HealthCheckLicenseData', 'start', __line__())
+  demisto.debug('pack name = System Diagnostics and Health Check, pack version = 2.1.3')
+
+
+
+
+  validTil = []
+  customer = []
+  permittedUsers = []
+  usedUsers = []
+  licenseType = []
+  uid = []
+  TimLicenseType = []
+
+  res = demisto.executeCommand('getFilePath', {'id': demisto.args()['entryID']})
+  if res[0]['Type'] == entryTypes['error']:
+      demisto.results('File not found')
+
+  try:
+      with open(res[0]['Contents']['path'], 'r') as file:
+          python_dict = json.loads(str(file.read()))
+          if 'validTil' in python_dict:
+              validTil = python_dict['validTil']
+          elif 'soar' in python_dict['license']:
+              validTil = python_dict['license']['soar']['validTil']
+          else:
+              validTil = python_dict['license']['validTil']
+
+          if 'customer' in python_dict:
+              customer = python_dict['customer']
+          elif 'soar' in python_dict['license']:
+              customer = python_dict['license']['soar']['customer']
+          else:
+              customer = python_dict['license']['customer']
+
+          if 'permittedUsers' in python_dict:
+              permittedUsers = python_dict['permittedUsers']
+          elif 'soar' in python_dict['license']:
+              permittedUsers = python_dict['license']['soar']['permittedUsers']
+          else:
+              permittedUsers = python_dict['license']['permittedUsers']
+
+          if 'usedUsers' in python_dict:
+              usedUsers = python_dict['usedUsers']
+          elif 'soar' in python_dict['license']:
+              usedUsers = python_dict['license']['soar']['usedUsers']
+          else:
+              usedUsers = python_dict['license']['usedUsers']
+
+          if 'type' in python_dict:
+              licenseType = python_dict['type']
+          elif 'soar' in python_dict['license']:
+              licenseType = python_dict['license']['soar']['type']
+          elif 'types' in python_dict['license']:
+              licenseType = python_dict['license']['types']['soar']
+              TimLicenseType = python_dict['license']['types']['tim']
+          else:
+              licenseType = python_dict['license']['type']
+
+          if 'id' in python_dict:
+              uid = python_dict['id']
+          elif 'soar' in python_dict['license']:
+              uid = python_dict['license']['soar']['id']
+          else:
+              uid = python_dict['license']['id']
+
+          demisto.executeCommand("setIncident", {
+              'healthcheckpermittedusers': permittedUsers,
+              'healthcheckusedusers': usedUsers,
+              'xsoarcustomername': customer,
+              'xsoarlicense': licenseType,
+              'xsoarlicensevalidtill': validTil,
+              'xsoartelemetryuuid': uid,
+          })
+
+
+  except ValueError:  # includes simplejson.decoder.JSONDecodeError
+      demisto.results('Decoding JSON has failed')
+
+  register_module_line('HealthCheckLicenseData', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags: []
+type: python
