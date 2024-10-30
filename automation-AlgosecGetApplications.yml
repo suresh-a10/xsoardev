@@ -1,0 +1,81 @@
+args:
+- default: true
+  description: The IP/Subnet to search.
+  name: address
+  required: true
+- auto: PREDEFINED
+  description: The search method for the address.
+  name: type
+  predefined:
+  - INTERSECT
+  - CONTAINED
+  - CONTAINING
+  - EXACT
+comment: Find applications containing network objects related to IP address using
+  BusinessFlow.
+commonfields:
+  id: AlgosecGetApplications
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.0.0
+    itemVersion: 1.0.13
+    packID: Algosec
+    packName: AlgoSec
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dependson:
+  must:
+  - algosec-get-applications
+dockerimage: demisto/python3:3.10.13.83255
+engineinfo: {}
+mainengineinfo: {}
+name: AlgosecGetApplications
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('AlgosecGetApplications', 'start', __line__())
+  ### pack version: 1.0.13
+
+
+
+
+  def algosec_get_applications():
+      resp = demisto.executeCommand("algosec-get-applications", demisto.args())
+
+      if isError(resp[0]):
+          result = resp
+      else:
+          data = [demisto.get(x, "Contents") for x in resp]
+          if data:
+              data = data if isinstance(data, list) else [data]
+              data = flattenTable(data)
+              result = {"ContentsFormat": formats["table"], "Type": entryTypes["note"], "Contents": data}
+          else:
+              result = "No results."
+      return_results(result)
+
+
+  def main():  # pragma: no cover
+      try:
+          algosec_get_applications()
+      except Exception as e:
+          err_msg = f'Encountered an error while running the script: [{e}]'
+          return_error(err_msg, error=e)
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+  register_module_line('AlgosecGetApplications', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- Algosec
+type: python
