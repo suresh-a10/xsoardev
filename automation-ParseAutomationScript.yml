@@ -1,0 +1,90 @@
+args:
+- description: Get the Script from the automation
+  name: Script
+  required: true
+commonfields:
+  id: 257f0cae-f8a9-4150-88f7-1e012b79f6cf
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.48392
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ParseAutomationScript
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+  import re
+
+
+  ''' STANDALONE FUNCTION '''
+
+  automation_api_endpoints=[]
+  ''' MAIN FUNCTION '''
+  def get_api_request_dump(script_data):
+
+      if len(script_data)>0:
+          api_uri_list=re.findall(r'(/[^\s]+/[a-zA-Z0-9]+)',script_data)
+          if len(api_uri_list)>0:
+              automation_api_endpoints.append(api_uri_list)
+          else:
+              pass
+      else:
+          pass
+
+      return automation_api_endpoints
+
+
+
+  def main():
+      try:
+          script_data = demisto.args()['Script']
+          uri_list = get_api_request_dump(script_data)
+
+          if len(uri_list)>0:
+              for uri in uri_list:
+                  if type(uri) == list:
+                      for item in uri:
+                          demisto.results({
+                          "Contents":uri,
+                          "ContentsFormat":formats['json'],
+                          'EntryContext': {'APIEndpoints':{'URI':item}}
+                          })
+                  else:
+                      demisto.results({
+                              "Contents":uri,
+                              "ContentsFormat":formats['json'],
+                              'EntryContext': {'APIEndpoints':{'URI':uri}}
+                              })
+          else:
+              pass
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
