@@ -1,0 +1,147 @@
+commonfields:
+  id: c4f09910-3b69-42ba-8bad-ed2505efa19e
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CD_DynamicUpdateSNOWFinal_PROD_Ver1
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  from datetime import datetime
+  import pytz
+
+  priority_mapping = {"1 - Critical":"P1", "2 - High": "P2", "3 - Moderate": "P3", "4 - Low": "P4", "5 - Planning": "P4"}
+
+  inc_data = demisto.incidents()[0]
+  custom_fields = inc_data.get("CustomFields",{})
+  snow_id = custom_fields.get("cdsnowincidentnumber")
+  cur_state = custom_fields.get("snowstate")
+  cur_priority = custom_fields.get("cdpriority")
+  source_brand = inc_data.get("sourceBrand")
+
+  def convert_datetime_timezone(dt, tz1, tz2):
+      tz1 = pytz.timezone(tz1)
+      #print(tz1)
+      tz2 = pytz.timezone(tz2)
+      #print(tz2)
+      dt = datetime.strptime(dt,"%Y-%m-%d %H:%M:%S")
+      #print(dt)
+      dt = tz1.localize(dt)
+      dt = dt.astimezone(tz2)
+      dt = dt.strftime("%Y-%m-%d %H:%M:%S")
+      dt = datetime.strptime(dt,"%Y-%m-%d %H:%M:%S")
+
+      return dt
+
+  #snow_id="INC0010612"
+  #print(snow_id)
+  if snow_id is None or snow_id == "":
+      demisto.results("Service Now ticket Not created")
+  else:
+      query = "number="+str(snow_id)
+      #print(query)
+      res = demisto.executeCommand('servicenow-query-tickets',{'query':query, "system_params":"sysparm_display_value=true", "using":"ServiceNow v2_BIG-IndoChina"})
+      #print(res)
+      #demisto.results(res)
+      content = res[0]["Contents"]["result"][0]
+      #print(content)
+      assignment_group = content["assignment_group"] if content["assignment_group"] == "" else content["assignment_group"]['display_value']
+      assignment_to = content["assigned_to"] if content["assigned_to"] == "" else content["assigned_to"]['display_value']
+      data = [
+          {"Snow ID":content['number'],
+          "Customer SNOW Incident Number": content["number"],
+          "Snow impact": content['impact'],
+          "Snow Urgency": content['urgency'],
+          "Category": content["category"],
+          "SubCategory" : content["subcategory"],
+          "Priority" : content["priority"],
+          "Incident State" : content["incident_state"],
+          "On Hold Reason" : content["hold_reason"],
+          "Short Description": content["short_description"],
+          "Description": content["description"],
+          "Assignment Group": assignment_group,
+          "Assigned To": assignment_to,
+          "Opened At": content["opened_at"],
+          "Contact Type": content["contact_type"],
+          "Resolution Code": content["close_code"],
+          "Resolution Notes": content["close_notes"]
+          }
+      ]
+
+      table_data = tableToMarkdown("ServiceNow Ticket Details",data,headers=data[0].keys())
+
+
+      entry={
+          "Type":entryTypes["note"],
+          "Contents":content,
+          "ContentsFormat":formats["json"],
+          "HumanReadable":table_data,
+          "ReadableContentsFormat":formats["markdown"],
+          "EntryContext":{"snow":content}
+      }
+      #print(content["incident_state"],content["state"],content["close_code"],content["close_notes"])
+      if cur_state !="Resolved" and content["incident_state"] =="Resolved":
+          #demisto.results("Incident is Resolved")
+          demisto.executeCommand("setIncident",{"cdincidentstate":'In Progress',"snowonholdreason":"","snowstate":content["incident_state"],"snowresolutioncode":content["close_code"],"snowresolutionnotes":content["close_notes"]})
+          resolved_time = datetime.strptime(content["resolved_at"],"%Y-%m-%d %H:%M:%S")
+          resolved_time = resolved_time.strftime('%Y-%m-%d %H:%M:%S')
+          #print(resolved_time)
+          resolved_time_utc = convert_datetime_timezone(resolved_time, "US/Pacific", "Etc/UTC")
+          resolved_time_utc = resolved_time_utc.strftime('%Y-%m-%dT%H:%M:%S+00:00')
+          #print(resolved_time_utc)
+          demisto.executeCommand("setIncident",{"snowincidentresolutiontime":resolved_time_utc})
+          demisto.executeCommand('startTimer',{ 'timerField':'cdresolutionsla' })
+
+          #res = demisto.executeCommand("getUserByUsername", {"username":custom_fields.get('cdincidentowner')})
+          #subject = "Demisto ID: " + inc_data.get('id') +" : Incident State Change Notification"
+          #Content = "Hi " + res[0]['Contents']['name']+",\n\n"+"Kindly check the Demisto Incident as State has been Changed to In Progress as ServiceNow Ticket Raised has been resolved.\nGo Fight the Dark Forces."+"\n\nRegards,\nDemistoTeam"
+          #res = demisto.executeCommand("send-mail", {"to":res[0]['Contents']['email'],"subject":subject,"body":Content,"using":"Mail Sender_USA_Dallas_Primary"})
+          #demisto.results(res)
+      elif content["incident_state"] =="On Hold":
+          #on_hold_reason = content["assigned_to"] if content["assigned_to"] == "" else content["assigned_to"]['display_value']
+          demisto.executeCommand("setIncident",{"snowstate":content["incident_state"], "snowonholdreason":content["hold_reason"]})
+          if source_brand == "ServiceNow v2":
+              if content["hold_reason"] == "Awaiting Caller":
+                  demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Customer Inputs"})
+              elif content["hold_reason"] == "Awaiting Change":
+                  demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Others"})
+              elif content["hold_reason"] == "Awaiting Vendor":
+                  demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Vendor Inputs"})
+              else:
+                  pass
+          else:
+              pass
+      elif cur_state !="In Progress" and content["incident_state"] =="In Progress":
+          demisto.executeCommand("setIncident",{"snowresolutioncode":"", "snowonholdreason":"","snowresolutionnotes":""})
+
+      demisto.executeCommand("setIncident",{"snowcategory":content["category"],"snowsubcategory":content["subcategory"], "snowimpact":content['impact'],
+                                                                  "snowurgency":content['urgency'], "snowstate":content["incident_state"],
+                                                                  "snowassignmentgroup":assignment_group,"snowdescription":content["description"], "snowcontacttype":content["contact_type"],
+                                                                  "snowshortdescription":content["short_description"],"snowpriority":content["priority"],"customersnowincidentnumber":content["number"]})
+
+      if cur_priority == priority_mapping[content["priority"]]:
+          pass
+      else:
+          demisto.executeCommand("setIncident",{"cdpriority":priority_mapping[content["priority"]]})
+
+      demisto.results(entry)
+
+scripttarget: 0
+subtype: python3
+tags:
+- dynamic-section
+type: python
