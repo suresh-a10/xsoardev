@@ -1,0 +1,78 @@
+args:
+- name: EntryID
+  required: true
+commonfields:
+  id: 05f4788e-78f3-4a0a-8a09-45bb540cc988
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: localhost/sua-py:latest
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: TestPlot
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2
+
+
+  import os
+  os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
+
+  import tempfile
+  import shutil
+  from matplotlib import pyplot as plt
+  import pandas as pd
+  from matplotlib.backends.backend_pdf import PdfPages
+
+
+  def get_plot(entry_id):
+
+
+      res = demisto.getFilePath(entry_id).get('path')
+      data = pd.read_csv(res)
+
+      data.plot()
+      file_name='testplot.pdf'
+      plt.savefig(file_name,format='pdf')
+      temp = demisto.uniqueFile()
+      shutil.copy(file_name, demisto.investigation()['id'] + '_' + temp)
+      demisto.results({
+                      'Contents': '',
+                      'ContentsFormat': formats['text'],
+                      'Type': entryTypes['file'],
+                      'File':file_name,
+                      'FileID': temp
+      })
+
+
+      #shutil.copy(current_path+'/'+file_name,'/Users/sua/Desktop/')
+
+
+          #shutil.copy(f, demisto.investigation()['id'] + '_' + temp)
+  entry_id = demisto.args()['EntryID']
+  get_plot(entry_id)
+
+  """
+  demisto.results({
+           'Type': entryTypes ['image'],
+           'ContentsFormat': formats ['json'],
+           'File': image ['File'],
+           'FileID': image ['FileID'],
+           'Contents': 'Data'
+      })
+  """
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
