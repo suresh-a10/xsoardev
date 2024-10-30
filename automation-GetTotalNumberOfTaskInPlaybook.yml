@@ -1,0 +1,85 @@
+args:
+- description: Provide the playbook name
+  isArray: true
+  name: PlaybookName
+  required: true
+commonfields:
+  id: b8edc173-c2fb-4561-8810-3fd7e50eafeb
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.11.56082
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetTotalNumberOfTaskInPlaybook
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+
+  lists={}
+  main_pb_list=[]
+
+  def get_subplaybook_list(res,playbook_name):
+      if len(playbook_name)>0:
+          for i in range(len(playbook_name)):
+              for item in res["playbooks"]:
+                  if item['name'] == playbook_name[i]:
+                      main_pb_list.append({'Playbookname':playbook_name[i],'Total No of Tasks':len(item['tasks'])})
+      return main_pb_list
+
+  ''' MAIN FUNCTION '''
+
+  def main():
+
+      args=demisto.args()
+      playbook_name = argToList(args.get('PlaybookName'))
+
+      payload = { 'query' : demisto.args().get('query','hidden:F AND deprecated:F') }
+
+      res = demisto.executeCommand("demisto-api-post", {"uri":"playbook/search", "body" : json.dumps(payload)})[0]["Contents"]["response"]
+
+      if not res['playbooks']:
+          demisto.results("Playbook query did not return any results")
+          exit(0)
+      pb_data=get_subplaybook_list(res,playbook_name)
+
+      if len(pb_data)>0:
+          md = tableToMarkdown("Playbook Data:", pb_data, ['Playbookname','Total No of Tasks'])
+          demisto.results({
+              'Type': entryTypes['note'],
+              "Contents" : md,
+              'ContentsFormat': formats['json'],
+              'HumanReadable': md,
+              'ReadableContentsFormat' : formats['markdown'],
+              'EntryContext': {'PlaybookList':pb_data}
+          })
+      else:
+          demisto.results("No results found")
+
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
