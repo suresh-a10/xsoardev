@@ -1,0 +1,72 @@
+commonfields:
+  id: 0d3172cf-3621-42a9-8015-9b43ae769be2
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.11.54132
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: PreprocessingDemoScript
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  from typing import Dict, Any
+  import traceback
+
+
+
+
+
+  ''' MAIN FUNCTION '''
+  Parent_Incidents=[]
+  def search_incidents(inc_name,inc_type,sender,subject):
+      query='emailfrom:"'+sender+'" and emailsubject:"'+subject+'"'
+      #print(query)
+      res = demisto.executeCommand("SearchIncidentsV2",{"query":query, "fromDate":"24 hours ago"})[0]['Contents']
+
+      incidents= res[0]['Contents']['data']
+
+      if len(incidents)>0:
+          for i in range(len(incidents)):
+              demisto.executeCommand("addEntries", {"id": incidents[i]['id'], "entries": [{"Contents": f"Duplicate {inc_type} incident:#{inc_name} was dropped by DBot"}]})
+              demisto.executeCommand("setIncident", {"id":incidents[i]["id"],"severity":(incidents[i]["severity"])+1})
+              demisto.results(False)
+      else:
+          demisto.results(True)
+
+
+  def main():
+
+      inc_data= demisto.incidents()[0]
+      inc_type = inc_data['type']
+      inc_name = inc_data['name']
+      sender=inc_data['CustomFields']['emailfrom']
+      subject=inc_data['CustomFields']['emailsubject']
+
+      search_incidents(inc_name,inc_type,sender,subject)
+
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags:
+- preProcessing
+type: python
