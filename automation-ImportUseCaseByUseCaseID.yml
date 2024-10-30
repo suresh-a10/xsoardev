@@ -1,0 +1,121 @@
+args:
+- defaultValue: UsecaseLibrabyAdoption
+  description: Please provide the list name for use case library
+  name: listname
+- auto: PREDEFINED
+  description: Please provide the operation mode for automation
+  name: mode
+  predefined:
+  - AddToLayout
+  - GetData
+- description: Please provide a use case number such as 10003
+  isArray: true
+  name: usecase_id
+  required: true
+comment: This automation is designed to import use case from customer adoption library
+  and add them to the template.
+commonfields:
+  id: 927680e9-e239-4490-8eb8-5b5d8a3adf59
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.51930
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ImportUseCaseByUseCaseID
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+
+  def getList(listName):
+      return json.loads(demisto.executeCommand("getList", {"listName":listName})[0].get("Contents"))
+
+
+  def update_adoption_plan_to_incidnet(incident_id,usecase,adoption_plan):
+      #check owner then import
+      if incident_id != usecase.get("usecaseowner"):
+          #import with number - duplicate import
+          usecase["usecaseowner"] = ""
+          usecase["usecasenumber"] = ""
+
+      if type(adoption_plan) == dict:
+          adoption_plan = [adoption_plan]
+      adoption_plan.append(usecase)
+      x = demisto.executeCommand("setIncident", {
+          "adoptiontablev2": adoption_plan
+      })
+      print(x)
+
+
+  def add_usecase_to_layout(usecase):
+      incident = demisto.incident()
+      adoption_plan = incident.get("CustomFields").get("adoptiontablev2")
+      if len(adoption_plan):
+          for entry in adoption_plan:
+              if entry.get("usecasenumber") == usecase.get("usecasenumber"):
+                  #skip the use case import - use case already present
+                  return "Use Case already present, import not required."
+      #import use case
+      update_adoption_plan_to_incidnet(incident.get("id"), usecase, adoption_plan)
+      return "Use Case imported successfully"
+
+
+  def main():
+      args = demisto.args()
+      mode = args.get("mode")
+      listname = args.get("listname")
+      usecase_id = args.get("usecase_id")
+
+      data = getList(listname)
+
+      if not data.get(str(usecase_id)):
+          #result not found return error
+          return_error(f"Results not found for use case number: {usecase_id}")
+
+      usecase = data.get(str(usecase_id))
+
+      if mode == "AddToLayout":
+          add_usecase_to_layout(usecase)
+
+      data = usecase
+      context = {
+          "CustomerAdoption": {
+              "UseCaseSearch": {
+                  f"{usecase_id}": data
+              }
+          }
+      }
+
+      md = tableToMarkdown(f"Use Case Query UCN: {usecase_id}", data)
+
+      demisto.results({
+          'Type' : entryTypes['note'],
+          'Contents': data,
+          'ContentsFormat' : formats['json'],
+          'HumanReadable': md,
+          'ReadableContentsFormat' : formats['markdown'],
+          'EntryContext' : context
+      })
+
+
+
+  main()
+
+scripttarget: 0
+subtype: python3
+tags:
+- customer adoption
+type: python
