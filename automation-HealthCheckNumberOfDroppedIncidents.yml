@@ -1,0 +1,123 @@
+args:
+- auto: PREDEFINED
+  default: true
+  description: Is widget or playbook command.
+  name: isWidget
+  predefined:
+  - "False"
+  - "True"
+- description: Define the thresholds.
+  name: Thresholds
+comment: Number of dropped incidents.
+commonfields:
+  id: HealthCheckNumberOfDroppedIncidents
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 2.1.3
+    packID: HealthCheck
+    packName: System Diagnostics and Health Check
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.83255
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: HealthCheckNumberOfDroppedIncidents
+outputs:
+- contextPath: NumberOfDroppedIncidents
+  description: Number of dropped incidents.
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('HealthCheckNumberOfDroppedIncidents', 'start', __line__())
+  demisto.debug('pack name = System Diagnostics and Health Check, pack version = 2.1.3')
+
+
+
+
+  from datetime import datetime, timedelta
+
+  incident = demisto.incidents()[0]
+  accountName = incident.get('account')
+  accountName = f"acc_{accountName}/" if accountName != "" else ""
+
+  args = demisto.args()
+  Thresholds = {
+      "NumberOfDroppedIncidents": 2000
+  }
+  thresholds = args.get('Thresholds', Thresholds)
+  isWidget = args.get('isWidget', True)
+
+  daysAgo = datetime.today() - timedelta(days=30)
+
+
+  stats = demisto.executeCommand(
+      "core-api-post",
+      {
+          "uri": f"{accountName}settings/audits",
+          "body": {
+              "size": 10000,
+              "query": "type:notcreated and modified:>%s" % str(daysAgo.strftime("%Y-%m-%d"))
+
+          }
+      })
+
+
+  if isWidget is True:
+      data = {
+          "Type": 17,
+          "ContentsFormat": "number",
+          "Contents": {
+              "stats": stats[0]["Contents"]["response"]['total'],
+              "params": {
+                  "timeFrame": "minutes",
+                  "colors": {
+                      "isEnabled": True,
+                      "items": {
+                          "#D13C3C": {
+                            "value": 15
+                          }
+                      },
+                  }
+              }
+          }
+      }
+
+      demisto.results(data)
+  else:
+      actionItems = []
+      if stats[0]["Contents"]["response"]['total'] > thresholds['NumberOfDroppedIncidents']:
+          actionItems.append({'category': 'Incidents Analysis', 'severity': 'Low',
+                              'description': "Too many dropped incidents",
+                              'resolution': "Consider tuning the defined query to avoid fetching unneeded incidents"
+                              })
+
+          results = CommandResults(
+              readable_output="HealthCheckFileSysLog Done",
+              outputs_prefix="HealthCheck.ActionableItems",
+              outputs=actionItems)
+
+          return_results(results)
+
+      demisto.results({'Type': entryTypes['note'],
+                       'Contents': stats[0]["Contents"]["response"]['total'],
+                       'ContentsFormat': formats['text'],
+                       'HumanReadable': stats[0]["Contents"]["response"]['total'],
+                       'ReadableContentsFormat': formats['text'],
+                       'EntryContext': {'NumberOfDroppedIncidents': stats[0]["Contents"]["response"]['total']}
+                       })
+
+  register_module_line('HealthCheckNumberOfDroppedIncidents', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- dynamic-section
+type: python
