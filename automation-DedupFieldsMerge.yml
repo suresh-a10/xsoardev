@@ -1,0 +1,150 @@
+args:
+- name: UseCaseName
+  required: true
+commonfields:
+  id: 45c69dcf-4353-4da3-809c-ee080cdf6479
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: DedupFieldsMerge
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  ALERTFIELD_MAPPING = {
+      "destinationip": "destinationip",
+      "username": "username",
+      "destinationhostname":"destinationhostname",
+      "sourceusername": "sourceusername",
+      "filename":"filename",
+      "service": "service",
+      "sourcehostname": "sourcehostname",
+      "sourceip": "sourceip",
+      "url": "url"
+  }
+  #We need to convert everything to lower case and add it in similar key
+
+  def fetch_usecase_list(list_name):
+      try:
+          response = demisto.executeCommand('getList',{'listName': list_name})
+          if response[0]['Type'] == entryTypes['error']:
+              return None, f"Error fetching list: {response[0]['Contents']}"
+          return json.loads(response[0]['Contents']), None
+      except Exception as e:
+          return None, f"Error fetching usecase list: {str(e)}"
+
+  def fetch_incident_fields(incident, alertfield_key):
+      try:
+          incident_field_name = ALERTFIELD_MAPPING.get(alertfield_key.lower(), None)
+          if incident_field_name:
+              value = incident.get('CustomFields').get(incident_field_name, None)
+              if isinstance(value, list):
+                  value = ",".join(value)
+              return value, None
+          else:
+              return None, f"No value in incident field"
+      except Exception as e:
+          return "", f"Error fetching incident field: {str(e)}"
+
+  def merge_fields_and_update_incident(usecase_list, incident, usecase_name):
+      try:
+          for item in usecase_list:
+              usecase = item.get('Usecase', None)
+              category = item.get('category', None)
+              subcategory = item.get('subcategory', None)
+              alertfield_key = item.get('alertfield', None)
+
+              if usecase != usecase_name:
+                  continue
+
+              if alertfield_key:
+                  alertfield_value, fetch_error = fetch_incident_fields(incident, alertfield_key)
+
+              else:
+                  alertfield_value = None
+
+              category = category if category else "none"
+              subcategory = subcategory if subcategory else "none"
+              alertfield_value = alertfield_value.replace('"', '') if alertfield_value else "none"
+
+
+              # similar_key = f"{category}-{subcategory}-{alertfield_value}"
+
+              similar_key_parts = [part if part is not None else "None" for part in [category, subcategory, alertfield_value]]
+              similar_key = "-".join(part for part in similar_key_parts if part)
+              alerttype = f"{category}-{subcategory}-{alertfield_key}"
+              demisto.info(f"Similar key generated: {similar_key}")
+
+              if similar_key:
+                  demisto.executeCommand('setIncident', {'id': incident['id'], 'similarkey':similar_key, 'alerttype':alerttype, 'alertsource':similar_key})
+                  category = similar_key_parts[0]
+                  subcategory = similar_key_parts[1]
+                  alertfield_value = similar_key_parts[2]
+
+                  # demisto.executeCommand('setContext', {'key': 'SimilarKey', 'value': similar_key})
+                  # demisto.executeCommand('setContext', {'key': 'Category', 'value': category})
+                  # demisto.executeCommand('setContext', {'key': 'Subcategory', 'value': subcategory})
+                  # demisto.executeCommand('setContext', {'key': 'Alertfield', 'value': alertfield_value})
+
+                  return similar_key, category, subcategory, alertfield_value, alerttype
+
+
+      except Exception as e:
+          return None, f"Error merging fields and updating incident: {str(e)}"
+
+
+  def main():
+      list_name = "UseCaseDedup"
+      incident = demisto.incidents()[0]
+
+      usecase_name = demisto.args().get('UseCaseName')
+
+      usecase_list, usecase_list_error = fetch_usecase_list(list_name)
+      if usecase_list_error:
+          return_error(usecase_list_error)
+
+      if usecase_list is None:
+          return_error("Failed to fetch usecase list")
+
+      similar_key, category, subcategory, alertfield_value, alerttype = merge_fields_and_update_incident(usecase_list, incident, usecase_name)
+      if similar_key is not None and isinstance(similar_key,str) and similar_key.startswith("Error"):
+          return_error(similar_key)
+
+      demisto.results({
+          'Type': entryTypes['note'],
+          'Contents':{
+              'SimilarKey': similar_key,
+              'Category': category,
+              'Subcategory': subcategory,
+              'Alertfield': alertfield_value,
+              'Alerttype': alerttype
+          },
+          'ContentsFormat': formats['json'],
+          'EntryContext': {
+              'SimilarKey': similar_key,
+              'Category': category,
+              'Subcategory': subcategory,
+              'Alertfield': alertfield_value,
+              'Alerttype': alerttype
+          }
+      })
+
+  if __name__ in ('__main__', '__builtin__','builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
