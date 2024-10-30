@@ -1,0 +1,304 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 55e08de2-1e56-410c-83db-567517321d1c
+inputs: []
+name: Job - Resume Playbook
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f69db425-22c0-45cf-8f2d-9dea45d487e4
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: f69db425-22c0-45cf-8f2d-9dea45d487e4
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": -90
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: IncidentIDList=
+      listName:
+        simple: PauseIncidents
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.get
+      id: 54f7edd2-b84e-4cb3-852b-4e90ea007242
+      iscommand: true
+      name: Get List of Incidents to be resumed
+      script: Builtin|||getList
+      type: regular
+      version: -1
+    taskid: 54f7edd2-b84e-4cb3-852b-4e90ea007242
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 190
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      uri:
+        simple: /investigation/${IncidentIDs.[0]}/resume
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Core REST API
+      description: send HTTP POST request.
+      id: 61aac2c6-9e7f-4122-8394-b238cc0c6e0d
+      iscommand: true
+      name: Resume Playbook Execution
+      script: Core REST API|||demisto-api-post
+      type: regular
+      version: -1
+    taskid: 61aac2c6-9e7f-4122-8394-b238cc0c6e0d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 160,
+          "y": 710
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      listData:
+        complex:
+          root: IncidentIDs
+          transformers:
+          - args:
+              range:
+                value:
+                  simple: 1-
+            operator: GetRange
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      listName:
+        simple: PauseIncidents
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.set
+      id: 78a751c0-681b-4cd8-87bc-adc375cfb781
+      iscommand: true
+      name: Update the list
+      script: Builtin|||setList
+      type: regular
+      version: -1
+    taskid: 78a751c0-681b-4cd8-87bc-adc375cfb781
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 920
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: IncidentIDs
+      value:
+        complex:
+          root: ${IncidentIDList}
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: ','
+            operator: split
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 8cd6f223-0c25-47b5-84a0-9c40792dfc6b
+      iscommand: false
+      name: Set IncidentData
+      script: Set
+      type: regular
+      version: -1
+    taskid: 8cd6f223-0c25-47b5-84a0-9c40792dfc6b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 360
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: ${IncidentIDs}
+                transformers:
+                - operator: count
+          operator: isEqualNumber
+          right:
+            value:
+              simple: "1"
+      label: =1
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "2"
+      =1:
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b6d6a3a9-c10d-4f65-8625-d576b785170d
+      iscommand: false
+      name: Check length of IncidentIDs List
+      type: condition
+      version: -1
+    taskid: b6d6a3a9-c10d-4f65-8625-d576b785170d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 520
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      uri:
+        simple: /investigation/${IncidentIDs}/resume
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Core REST API
+      description: send HTTP POST request.
+      id: 0bcb590a-8f38-42cb-8344-06150bb27fdc
+      iscommand: true
+      name: Resume Playbook Execution
+      script: Core REST API|||demisto-api-post
+      type: regular
+      version: -1
+    taskid: 0bcb590a-8f38-42cb-8344-06150bb27fdc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 670,
+          "y": 710
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1105,
+        "width": 890,
+        "x": 160,
+        "y": -90
+      }
+    }
+  }
