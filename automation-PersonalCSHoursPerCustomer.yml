@@ -1,0 +1,78 @@
+commonfields:
+  id: 4d8707bd-956d-4d4d-81ee-df145213ad15
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.1.15759
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: PersonalCSHoursPerCustomer
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  URL = "https://cs.demisto.works/acc_CustomerSuccess#/Details/"
+
+  reportFrom = demisto.args()["from"]
+  reportsQuery = "(type:\"CS Report\" or type:\"PS Report\") and owner:{me} and (reportdate:>=\"" + reportFrom + "\" or csreportdate:>=\"" + reportFrom + "\")"
+  reportsIncidents = demisto.executeCommand("getIncidents", {"query": reportsQuery, "size": 10000})
+  reports = reportsIncidents[0]["Contents"]["data"]
+  res = {}
+  ids = []
+  if reports:
+      for report in reports:
+          name = report["CustomFields"]["selectcustomer"]
+          if name in res:
+              res[name] += report["CustomFields"]["hoursspent"]
+          else:
+              res[name] = report["CustomFields"]["hoursspent"]
+              if "customerincidentid" in report["CustomFields"]:
+                  ids.append(report["CustomFields"]["customerincidentid"])
+
+  table = []
+  for customerName in res.keys():
+      table.append({"Customer": customerName, "CS Hours": res[customerName]})
+
+  queryIds = " ".join(ids)
+  customersQuery = f'status:Active and (rawType:\"Customer\" or rawType:\"XDR Customer\" or rawType:\"XSIAM Customer\") and ((customersuccessengineer:{{me}} or customersuccessarchitect:{{me}} or customersuccessmanager:{{me}}) or id:({queryIds}))'
+  customerIncidents = demisto.executeCommand("getIncidents", {"query": customersQuery, "size": 10000})
+  customers = customerIncidents[0]["Contents"]["data"]
+  if customers:
+      for customer in customers:
+          if customer["type"] == "Customer":
+              fullName = customer["CustomFields"]["customername"] + " (Demisto)"
+          elif customer["type"] == "XSIAM Customer":
+              fullName = customer["CustomFields"]["customername"] + " (XSIAM)"
+          else:
+              fullName = customer["CustomFields"]["customername"] + " (XDR)"
+
+          found = False
+          for item in table:
+              if fullName == item["Customer"]:
+                  item["Customer"] = f'[{fullName}]({URL}{customer["id"]})'
+                  item["Tier"] = customer["CustomFields"].get("customertier")
+                  found = True
+                  break
+          if not found:
+              newItem = {"Customer": f'[{fullName}]({URL}{customer["id"]})', "CS Hours": 0, "Tier": customer["CustomFields"].get("customertier")}
+              table.append(newItem)
+
+  output = sorted(table, key=lambda k: k["CS Hours"], reverse=True)
+  md = tableToMarkdown("CS Hours per Customer", output, headers = ["Customer", "CS Hours", "Tier"])
+  demisto.results(md)
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+- csm-dashboard
+type: python
