@@ -1,0 +1,170 @@
+commonfields:
+  id: 3f69d719-90ce-4fda-8ff5-7e1488163c34
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.5.3471
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: WidgetResponseTimeTrendByAnalyst
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import json
+  from datetime import datetime
+  from datetime import timedelta
+  from collections import defaultdict
+
+  DIVIDE_BY = 60
+
+  class Utils:
+    """
+      Utilities API
+    """
+    @staticmethod
+    def parse_time(tstr):
+      """ Create a new datetime object from a time string
+
+       :param str tstr: a time string
+       :rtype: datetime
+       :return: datetime object meaning as tstr
+      """
+      try:
+        return  parse_date_string(tstr)
+      except ValueError:
+        return  Utils.parse_demisto_time(tstr)
+
+
+    @staticmethod
+    def parse_demisto_time(tstr):
+      """ Create a new datetime object from a demisto time string
+
+       :param str tstr: a demisto time string
+       :rtype: datetime
+       :return: datetime object meaning as tstr
+      """
+      m = re.match('^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(\.([0-9]+))?(([+-])([0-9]{2}):([0-9]{2})|Z)$', tstr)
+      if not m:
+        raise ValueError('Incorrect time format: {}'.format(tstr))
+
+      year, month, day, hour, minute, second, dummy, fraction, tzname, tzsym, tzhour, tzmin = m.groups()
+
+      microsecond = 0 if not fraction else int(fraction[:6])
+
+      if tzname == 'Z':
+        tz = 0
+      elif tzsym:
+        tz = (int(tzhour)*3600) + int(tzmin)
+        if tzsym == '-':
+          tz = tz * -1
+        elif tzsym != '+':
+          raise ValueError('Incorrect timezone: {}'.format(tstr))
+      else:
+        raise ValueError('Incorrect timezone: {}'.format(tstr))
+
+      dt = datetime(year=int(year), month=int(month), day=int(day), hour=int(hour), minute=int(minute), second=int(second), microsecond=microsecond)
+      return  dt - timedelta(seconds=tz)
+
+
+  def get_datetime(jdic, key):
+    dt = demisto.get(jdic, key)
+    if dt is not None:
+      dt = Utils.parse_time(dt)
+    return  dt
+
+
+  def get_incidents_from_res(res):
+    contents = demisto.get(res[0], "Contents")
+    if contents:
+      return  demisto.get(contents, "data")
+    return  None
+
+
+  def get_total_durations(now, incident):
+    td = defaultdict(int)
+    try:
+      owner = demisto.get(incident, 'owner')
+      xfields = demisto.get(incident, 'CustomFields')
+      #demisto.debug("DEBUG: {}".format(json.dumps(xfields)))
+      if xfields:
+        responsetime = demisto.get(xfields, 'responsetime')
+        if responsetime:
+          for name, info in json.loads(responsetime).items():
+            totalDuration = info.get('totalDuration', 0)
+            assignedAt = get_datetime(info, 'assignedAt')
+            finishedAt = get_datetime(info, 'finishedAt')
+
+            if int(demisto.get(incident, 'status', 0)) == 2: # closed (2)
+              closedAt = get_datetime(incident, 'closed')
+              if not assignedAt or assignedAt > closedAt:
+                assignedAt = closedAt
+              if not finishedAt or finishedAt > closedAt:
+                finishedAt = closedAt
+            else:
+              if assignedAt and ( not finishedAt or assignedAt > finishedAt ):
+                finishedAt = now
+            if owner and name == owner and assignedAt and finishedAt:
+              totalDuration += int((finishedAt - assignedAt).total_seconds())
+
+            td[name] += totalDuration
+    except:
+      pass
+    return  td
+
+
+  def calc_daily_response_time_by_analyst(now, tformat, fromdate, todate):
+    td = defaultdict(lambda: defaultdict(int))
+    page = 0
+    res = demisto.executeCommand('getIncidents',
+                                 {'fromdate': fromdate, 'todate': todate, 'size': 100, 'page': page})
+    while not isError(res[0]):
+      incidents = get_incidents_from_res(res)
+      if not incidents:
+        break
+      for incident in incidents:
+        for k, v in get_total_durations(now, incident).items():
+          try:
+            date = Utils.parse_time(demisto.get(incident, 'created')).strftime(tformat)
+            td[date][k] += v
+          except:
+            pass
+
+      page += 1
+      res = demisto.executeCommand('getIncidents',
+                                   {'fromdate': fromdate, 'todate': todate, 'size': 100, 'page': page})
+    return  td
+
+
+  now = datetime.now()
+  args = demisto.args()
+
+  td = calc_daily_response_time_by_analyst(now=now, tformat='%Y-%m-%d %H:%M', fromdate=args.get('from'), todate=args.get('to'))
+  wd = [
+    {
+      'name': d,
+      'groups': [
+        {
+          'name': a,
+          'data':[int((t+DIVIDE_BY-1)/DIVIDE_BY)]
+        } for a,t in sorted(v.items(), key=lambda x:x[1])
+      ]
+    }
+    for d,v in sorted(td.items(), key=lambda x:x[0])
+  ]
+  demisto.results(json.dumps(wd))
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
