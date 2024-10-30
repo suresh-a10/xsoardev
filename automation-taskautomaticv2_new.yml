@@ -1,0 +1,150 @@
+args:
+- name: from
+commonfields:
+  id: db2f0e43-883c-49b1-864d-84f9a7dc88f1
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.4.31492
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: taskautomaticv2_new
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  import json
+  from datetime import datetime
+  automated = 0
+  manual = 0
+  output = []
+  typetasks = {}
+
+  def GetIncidents():
+
+      args = {}
+      args2 = {}
+      invId = []
+
+      res = demisto.executeCommand("GetTime", args)
+
+      if 'from' in demisto.args():
+          fromDate = demisto.args()['from']
+      else:
+          gettingdate = demisto.executeCommand("GetTime", {"daysAgo":"30","dateFormat":"iso"})
+          fromDate = gettingdate[0]['Contents']
+
+      if 'to' in demisto.args():
+          args2['todate'] = demisto.args()['to']
+          args2['query'] = " todate:"+ demisto.args()['to']
+
+      if 'query' in demisto.args():
+          args2['query'] = demisto.args()['query']
+
+      query =  "status:closed and created:>="+ fromDate
+
+      # demisto.results(args2)
+
+      incidents = demisto.executeCommand("getIncidents", {"query":query})[0]['Contents']
+
+      if incidents['total']>0:
+          for item in incidents['data']:
+              invId.append({"id":item['id'],"type":item['type'],"pname":item['playbookId']})
+          return(invId)
+      else:
+          return(incidents['total'])
+
+      demisto.results(invId)
+
+
+  def getTaskMetric(task_result):
+      global automated
+      global manual
+      if task_result["completedBy"] == "DBot":
+          automated = automated+1
+      elif task_result["completedBy"] != "N/A":
+          manual = manual+1
+      return({"automated":automated,"manual":manual})
+
+
+
+  def setTypeMetric(a,m,t,p): #{"Widget-Duration":[8,5],"Unclassified":[5,2]}
+      global typetasks
+      if t not in typetasks:
+          typetasks[t] = [a,m,p]
+      else:
+          typetasks[t][0] += a;
+          typetasks[t][1] += m;
+          typetasks[t][2] = p;
+
+  def formatOutput(typetasks):
+      formatted = []
+      automated_percent=""
+      manual_percent=""
+      for itype in typetasks:
+          total = typetasks[itype][0] + typetasks[itype][1]
+          if total>0:
+              automated_percent = (typetasks[itype][0]/total)*100
+              manual_percent = (typetasks[itype][1]/total)*100
+          formatted.append({"Incident Type":itype,"Playbook Name":typetasks[itype][2],"Tasks-automated(%)":automated_percent,"Tasks-manual(%)":manual_percent})
+          formatted.sort(key=sortSecond)
+
+      return formatted
+
+  def sortSecond(val):
+      return val['Incident Type']
+
+  incident = GetIncidents()
+
+  if incident != 0:
+      for item in incident:
+          #print(item)
+          task_result = []
+          automated = 0
+          manual = 0
+
+          res = demisto.executeCommand("DemistoGetIncidentTasksByState", {"incidentId":item['id'],"states":"Completed"})
+          if "Could not find investigations" in res[0]['Contents']:
+              continue
+
+          #print(res)
+          if "has no tasks" not in res[0]['Contents']:
+
+              for i in res[0]['Contents']:
+                  try:
+                      task_result.append({"completedBy":i['completedBy']})
+                  except:
+                      print(item['id'])
+                      return_error(res)
+
+                  #task_result.append({"completedBy":i['completedBy']})
+
+          else:
+              task_result.append({"completedBy":"N/A"})
+
+          for i in task_result:
+                getTaskMetric(i)
+          setTypeMetric(automated,manual,item["type"],item["pname"])
+
+  # else:
+  #     demisto.results({"data":{"Incident Type":"N/A","Tasks - automated":0,"Tasks - manual":0},"total":0})
+  result = json.dumps({"data":formatOutput(typetasks),"total":len(formatOutput(typetasks))})
+  demisto.results(result)
+  demisto.results({"data":formatOutput(typetasks),"total":len(formatOutput(typetasks))})
+
+
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
