@@ -1,0 +1,63 @@
+comment: 'Post Processing Script that will close linked Incidents when the Incident
+  is closed.  Will set the same close code as the parent, and add closing notes from
+  the parent. '
+commonfields:
+  id: CloseLinkedIncidentsPostProcessing
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.8.0
+    itemVersion: 1.4.8
+    packID: CaseManagement-Generic
+    packName: CaseManagement-Generic
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.14.91134
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CloseLinkedIncidentsPostProcessing
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('CloseLinkedIncidentsPostProcessing', 'start', __line__())
+  ### pack version: 1.4.8
+
+
+
+
+  def main():
+      incident = demisto.incident()
+      close_reason = demisto.args().get("closeReason")
+      close_notes = demisto.args().get("closeNotes")
+      incident_id = incident.get("id")
+      linked_incidents = incident.get("linkedIncidents")
+
+      if linked_incidents and not str(close_notes).startswith("Closed from parent Incident"):
+          demisto.executeCommand("executeCommandAt",
+                                 {"command": "closeInvestigation",
+                                  "arguments": {
+                                      "closeReason": close_reason,
+                                      "closeNotes": f"Closed from parent Incident {incident_id}\n"
+                                                    f"\nClose Notes:\n{close_notes}"},
+                                  "incidents": ",".join(linked_incidents)})
+          demisto.results(f"Closing linked Incidents {','.join(linked_incidents)}")
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+  register_module_line('CloseLinkedIncidentsPostProcessing', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- post-processing
+- training
+- internal
+type: python
