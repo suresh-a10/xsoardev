@@ -1,0 +1,68 @@
+commonfields:
+  id: 6fcbc66f-c88e-49c8-83a3-21a27b85beab
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.1.14969
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CD_SNOWAutoClosure_PROD_Ver1
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import datetime
+  inc_data = demisto.incidents()[0]
+
+  custom_fields = inc_data.get("CustomFields",{})
+
+
+  sys_id = custom_fields.get("snowincidentsysid")
+  onhold_reason = custom_fields.get("snowonholdreason")
+  print(sys_id)
+
+  args_sev =  demisto.args().get('new')
+  #demisto.results(args_sev)
+  #args_sev = "Yes"
+  if args_sev == "Yes":
+  #!servicenow-update-ticket id=b6819d7c1bfbdc10d6557805464bcb1c incident_state=6 close_code="Closed/Resolved by Caller" close_notes="False Positive" comments="Incident is resolved by Analyst"
+      if sys_id != None or sys_id != "":
+          resolution_code = custom_fields.get('snowresolutioncode')
+          resolution_notes = custom_fields.get('cdclosednotes')
+          if resolution_code == "" or resolution_code == None or resolution_notes == "" or resolution_notes == None:
+              #print(resolution_code, resolution_notes)
+              demisto.results("Kindly check if resolution code or resolution notes are provided!!")
+          else:
+              current_time = datetime.datetime.now()
+              newsla = current_time.strftime('%Y-%m-%dT%H:%M:%S+00:00')
+              demisto.executeCommand("setIncident",{"snowstate":"Resolved"})
+              demisto.executeCommand("setIncident",{"snowincidentresolutiontime":newsla,"snowresolutionnotes":resolution_notes})
+              res = demisto.executeCommand("servicenow-update-ticket", {"id":sys_id,"close_code":resolution_code,
+                                                                      "close_notes":resolution_notes,
+                                                                      "incident_state":6,
+                                                                      "using":"COSTA_ServiceNow _v2_Instance"})
+              demisto.results(res)
+          #print("test")
+          if onhold_reason != "" or onhold_reason is not None:
+              demisto.executeCommand("setIncident",{"snowonholdreason":""})
+          else:
+              pass
+      else:
+          demisto.results("ServiceNow Ticket is not yet created !!")
+  else:
+      pass
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
