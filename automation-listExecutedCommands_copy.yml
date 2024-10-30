@@ -1,0 +1,79 @@
+comment: Lists  executed commands in War Room
+commonfields:
+  id: 2b9da7d9-0e71-44b0-8a34-b69544d2d630
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: listExecutedCommands_copy
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2
+
+
+  var entries = executeCommand('getEntries', {});
+
+  commands = [];
+  count = {};
+
+  for (var i = 0; i < entries.length; i++) {
+      if (typeof entries[i].Contents == 'string' && entries[i].Contents.indexOf('!') === 0 && entries[i].Contents.indexOf('!listExecutedCommands_copy') !== 0) {
+          if (entries[i].Metadata.User) {
+
+              name =  entries[i].Contents.replace('!','');
+              user = entries[i].Metadata.User;
+              cmd_meta = name + "||" + user;
+
+              if (user && !count[cmd_meta]) {
+                  count[cmd_meta] = 1;
+              } else if (user && count[cmd_meta]) {
+                  count[cmd_meta] += 1;
+              }
+
+
+          }else {
+
+              name =  entries[i].Contents;
+              runBy = entries[i].Metadata.EntryTask.PlaybookName + " (" + entries[i].Metadata.EntryTask.TaskName + ")";
+              cmd_meta = name + "||" + runBy;
+
+              if (runBy && !count[cmd_meta]) {
+                  count[cmd_meta] = 1;
+              } else if (runBy && count[cmd_meta]) {
+                  count[cmd_meta] += 1;
+              }
+
+          }
+
+      }
+  }
+
+
+
+  var md = '';
+  if (count.length > 0) {
+      for( var i = 0; i < count.length; i++){
+          commands.push({"command":count.split("||")[0] , "run_by":cmd.split("||")[1], "count":str(count[cmd])})
+      }
+      md += tableToMarkdown('Executed Commands', commands, ['commands', 'run_by', 'count']) + '\n';
+  }
+  if (md === '') {
+      md = 'No commands found\n';
+  }
+  return {ContentsFormat: formats.markdown, Type: entryTypes.note, Contents: md};
+scripttarget: 0
+tags:
+- Utility
+type: javascript
