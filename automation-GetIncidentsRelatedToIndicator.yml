@@ -1,0 +1,46 @@
+args:
+- name: value
+  required: true
+commonfields:
+  id: bf7a82c5-f19b-4741-8a62-8d8e81479b3e
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.9.42008
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetIncidentsRelatedToIndicator
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  indicator = demisto.executeCommand("findIndicators", {"query":"value:"+demisto.args().get("value")})[0]['Contents']
+  if isinstance(indicator,list) and len(indicator)>0:
+      indicator = indicator[0]
+
+      if "investigationIDs" in indicator and len(indicator["investigationIDs"])>0:
+          result = {}
+          latest_incident_id = indicator['investigationIDs'][-1] #latest investigation
+          latest_investigation_context = demisto.executeCommand("getContext", {"id":str(latest_incident_id)})
+          latest_incident = demisto.executeCommand("getIncidents", {"query":"id:"+str(latest_incident_id)})[0]['Contents']
+          result['context'] = latest_investigation_context
+          result['incident'] = latest_incident
+          demisto.results(result)
+      else:
+          demisto.results("Indicator is not associated with a list")
+  else:
+      demisto.results("Indicator not found")
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
