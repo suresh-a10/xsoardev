@@ -1,0 +1,272 @@
+args:
+- description: '- Run this command "/docker_images" to find the latest python3 docker
+    image  E.g "demisto/python3:3.10.14.90585"'
+  name: Latestdockerimage
+- description: Provide the list of automation names for which you want to make exceptions.
+    For example, 'test1, test2, test3'. Ensure that the provided names exactly match
+    the automation names.
+  name: Exception_automation_name
+- description: 1. Provide a list of automation names for which you want to change
+    the latest Docker image. For example, 'test1, test2, test3'. Ensure that the provided
+    names exactly match the automation names.  2. If you want to change the latest
+    docker image of all the custom automations, then provide the key value as 'all'.
+    Note that this will change the Docker image of all existing Python 3 scripts.
+  name: list_automation_names
+- auto: PREDEFINED
+  description: 1. "no" - It will list all the Python 3 Docker images and automation
+    names in Excel sheet. 2. "yes" - It will change the latest Docker image for the
+    provided automation name. It depends on other arguments such as 'list_automation_names',
+    etc."
+  name: change_latest_dockerimage
+  predefined:
+  - "yes"
+  - "no"
+- description: Provide your XSOAR API instance name, for example, Core REST API_instance_1
+  name: instancename
+comment: 'This script facilitates updating the latest Python 3 Docker image for custom
+  automations.  '
+commonfields:
+  id: 158267a1-ec98-42a6-84fe-8708beeab4a0
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.89873
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: DBS_updatecustomautomation_dockerimage
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  register_module_line('updateCustomAutomationsWithLatestDockerImage', 'start', __line__())
+
+  INSTANCE = demisto.args().get('instancename',None)
+
+
+  def checkdockerversion(latestdockerimage,INSTANCE):
+
+      if 'demisto/python3' in latestdockerimage:
+          allautomation = demisto.executeCommand("core-api-post", {"uri":"/automation/search", "body":"{\"query\":\"system:F OR system:T \"}","using":INSTANCE})[0]["Contents"]["response"]["scripts"]
+          # To ensure the provided docker image able to identify with existing automation.
+          counter = 1
+          found = False
+          for automation in allautomation:
+              dockerversion = automation.get('dockerImage', '')
+              if dockerversion == latestdockerimage:
+                  print(f"{counter}\t{automation['name']}\t{dockerversion}")
+                  found = True
+                  break
+              counter += 1
+          if not found:
+              return_error("Error: Docker image not found in the list.")
+      else:
+          return_error("Provide only the python3 image")
+
+  def get_automationconfig(automation_name):
+
+      query = f'name:"{automation_name}"'
+      automation_result = demisto.executeCommand("demisto-api-post", {
+          "body": {
+              "query": query
+          },
+          "uri": "/automation/search"
+      })[0]["Contents"]["response"]["scripts"]
+
+      if len(automation_result) == 1:
+          docker_id = automation_result[0]["id"]
+
+      return docker_id
+
+  def updatedockerimageforautomation(automationContent,latestdockerimage):
+
+      temp ={}
+
+      if "demisto/python3" in automationContent["dockerImage"]:
+          if automationContent["dockerImage"] == latestdockerimage:
+              temp["status"] = "Not Updated"
+              temp["comment"] = "Because it is already using latest python3 image"
+              temp["name"] = automationContent.get("name")
+              temp["id"] = automationContent.get("id")
+              temp["previousDockerImage"] = automationContent.get("dockerImage")
+
+          else:
+              temp["previousDockerImage"] = automationContent.get("dockerImage")
+              automationContent["dockerImage"] = latestdockerimage
+              updatedAutomationPayload = {
+                  "filter":{
+                      "query":""
+                      },
+                  "savePassword":False,
+                  "script":automationContent
+              }
+              res = demisto.executeCommand("demisto-api-post", {"uri":"/automation", "body":updatedAutomationPayload, "using":INSTANCE})
+              if isError(res):
+                  temp["status"] = "Not Updated"
+                  temp["comment"] = "Updating automation failed due to {}".format(str(res))
+                  temp["id"] = automationContent.get("id")
+                  temp["name"] = automationContent.get("name")
+
+              else:
+                  temp["status"] = "Updated"
+                  temp["comment"] = "Updated to {}".format(latestdockerimage)
+                  temp["name"] = automationContent.get("name")
+                  temp["id"] = automationContent.get("id")
+
+      else:
+          temp["status"] = "Not Updated"
+          temp["comment"] = "Because it was not using python3 image"
+          temp["name"] = automationContent.get("name")
+          temp["id"] =  automationContent.get("id")
+          temp["previousDockerImage"] = automationContent.get("dockerImage")
+
+      return temp
+
+  def main():
+
+      args = demisto.args()
+      outputExcel = []
+      latestdockerimage = demisto.args().get('Latestdockerimage',None)
+      exception_automation_name = demisto.args().get('Exception_automation_name',None)
+      list_automation_names = demisto.args().get('list_automation_names',None)
+      change_latest_dockerimage = demisto.args().get('change_latest_dockerimage')
+      customAutomations = demisto.executeCommand("core-api-post", {"uri":"/automation/search", "body":"{\"query\":\"system:F AND hidden:F AND deprecated:F\"}", "using":INSTANCE})[0]["Contents"]["response"]["scripts"]
+
+      if change_latest_dockerimage == "no":
+          matching_images = []
+          index = 1
+          for docker_image in customAutomations:
+              if 'demisto/python3' in docker_image.get('dockerImage', ''):
+                  matching_images.append({
+                      'S.No': index,
+                      'name': docker_image.get('name', ''),
+                      'dockerImage': docker_image.get('dockerImage', '')
+                  })
+                  index += 1
+
+
+          if len(matching_images) >=1:
+              excel_data = []
+              for entry in matching_images:
+                  excel_data.append({
+                      "S.No": entry['S.No'],
+                      "name":entry['name'],
+                      "dockerImage":entry['dockerImage']
+                  })
+
+          file_name = f"customautomations.xlsx"
+
+          excel_headers = ["S.No","name","dockerImage"]
+
+          res = demisto.executeCommand("ExportToXLSX", {
+              "file_name": file_name,
+              "data": excel_data,
+              "sheet_name": "sheet1",
+              "headers": ",".join(excel_headers)
+               })
+
+          print("res",res)
+
+          return_results(demisto.executeCommand("ExportToXLSX", {
+              "file_name": file_name,
+              "data": excel_data,
+              "sheet_name": "sheet1",
+              "headers": ",".join(excel_headers)
+          }))
+
+      elif change_latest_dockerimage == "yes":
+
+          if latestdockerimage is None:
+              return_error("Latestdockerimage is mandatory.Provide the latest python3 docker image")
+
+          elif latestdockerimage is not None:
+              version = checkdockerversion(latestdockerimage,INSTANCE)
+
+          if list_automation_names is not None:
+              # Continue with the logic to fetch docker ids for all automations
+              removed_items = []
+              if list_automation_names.lower() == "all":
+
+                  if exception_automation_name is None:
+
+                      # Get demisto/python3' custom automation
+                      for automation in customAutomations:
+                          if 'demisto/python3' in automation.get('dockerImage', ''):
+                              python3automation.append(automation)
+
+                      for eachAutomation in python3automation:
+                          automationContent = demisto.executeCommand("demisto-api-post", {"uri":"/automation/load/{}".format(eachAutomation["id"]), "using":INSTANCE})[0]["Contents"]["response"]
+                          response = updatedockerimageforautomation(automationContent,latestdockerimage)
+                          outputExcel.append(response)
+
+                      return_results(demisto.executeCommand("ExportToXLSX", {"file_name":"updateCustomAutomationsWithLatestDockerImage.xlsx","data":outputExcel,"sheet_name":"sheet1","headers":"id,name,status,previousDockerImage,comment"}))
+
+                  elif len(exception_automation_name)>=1:
+                      python3automation = []
+                      exception_names = exception_automation_name.split(',')
+
+                      # Get demisto/python3' custom automation
+                      for automation in customAutomations:
+                          if 'demisto/python3' in automation.get('dockerImage', ''):
+                              python3automation.append(automation)
+
+                      # remove the exception list
+                      for exception_name in exception_names:
+                          found = False
+                          for automation in python3automation:
+                              if str(automation["name"]).strip() == str(exception_name).strip():
+                                  found = True
+                                  python3automation.remove(automation)
+                                  removed_items.append(exception_name)
+                                  break
+                          if not found:
+                              raise ValueError(f"Automation with name '{exception_name}' not found.")
+
+                      print(f"Exception automation's: {removed_items}")
+                      for eachAutomation in python3automation:
+                          automationContent = demisto.executeCommand("demisto-api-post", {"uri":"/automation/load/{}".format(eachAutomation["id"]), "using":INSTANCE})[0]["Contents"]["response"]
+                          response = updatedockerimageforautomation(automationContent,latestdockerimage)
+                          outputExcel.append(response)
+                  return_results(demisto.executeCommand("ExportToXLSX", {"file_name":"updateCustomAutomationsWithLatestDockerImage.xlsx","data":outputExcel,"sheet_name":"sheet1","headers":"id,name,status,previousDockerImage,comment"}))
+              else:
+                  # If any other value is defined, split the value by comma and keep as a list
+                  automation_names = list_automation_names.split(',')
+                  if isinstance(automation_names, str):
+                      automation_names = [automation_names]
+                  for automation_name in automation_names:
+                      # Get docker_id for each automation script
+                      docker_id = get_automationconfig(automation_name)
+
+                      automationContent = demisto.executeCommand("demisto-api-post", {
+                          "uri": "/automation/load/{}".format(docker_id),
+                          "using": INSTANCE
+                      })[0]["Contents"]["response"]
+                      response = updatedockerimageforautomation(automationContent,latestdockerimage)
+                      outputExcel.append(response)
+                      # Continue with the logic to use automation_content as needed
+                      print(f"Loaded automation content for {automation_name}")
+
+                  return_results(demisto.executeCommand("ExportToXLSX", {"file_name":"updateCustomAutomationsWithLatestDockerImage.xlsx","data":outputExcel,"sheet_name":"sheet1","headers":"id,name,status,previousDockerImage,comment"}))
+          else:
+              print("list_automation_names is None")
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+
+  register_module_line('updateCustomAutomationsWithLatestDockerImage', 'end', __line__())
+scripttarget: 0
+subtype: python3
+tags:
+- dbs_dcokerimage
+type: python
