@@ -1,0 +1,207 @@
+args:
+- name: DocFileName
+- name: PlaybookName
+  required: true
+- auto: PREDEFINED
+  name: Output_Format
+  predefined:
+  - Table
+  - Paragraph
+commonfields:
+  id: e4f27c24-5c59-4099-8ab8-3cc6dbec21bf
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/sane-doc-reports:1.0.0.20692
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: create-playbook-doc
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  import json
+  from docx import Document
+  from docx import Document
+  from docx.shared import Inches
+  from docx.enum.section import WD_ORIENT
+
+  headers=[]
+  taskAdded = {}
+  retVal = {}
+  DEMISTO_PLAYBOOKS_PATH = "/playbook/search"
+  document = Document()
+  Table = ""
+
+  def post_api_request(url, body):
+      api_args = {
+          "uri": url,
+          "body": body
+      }
+      raw_res = demisto.executeCommand("demisto-api-post", api_args)
+      try:
+          res = raw_res[0]['Contents']['response']
+          return res
+      except KeyError:
+          return_error(f'API Request failed, no response from API call to {url}')
+      except TypeError:
+          return_error(f'API Request failed, failedto {raw_res}')
+
+  def EnterHeader(HeaderStr):
+      document.add_heading(HeaderStr, level=1)
+      return
+
+  def StartTable():
+
+      global Table
+
+      Table = document.add_table(rows=1, cols=3)
+      Table.style = 'Light Grid Accent 1'
+      hdr_cells = Table.rows[0].cells
+      hdr_cells[0].text = 'Name'
+      hdr_cells[1].text = 'Desc'
+      hdr_cells[2].text = 'Type'
+
+      return
+
+  def TraverseTasks(TaskID):
+
+      global retVal
+      global taskAdded
+      global document
+      global Table
+
+      # print(TaskID)
+
+      if (TaskID == None):
+          # demisto.results('None')
+          return
+
+      else:
+          curTask = retVal[0]['tasks'][str(TaskID)]
+
+          if 'description' in curTask['task'].keys():
+              taskDescription =  curTask['task']['description']
+
+          else:
+              taskDescription = "[Blank]"
+
+          Description = taskDescription
+          Type = curTask['type']
+
+          if (str(TaskID) == '0'):
+              Name = 'Playbook Triggered'
+
+          else:
+              Name = curTask['task']['name']
+
+          # taskAdded[str(TaskID)] = 1
+
+          if (Type == 'title' or Type == 'start'):
+              # print("-->"+Name+"ID->"+TaskID)
+              EnterHeader(Name)
+              StartTable()
+
+          else:
+
+              if (Table == ""):
+                  StartTable()
+
+              row_cells = Table.add_row().cells
+              row_cells[0].text = Name
+              row_cells[1].text = Description
+              row_cells[2].text = Type
+
+          if (curTask['nextTasks'] != None):
+              # print(TaskID)
+
+              if (curTask['type'] != 'condition'):
+                  for NextTaskID in curTask['nextTasks']['#none#']:
+                      # demisto.results(NextTaskID)
+                      # print(NextTaskID)
+                      TypeOfNextTask = retVal[0]['tasks'][str(NextTaskID)]['task']['type']
+
+                      if (TypeOfNextTask != 'title'):
+                          TraverseTasks(NextTaskID)
+              else:
+                  for TempKeys in curTask['nextTasks']:
+                      for NextTaskID in curTask['nextTasks'][TempKeys]:
+                          TypeOfNextTask = retVal[0]['tasks'][str(NextTaskID)]['task']['type']
+
+                          if (TypeOfNextTask != 'title'):
+                              TraverseTasks(NextTaskID)
+
+
+      return
+
+
+  ''' MAIN FUNCTION '''
+
+  def main():
+
+      global retVal
+      global document
+
+      args = demisto.args()
+      DocFileName = args.get('DocFileName')
+      PlaybookName = args.get('PlaybookName')
+      # demisto.results(args)
+      TempStr = PlaybookName + "- Playbook"
+
+      sections = document.sections
+      section = sections[-1]
+      old_width = section.page_width
+      old_height = section.page_height
+      section.orientation = WD_ORIENT.LANDSCAPE
+      section.page_width = old_height
+      section.page_height = old_width
+      document.add_heading(TempStr, 0)
+
+      retVal = post_api_request(DEMISTO_PLAYBOOKS_PATH, {"query": PlaybookName}).get("playbooks")
+
+      taskInfo= retVal[0]['tasks']
+
+      for ID in taskInfo.keys():
+          if (taskInfo[ID]['type'] == 'title' or taskInfo[ID]['type'] == 'start') :
+              # print(ID)
+              TraverseTasks(ID)
+
+      for tb in document.tables:
+          for cell in tb.columns[0].cells:
+              cell.width = Inches(3)
+
+          for cell in tb.columns[1].cells:
+              cell.width = Inches(5)
+
+          for cell in tb.columns[2].cells:
+              cell.width = Inches(1)
+
+      document.save(DocFileName)
+
+      with open(DocFileName, 'rb') as f:
+          filedata = f.read()
+
+      demisto.results(fileResult(DocFileName,filedata))
+      return
+
+
+
+  ''' ENTRY POINT '''
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
