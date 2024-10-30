@@ -1,0 +1,121 @@
+args:
+- description: Get REST API BrandName
+  name: BrandName
+  required: true
+commonfields:
+  id: 89bc4c87-dedf-435a-87b1-3f5c26e0348a
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: GetAllAPIEndpointsV2 Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.48392
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ParseAutomationScriptV3
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+  import re
+
+
+  ''' COMMON VARIABLES'''
+
+  automation_api_endpoints=[]
+  BrandNameList={'Core REST API':'core-api-post','Demisto REST API':'demisto-api-post'}
+
+  ''' MAIN FUNCTION '''
+
+  def load_script(automation_ids_list,brand_name):
+      for i in range(len(automation_ids_list)):
+          if automation_ids_list[i]['id'] != 'Common':
+              script_data=demisto.executeCommand(BrandNameList[brand_name], {"uri":"/automation/load/"+automation_ids_list[i]['id']})[0]['Contents']['response']['script']
+              if len(script_data)>0:
+                  api_uri_list=re.findall(r'([^\s]+/[a-zA-Z0-9]+)',script_data)
+                  if len(api_uri_list)>0:
+                      automation_api_endpoints.append({'scriptname':automation_ids_list[i]['name'],'urls':api_uri_list})
+                  else:
+                      pass
+              else:
+                  pass
+      return automation_api_endpoints
+
+  def table_to_markdown(url_data,API_URI_LIST):
+      final_uri_list=[]
+      for key,value in url_data.items():
+          name=[]
+          for i in range(len(API_URI_LIST)):
+              if API_URI_LIST[i]['uri'] == key:
+                  name.append(API_URI_LIST[i]['scriptname'])
+          final_uri_list.append({'uri':key,'count':value,'scriptname':name})
+
+      md = tableToMarkdown(name="List of Automation API Endpoints",t=final_uri_list,headers=["uri","count","scriptname"])
+
+      demisto.results({
+        "Contents":final_uri_list,
+        "ContentsFormat":formats['markdown'],
+        "Type":entryTypes["note"],
+        "HumanReadable":md,
+        "ReadableContentsFormat":formats['markdown'],
+        'EntryContext': {'AutomationAPIEndpoints':final_uri_list}
+    })
+
+  def main():
+      #try:
+      brand_name = demisto.args()['BrandName']
+
+      automation_ids_list=demisto.executeCommand(BrandNameList[brand_name], {"uri":"/automation/search","body":{"query":"system:F AND hidden:F AND deprecated:F"}})[0]['Contents']['response']['scripts']
+
+
+      url_data={}
+      API_URI_LIST=[]
+      if len(automation_ids_list)>0:
+          uri_list=load_script(automation_ids_list,brand_name)
+
+          for i in range(len(uri_list)):
+              if len(uri_list[i]['urls'])>1:
+                  for urls in uri_list[i]['urls']:
+                      API_URI_LIST.append({'scriptname':uri_list[i]['scriptname'],'uri':urls})
+              else:
+                  API_URI_LIST.append({'scriptname':uri_list[i]['scriptname'],'uri':uri_list[i]['urls'][0]})
+
+          for i in range(len(API_URI_LIST)):
+              if API_URI_LIST[i]['uri'] in url_data:
+                  url_data[API_URI_LIST[i]['uri']]+=1
+              else:
+                  url_data[API_URI_LIST[i]['uri']]=1
+
+          table_to_markdown(url_data,API_URI_LIST)
+
+      else:
+          print('No Custom Automation Scripts')
+
+
+
+      #except Exception as ex:
+          #demisto.error(traceback.format_exc())  # print the traceback
+          #return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
