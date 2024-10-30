@@ -1,0 +1,377 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.8.0
+    itemVersion: 3.1.4
+    packID: IntSight
+    packName: Rapid7 - Threat Command (IntSights)
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: This playbook is used by default for the Rapid7 ThreatCommand alerts
+  being ingested as XSOAR incidents. This playbook retrieves attachments (CSV file
+  and images) using the Alert ID incident field.
+id: Retrieve Alert Attachments - Rapid7 ThreatCommand
+inputs:
+- description: Alert ID of the Rapid7 Threat Command incident.
+  key: alert_id
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: ${incident.alertid}
+- description: Boolean value indicating to include image files of alerts. If set to
+    "true", then it fetches image files; otherwise, it does not.
+  key: fetch_attachments
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: ${incident.labels.fetch_attachments}
+- description: Boolean value indicating to include CSV file of alerts. If set to "true",
+    then it fetches CSV file; otherwise, it does not.
+  key: fetch_csv
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: ${incident.labels.fetch_csv}
+name: Retrieve Alert Attachments - Rapid7 ThreatCommand
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 86bc154e-44b7-4cce-8a12-98c06fc80326
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 86bc154e-44b7-4cce-8a12-98c06fc80326
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 592.5,
+          "y": -120
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alert_id:
+        complex:
+          root: inputs.alert_id
+      ignore-outputs:
+        simple: "false"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: List alert images by ID.
+      id: 50a8d6dd-17ed-4253-8f6a-92d44744f150
+      iscommand: true
+      name: Retrieve images of the alert.
+      script: '|||threat-command-alert-image-list'
+      type: regular
+      version: -1
+    taskid: 50a8d6dd-17ed-4253-8f6a-92d44744f150
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 630
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Rapid7 ThreatCommand CSV
+      output:
+        complex:
+          accessor: content
+          root: ThreatCommand.CSV
+          transformers:
+          - operator: ConvertKeysToTableFieldFormat
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alert_id:
+        complex:
+          root: inputs.alert_id
+      ignore-outputs:
+        simple: "false"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Get alert's CSV file in case of credentials leakage or leaked credit
+        cards alerts.
+      id: 826052d7-3bb1-4f06-8c7a-203aa5c3529e
+      iscommand: true
+      name: Retrieve the CSV file of the alert.
+      script: '|||threat-command-alert-csv-get'
+      type: regular
+      version: -1
+    taskid: 826052d7-3bb1-4f06-8c7a-203aa5c3529e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1042.5,
+          "y": 630
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1bf28ddf-21ff-4534-8585-dbd583610445
+      iscommand: false
+      name: End
+      type: title
+      version: -1
+    taskid: 1bf28ddf-21ff-4534-8585-dbd583610445
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 710,
+          "y": 830
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      "yes":
+      - "6"
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: modules.brand
+              operator: isEqualString
+              right:
+                value:
+                  simple: rapid7_threat_command
+          - - left:
+                iscontext: true
+                value:
+                  simple: modules.state
+              operator: isEqualString
+              right:
+                value:
+                  simple: active
+          root: modules
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if a given value exists in the context. Will return 'no'
+        for empty empty arrays. To be used mostly with DQ and selectors.
+      id: e5732dd2-c8bd-4b99-8947-7cbca159d87c
+      iscommand: false
+      name: Is Rapid7 Threat Command integration enabled?
+      script: Exists
+      type: condition
+      version: -1
+    taskid: e5732dd2-c8bd-4b99-8947-7cbca159d87c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 592.5,
+          "y": 25
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: As an instance of Rapid7 - Threat Command (IntSights) Integration
+          is not active, so not going to fetch attachments.
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 7045be80-5df8-4b8a-8a1b-ac1c6a52fba0
+      iscommand: false
+      name: Integration is not enabled.
+      script: Print
+      type: regular
+      version: -1
+    taskid: 7045be80-5df8-4b8a-8a1b-ac1c6a52fba0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 630
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "1"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      left:
+        complex:
+          root: inputs.fetch_attachments
+          transformers:
+          - operator: Stringify
+          - operator: toLowerCase
+      right:
+        simple: "true"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check whether the values provided in arguments are equal. If either
+        of the arguments are missing, no is returned.
+      id: 236e0967-4a13-42a4-81d2-c127dd71eb4c
+      iscommand: false
+      name: Is fetch attachment enabled?
+      script: AreValuesEqual
+      type: condition
+      version: -1
+    taskid: 236e0967-4a13-42a4-81d2-c127dd71eb4c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 562.5,
+          "y": 370
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      left:
+        complex:
+          root: inputs.fetch_csv
+          transformers:
+          - operator: Stringify
+          - operator: toLowerCase
+      right:
+        simple: "true"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check whether the values provided in arguments are equal. If either
+        of the arguments are missing, no is returned.
+      id: 513df51e-a212-4ba1-85dd-d5b30b8da2a0
+      iscommand: false
+      name: Is fetch CSV enabled?
+      script: AreValuesEqual
+      type: condition
+      version: -1
+    taskid: 513df51e-a212-4ba1-85dd-d5b30b8da2a0
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1042.5,
+          "y": 370
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1015,
+        "width": 1372.5,
+        "x": 50,
+        "y": -120
+      }
+    }
+  }
