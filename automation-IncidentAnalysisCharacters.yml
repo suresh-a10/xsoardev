@@ -1,0 +1,77 @@
+commonfields:
+  id: eef609cb-edc3-4183-85a1-1892ccee6bc7
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: IncidentAnalysisCharacters
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import re
+  #import demistostock as demisto
+
+  def count_words(text):
+      words = re.findall(r'\b\w+\b', text)
+      return len(words)
+
+  incident = demisto.incidents()[0]
+  incident_analysis = incident.get('CustomFields',{}).get('incidentanalysis')
+
+  if incident_analysis =="" or incident_analysis is None or count_words(incident_analysis)<50:
+      error_msg = "Not Valid - Incident analysis is missing or less that 50 words"
+
+
+      dict_error = {
+          "type": "incident_analysis",
+          "comment": error_msg
+
+      }
+      demisto.setContext('error_msg', error_msg)
+      demisto.executeCommand(
+
+          "setIncident", {
+
+              "incidentanalysisvalidation": error_msg
+
+          }
+
+      )
+      demisto.results({
+          "Type":1,
+          "Contents": {
+              "error_msg":error_msg
+          },
+          "ContentsFormat": "json",
+          "HumanReadable":error_msg
+      })
+  else:
+      valid_msg = "Valid - Incident analysis is valid"
+      demisto.setContext('valid_msg', valid_msg)
+
+      demisto.executeCommand(
+
+          "setIncident", {
+
+              "incidentanalysisvalidation": "Valid - Incident analysis is valid"
+
+          }
+
+      )
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
