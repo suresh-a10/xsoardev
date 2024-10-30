@@ -1,0 +1,280 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.2.0
+    itemVersion: 1.4.8
+    packID: CaseManagement-Generic
+    packName: CaseManagement-Generic
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: "This playbook can be used to send email notification if an Incidents
+  severity is Critical or High.  \n\nCan be used as a sub-playbook to perform the
+  same logic across different playbooks/use cases."
+id: Case Management - Generic - Send On Call Notification
+inputs:
+- description: 'The email addresses to send the message to, can be comma separated. '
+  key: emails
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: |-
+    The minimum severity level for the Incident to send notification for.  Default is 3 (High).   XSOAR Severity values:
+    Critical (4), High (3), Medium (2), Low (1), Information (0.5), Unknown (0)
+  key: minimum_severity
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "3"
+name: Case Management - Generic - Send On Call Notification
+outputs:
+- contextPath: EscalationEmailSent
+  description: Whether an escalation email was sent, will be Yes or No
+  type: string
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1063020a-0a72-444f-8625-f96814d6c2e8
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 1063020a-0a72-444f-8625-f96814d6c2e8
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 50
+        }
+      }
+  "1":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: severity
+                root: incident
+          operator: greaterThanOrEqual
+          right:
+            iscontext: true
+            value:
+              simple: inputs.minimum_severity
+      label: "yes"
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if the severity on the Incident is critical (3) or high (2)
+      id: d88429a1-661a-4641-8e10-b2e4e3d787a1
+      iscommand: false
+      name: Does the Incident Severity Require Notification?
+      type: condition
+      version: -1
+    taskid: d88429a1-661a-4641-8e10-b2e4e3d787a1
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 195
+        }
+      }
+  "2":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      body:
+        simple: "${incident.severityStr} Severity Incident notification. \n\nName:
+          ${incident.name}\nType: ${incident.type}\nInvestigation Link: ${demistoUrls.investigation}"
+      subject:
+        simple: Cortex XSOAR - ${incident.severityStr} Severity Incident Notification
+      to:
+        complex:
+          root: inputs.emails
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Send an email (doesn't actually send an email)
+      id: e449fe0d-e25f-4eb4-8e9c-f626d1f06d60
+      iscommand: true
+      name: Send Email Notification
+      script: '|||send-mail'
+      type: regular
+      version: -1
+    taskid: e449fe0d-e25f-4eb4-8e9c-f626d1f06d60
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 370
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4c5ba57a-ae40-485e-87ca-980b5b3ca3ce
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 4c5ba57a-ae40-485e-87ca-980b5b3ca3ce
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 720
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 1
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EscalationEmailSent
+      stringify:
+        simple: "true"
+      value:
+        simple: "Yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 153cfea4-6712-4645-8f5a-d47daf496d0c
+      iscommand: false
+      name: Set EscalationEmail to Yes
+      script: Set
+      type: regular
+      version: -1
+    taskid: 153cfea4-6712-4645-8f5a-d47daf496d0c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 545
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 1
+    reputationcalc: 1
+    scriptarguments:
+      append:
+        simple: "false"
+      key:
+        simple: EscalationEmailSent
+      stringify:
+        simple: "true"
+      value:
+        simple: "No"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 17a0fa65-2580-48f5-890f-310b4608f546
+      iscommand: false
+      name: Set EscalationEmail to No
+      script: Set
+      type: regular
+      version: -1
+    taskid: 17a0fa65-2580-48f5-890f-310b4608f546
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 545
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 735,
+        "width": 810,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
