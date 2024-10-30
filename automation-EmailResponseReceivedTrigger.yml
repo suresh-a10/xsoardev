@@ -1,0 +1,49 @@
+comment: This script will complete tasks with the 'timerbreach' tag value upon timer
+  breach
+commonfields:
+  id: 82e55e25-daf2-4757-8a0c-8f36d0222a58
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.8.3.9324
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: EmailResponseReceivedTrigger
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  # This script will complete tasks with the timerbreach tag value upon timer breach
+  # Add this as the script to run upon breach on the given timer field.
+  # Playbook tasks to complete need to be tagged timerbreach.
+
+  timerfields={"initialsla":"test","secondremidersla":"test1","finalremindersla":"test2"}
+  inc = demisto.incidents()[0]
+  custom_fields = inc.get('CustomFields')
+
+  #new= inc.get('CustomFields').get('emailresponsereceived')
+  new = demisto.args()['new']
+  if new=="Yes":
+      for key,value in timerfields.items():
+          status=custom_fields.get(key).get('runStatus')
+          if status=="running":
+              demisto.results(demisto.executeCommand("taskComplete", {"id":value, "incidentId": inc.get('id')}))
+
+  else:
+      pass
+
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
