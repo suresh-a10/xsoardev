@@ -1,0 +1,76 @@
+args:
+- name: UseCaseName
+  required: true
+commonfields:
+  id: eff5a5fe-6f1f-453d-86c0-154a21da14fc
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: FieldsMaptoIncidentLayout
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2-
+
+  def main():
+      try:
+          use_case_name = demisto.args().get('UseCaseName')
+          if not use_case_name:
+              return_error("UseCaseName is required.")
+
+          json_list_name = 'IncidentLayoutMapping'
+          json_list = demisto.executeCommand('getList', {'listName': json_list_name})[0]['Contents']
+          if isinstance(json_list, str):
+              json_list = json.loads(json_list)
+
+          matching_entry = next((entry for entry in json_list if entry['UseCase'] == use_case_name), None)
+          if not matching_entry:
+              return_error(f"No matching entry found for UseCase: {use_case_name}")
+
+
+          incident_fields = {
+              'snowcategorytier2': matching_entry.get('SNOWCategoryTier2',''),
+              'snowcategorytier3': matching_entry.get('SNOWCategoryTier3',''),
+              'servicenowimpact': matching_entry.get('SNOWImpact',''),
+              'servicenowurgency': matching_entry.get('SNOWUrgency',''),
+              'servicenowpriority': matching_entry.get('SNOWPriority',''),
+              'workflowtype': matching_entry.get('WorkflowType','')
+          }
+
+          for field, value in incident_fields.items():
+              if value:
+                  demisto.executeCommand('setIncident', {field: value})
+
+          demisto.results({
+              'Type': 1,
+              'ContentsFormat': 'json',
+              'Contents': incident_fields,
+              'EntryContext': {
+                  'IncidentFieldsMapped': incident_fields
+              }
+          })
+
+
+
+      except Exception as e:
+          return_error(f"Failed to map fields: {str(e)}")
+
+  if __name__ in ['__main__','__builtin__','builtins']:
+      main()
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
