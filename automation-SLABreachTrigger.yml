@@ -1,0 +1,61 @@
+comment: This script will complete tasks with the 'timerbreach' tag value upon timer
+  breach
+commonfields:
+  id: ecd2a196-e2ed-4bd4-8c2b-025f890acac9
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.8.3.9324
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SLABreachTrigger
+pswd: ""
+runas: DBotRole
+runonce: false
+script: |
+  # This script will complete tasks with the timerbreach tag value upon timer breach
+  # Add this as the script to run upon breach on the given timer field.
+  # Playbook tasks to complete need to be tagged timerbreach.
+
+  """List of timer fields"""
+  timerfields=["initialsla","secondremindersla","finalremindersla"]
+
+  def taskComplete_stopTimer(inc_id):
+
+      """Get field CLI name"""
+      field_name = demisto.args().get("field").get("cliName")
+
+      for timer_field in timerfields:
+          if timer_field == field_name:
+              demisto.results(demisto.executeCommand("taskComplete", {"id":"test", "incidentId": inc_id}))
+              demisto.results(demisto.executeCommand("stopTimer", {"timerField":field_name,"incidentId": inc_id}))
+      else:
+          pass
+
+
+  def main():
+      """ Get Incident ID"""
+      inc_id = demisto.incidents()[0].get("id")
+      taskComplete_stopTimer(inc_id)
+
+
+
+
+
+  if __name__ == "__builtin__" or __name__ == "builtins":
+      main()
+scripttarget: 0
+subtype: python3
+tags:
+- sla
+type: python
