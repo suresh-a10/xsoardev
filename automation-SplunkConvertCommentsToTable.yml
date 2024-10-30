@@ -1,0 +1,64 @@
+comment: This script is used to convert Splunk comments to a table.
+commonfields:
+  id: SplunkConvertCommentsToTable
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 3.1.37
+    packID: SplunkPy
+    packName: Splunk
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.12.68714
+engineinfo: {}
+mainengineinfo: {}
+name: SplunkConvertCommentsToTable
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('SplunkConvertCommentsToTable', 'start', __line__())
+  demisto.debug('pack name = Splunk, pack version = 3.1.37')
+
+
+
+
+  def main():
+      incident = demisto.incident()
+      splunkComments = []
+      if not incident:
+          raise ValueError("Error - demisto.incident() expected to return current incident "
+                           "from context but returned None")
+      fields = incident.get('CustomFields', [])
+      if fields:
+          splunkComments_str = fields.get('splunkcomments', [])
+          for data in splunkComments_str:
+              parsed_data = json.loads(data)
+              splunkComments.append(parsed_data)
+      if not splunkComments:
+          return CommandResults(readable_output='No comments were found in the notable')
+
+      markdown = tableToMarkdown("", splunkComments, headers=['Comment'])
+      return CommandResults(
+          readable_output=markdown
+      )
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      try:
+          return_results(main())
+      except Exception as e:
+          return_error(f'Got an error while parsing Splunk events: {e}', error=e)
+
+  register_module_line('SplunkConvertCommentsToTable', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- dynamic-section
+type: python
