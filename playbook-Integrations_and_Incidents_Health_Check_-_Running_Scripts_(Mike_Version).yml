@@ -1,0 +1,507 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 1.3.11
+    packID: ""
+    packName: Integrations & Incidents Health Check
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: This playbook is triggered by a 'JOB - Integrations and Playbooks Health'
+  playbook and is responsible for running failed integrations and failed incidents
+  scripts. The playbook may run separately from the main playbook to run health tests
+  on enabled integrations and open incidents.
+id: c5e79b1e-142e-4997-8fcb-da31d6ab14ca
+inputs:
+- description: "List of instances to ignore when setting the grid for the Failed Instances.
+    \ \n\nThis can be used to ignore instances for which the test button doesn't work
+    due to the integration itself. "
+  key: IgnoreFailedInstances
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: FailedInstancesIgnore
+      root: lists
+name: Integrations and Incidents Health Check - Running Scripts (Mike Version)
+outputs: []
+sourceplaybookid: Integrations and Playbooks Health Check - Running Scripts
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7dbbdabe-9a6b-41ad-80ee-8b6fb93836fe
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 7dbbdabe-9a6b-41ad-80ee-8b6fb93836fe
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 592.5,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Integrations Failed Categories
+      output:
+        simple: ${FailedInstances.category}
+    - incidentfield: Integrations Categories
+      output:
+        simple: ${FailedInstances.category}
+    - incidentfield: Integrations Categories
+      output:
+        simple: ${SuccessInstances.category}
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+      - "16"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Executes a test for all integration instances available and returns
+        detailed information about succeeded and failed integration instances.
+      id: f31b6509-960f-455f-88d4-a365a0fda694
+      iscommand: false
+      name: Search for currently failing integrations
+      script: FailedInstances
+      type: regular
+      version: -1
+    taskid: f31b6509-960f-455f-88d4-a365a0fda694
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 245,
+          "y": 340
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      columns:
+        simple: Brand,Category,Information,Instance
+      context_path:
+        simple: FailedInstances
+      grid_id:
+        simple: integrationstestgrid
+      keys:
+        simple: brand,category,information,instance
+      overwrite:
+        simple: "true"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Creates a Grid table for failed instance information.
+      id: 3f8a6c18-cb81-40fb-8e68-3a036a83e2c3
+      iscommand: false
+      name: Creates failed Integrations grid
+      script: SetGridField
+      type: regular
+      version: -1
+    taskid: 3f8a6c18-cb81-40fb-8e68-3a036a83e2c3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 397.5,
+          "y": 865
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      numberofentriesiderrors:
+        complex:
+          accessor: Error Entry ID
+          root: GetFailedTasks
+          transformers:
+          - operator: count
+      numberoffailedincidents:
+        complex:
+          accessor: Incident ID
+          root: GetFailedTasks
+          transformers:
+          - operator: uniq
+          - operator: count
+      totalfailedinstances:
+        complex:
+          accessor: FailedCount
+          root: InstancesCount
+      totalgoodinstances:
+        complex:
+          accessor: SuccessCount
+          root: InstancesCount
+      totalinstances:
+        complex:
+          accessor: TotalCount
+          root: InstancesCount
+      unassignedincidents:
+        complex:
+          accessor: Incident ID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: GetFailedTasks.Incident Owner
+              operator: isEmpty
+          root: GetFailedTasks
+          transformers:
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Adds the scripts result from previous tasks to the incident data.
+      id: 0483e87d-19a7-4775-83cf-2fba031c07cc
+      iscommand: true
+      name: Set scripts result
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 0483e87d-19a7-4775-83cf-2fba031c07cc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 515
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: Playbook Names With Failed Tasks
+      output:
+        complex:
+          accessor: Playbook Name
+          root: GetFailedTasks
+    - incidentfield: Playbooks Failed Commands
+      output:
+        complex:
+          accessor: Command Name
+          root: GetFailedTasks
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query:
+        simple: -status:closed and runStatus:error
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Uses a query to get failed task details for incidents.
+      id: 80ced8cf-05e0-4829-850b-465261189ce8
+      iscommand: false
+      name: Search for incidents with errors
+      script: GetFailedTasks
+      type: regular
+      version: -1
+    taskid: 80ced8cf-05e0-4829-850b-465261189ce8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 940,
+          "y": 340
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      columns:
+        simple: Command Name,Creation Date,Incident ID,Number of Errors,Owner,Task
+          Name,Task ID,Playbook Name
+      context_path:
+        simple: GetFailedTasks
+      grid_id:
+        simple: playbooktaskserrors
+      keys:
+        simple: Command Name,Incident Created Date,Incident ID,Number of Errors,Incident
+          Owner,Task Name,Task ID,Playbook Name
+      overwrite:
+        simple: "true"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Creates a Grid table for failed incident information.
+      id: ce36126a-1f98-4cb9-891d-81e446f27069
+      iscommand: false
+      name: Create failed playbook tasks grid
+      script: SetGridField
+      type: regular
+      version: -1
+    taskid: ce36126a-1f98-4cb9-891d-81e446f27069
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 940,
+          "y": 865
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9e6163cb-de1f-4abf-88b1-66c38cb9261b
+      iscommand: false
+      name: Run Health Check Scripts
+      type: title
+      version: -1
+    taskid: 9e6163cb-de1f-4abf-88b1-66c38cb9261b
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 592.5,
+          "y": 195
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 0b3820ce-78f0-4db3-8b36-5668f82aab7a
+      iscommand: false
+      name: Create Grid for Health Check
+      type: title
+      version: -1
+    taskid: 0b3820ce-78f0-4db3-8b36-5668f82aab7a
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 705
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 916f1095-cba2-47d7-820f-aec6d746f105
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 916f1095-cba2-47d7-820f-aec6d746f105
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 807.5,
+          "y": 1040
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "false"
+      key:
+        simple: FailedInstances
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: FailedInstances.instance
+              operator: notInList
+              right:
+                iscontext: true
+                value:
+                  simple: lists.FailedInstancesIgnore
+          root: FailedInstances
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 84305e58-2c67-41c6-83d2-2b674698d773
+      iscommand: false
+      name: Set FailedInstances Context - Removing Ignored Instances
+      script: Set
+      type: regular
+      version: -1
+    taskid: 84305e58-2c67-41c6-83d2-2b674698d773
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 690
+        }
+      }
+  "16":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.IgnoreFailedInstances
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "15"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d5e4dc7d-cd33-4a5f-83b8-ec6f4c693c29
+      iscommand: false
+      name: Is there a list of instances to ignore?
+      type: condition
+      version: -1
+    taskid: d5e4dc7d-cd33-4a5f-83b8-ec6f4c693c29
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 592.5,
+          "y": 515
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1055,
+        "width": 1270,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
