@@ -1,0 +1,182 @@
+args:
+- description: The NSG priority to start finding available priorities from. The target
+    priority cannot be 100.
+  name: target_rule_priority
+  required: true
+- description: 'The number of priorities that are available to be returned. (limit:
+    5).'
+  name: number_of_available_priorities_to_retrieve
+  required: true
+- description: 'The list of priorities from rules in an Azure Network Security Group.
+    (limit: 995).'
+  isArray: true
+  name: list_of_priorities_from_rules
+  required: true
+comment: This script takes in a list of numbers that represent Azure priorities for
+  NSG rules, a target priority number, and a number available priorities to return
+  available priorities from the provided list.
+commonfields:
+  id: AzureFindAvailableNSGPriorities
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.5.0
+    itemVersion: 1.1.19
+    packID: Azure-Enrichment-Remediation
+    packName: Azure Enrichment and Remediation
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.83255
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: AzureFindAvailableNSGPriorities
+outputs:
+- contextPath: AvailableAzureNSGPriorities
+  description: List of numbers that represent available Azure NSG priorities.
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('AzureFindAvailableNSGPriorities', 'start', __line__())
+  ### pack version: 1.1.19
+
+
+
+
+  def find_available_priorities(
+      target_rule_priority: int,
+      number_of_available_priorities_to_retrieve: int,
+      list_of_priorities_from_rules: list,
+  ) -> list:
+      """This function gathers the below arguments to retrieve a list of available priorities
+      from an Azure NSG that can be used to add rules to.
+
+      Args:
+          target_rule_priority (int): The priority of the rule you want to find available priorities before.
+          number_of_available_priorities_to_retrieve (int): Number of available priorities to find.
+          list_of_priorities_from_rules (list): List of existing rule priorities.
+
+      Raises:
+          ValueError: if target_rule_priority not specified.
+          ValueError: if target_rule_priority is 100 or less.
+          ValueError: if target_rule_priority is 4096 or more.
+          ValueError: if number_of_available_priorities_to_retrieve not specified.
+          ValueError: if number_of_available_priorities_to_retrieve is 0 or less, or more than 5.
+          ValueError: if list_of_priorities_from_rules is not specified.
+          ValueError: if list_of_priorities_from_rules is not a list.
+          ValueError: if list_of_priorities_from_rules is over 999 entries.
+          ValueError: if available priorities are not found.
+
+      Returns:
+          list: a number of available priorities before the offending rules' priority (target_rule_priority).
+      """
+
+      list_of_priorities_from_rules = validate_input(
+          target_rule_priority,
+          number_of_available_priorities_to_retrieve,
+          list_of_priorities_from_rules,
+      )
+
+      not_in_list = set(range(100, target_rule_priority)).difference(
+          set(list_of_priorities_from_rules)
+      )
+      closest_numbers = sorted(
+          not_in_list, key=lambda entry: abs(entry - target_rule_priority)
+      )[:number_of_available_priorities_to_retrieve]
+
+      if (
+          not closest_numbers
+          or len(closest_numbers) != number_of_available_priorities_to_retrieve
+      ):
+          raise ValueError("Available priorities not found.")
+
+      return closest_numbers
+
+
+  def validate_input(
+      target_rule_priority: int,
+      number_of_available_priorities_to_retrieve: int,
+      list_of_priorities_from_rules: list,
+  ):
+      if not target_rule_priority:
+          raise ValueError("target_rule_priority not specified.")
+      elif target_rule_priority <= 100:
+          raise ValueError("target_rule_priority must not be 100 or less.")
+      elif target_rule_priority >= 4096:
+          raise ValueError("target_rule_priority must not be 4096 or more.")
+
+      if not number_of_available_priorities_to_retrieve:
+          raise ValueError("number_of_available_priorities_to_retrieve not specified.")
+      elif (
+          number_of_available_priorities_to_retrieve > 5
+          or number_of_available_priorities_to_retrieve <= 0
+      ):
+          raise ValueError(
+              "number_of_available_priorities_to_retrieve cannot be 0 or less, or more than 5. Please use a lower number."
+          )
+
+      if not list_of_priorities_from_rules:
+          raise ValueError("list_of_priorities_from_rules not specified.")
+      if isinstance(list_of_priorities_from_rules, int):
+          list_of_priorities_from_rules = [list_of_priorities_from_rules]
+      if not isinstance(list_of_priorities_from_rules, list):
+          raise ValueError("list_of_priorities_from_rules must be a list.")
+      elif len(list_of_priorities_from_rules) > 999:
+          raise ValueError(
+              "list_of_priorities_from_rules does not support list over 999 entries, please reduce the list."
+          )
+
+      return list_of_priorities_from_rules
+
+
+  def main():
+      try:
+          args = demisto.args()
+
+          target_rule_priority = int(args.get("target_rule_priority"))
+          number_of_available_priorities_to_retrieve = int(
+              args.get("number_of_available_priorities_to_retrieve")
+          )
+          list_of_priorities_from_rules = argToList(
+              args.get("list_of_priorities_from_rules")
+          )
+
+          closest_numbers = find_available_priorities(
+              target_rule_priority,
+              number_of_available_priorities_to_retrieve,
+              list_of_priorities_from_rules,
+          )
+
+          markdown = tableToMarkdown(
+              "Available Azure NSG Priorities", closest_numbers, headers=["priorities"]
+          )
+
+          results = CommandResults(
+              outputs_prefix="AvailableAzureNSGPriorities",
+              readable_output=markdown,
+              outputs=closest_numbers,
+          )
+
+          return_results(results)
+
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(
+              f"Failed to execute AzureFindAvailableNSGPriorities. Error: {str(ex)}"
+          )
+
+
+  if __name__ in ("__main__", "__builtin__", "builtins"):
+      main()
+
+  register_module_line('AzureFindAvailableNSGPriorities', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags: []
+type: python
