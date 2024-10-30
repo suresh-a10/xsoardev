@@ -1,0 +1,114 @@
+args:
+- description: Provide the REST API brand name
+  name: BrandName
+  required: true
+commonfields:
+  id: 7c3f7430-5014-4354-8ab7-02bac4ebfe8f
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: GetAllAPIEndpointsV2 Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.48392
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ParsePlaybookListV3
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+  import re
+
+
+  ''' COMMON VARIABLES'''
+
+  playbook_api_endpoints=[]
+  BrandNameList={'Core REST API':'core-api-post','Demisto REST API':'demisto-api-post'}
+
+
+  ''' MAIN FUNCTION '''
+
+
+  def load_playbook(playbooks_list,brand_name):
+      for i in range(len(playbooks_list)):
+          for task_list in playbooks_list[i]['tasks'].values():
+                  for task_item in task_list.values():
+                      if type(task_item) == dict:
+                          for key,value in task_item.items():
+                              if key == 'uri':
+                                  playbook_api_endpoints.append({'PlaybookName':playbooks_list[i]['name'],'urls':value['simple']})
+                              else:
+                                  pass
+
+
+      return playbook_api_endpoints
+
+  def table_to_markdown(url_data,uri_list):
+
+      final_uri_list=[]
+      for key,value in url_data.items():
+          name=[]
+          for i in range(len(uri_list)):
+              if uri_list[i]['urls'] == key:
+                  name.append(uri_list[i]['PlaybookName'])
+          final_uri_list.append({'uri':key,'count':value,'PlaybookName':name})
+
+
+
+      md = tableToMarkdown(name="List of Playbook API Endpoints",t=final_uri_list,headers=["uri","count","PlaybookName"])
+
+      demisto.results({
+        "Contents":final_uri_list,
+        "ContentsFormat":formats['markdown'],
+        "Type":entryTypes["note"],
+        "HumanReadable":md,
+        "ReadableContentsFormat":formats['markdown'],
+        'EntryContext': {'PlaybookAPIEnpoints':final_uri_list}
+    })
+
+  def main():
+      #try:
+      url_data={}
+      API_URI_LIST=[]
+      brand_name = demisto.args()['BrandName']
+      playbooks_list=demisto.executeCommand(BrandNameList[brand_name], {"uri":"/playbook/search","body":{"query":"hidden:F AND deprecated:F"}})[0]['Contents']['response']['playbooks']
+      #print(playbooks_list)
+
+      if len(playbooks_list)>0:
+          uri_list=load_playbook(playbooks_list,brand_name)
+          for i in range(len(uri_list)):
+              if uri_list[i]['urls'] in url_data:
+                  url_data[uri_list[i]['urls']]+=1
+              else:
+                  url_data[uri_list[i]['urls']]=1
+          table_to_markdown(url_data,uri_list)
+      else:
+          print('No Custom Playbooks')
+
+
+      #except Exception as ex:
+          #demisto.error(traceback.format_exc())  # print the traceback
+          #return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
