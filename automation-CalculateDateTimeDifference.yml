@@ -1,0 +1,94 @@
+args:
+- name: FirstUptime
+  required: true
+- name: LastUptime
+  required: true
+commonfields:
+  id: 870333b2-0a3f-497f-8638-4c22d94d8c2d
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.12.63474
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CalculateDateTimeDifference
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  from typing import Dict, Any
+  import traceback
+  from datetime import datetime
+  import math
+  import json
+  ''' MAIN FUNCTION '''
+
+
+
+  start_date= "Wed 2023-07-05 18:19:50 UTC"
+  end_date = "Wed 2023-07-05 18:33:40 UTC"
+
+  def convert_str_to_datetime(start_datestr,end_datestr):
+
+      # Replace UTC with +0000
+      sd=start_date.replace('UTC','+0000')
+      ed=end_date.replace('UTC','+0000')
+
+      #Current Date format Wed 2023-07-05 18:19:50 UTC
+      formats = '%a %Y-%m-%d %X %z'
+
+      # Converting string to Date format
+      start_dtime = datetime.strptime(sd,'%a %Y-%m-%d %X %z')
+      end_dtime = datetime.strptime(ed,'%a %Y-%m-%d %X %z')
+
+      return start_dtime,end_dtime
+
+
+  def calculate_timedifference(start_dtime,end_dtime):
+
+      diff_time = end_dtime-start_dtime
+      # differenc in seconds
+      sec = diff_time.total_seconds()
+      sec= math.ceil(sec)
+      # #difference in Minutes
+      # mins = sec / 60
+      # mins = math.ceil(mins)
+
+      return sec
+
+  def main():
+
+      start_datestr = demisto.args()['FirstUptime']
+      end_datestr = demisto.args()['LastUptime']
+      start_dtime,end_dtime = convert_str_to_datetime(start_datestr,end_datestr)
+      time_in_sec = calculate_timedifference(start_dtime,end_dtime)
+
+      data=[]
+      data.append({"name":"", "data": [time_in_sec]})
+
+      data1 = data
+      demisto.results(json.dumps(data1))
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+- Utility
+type: python
