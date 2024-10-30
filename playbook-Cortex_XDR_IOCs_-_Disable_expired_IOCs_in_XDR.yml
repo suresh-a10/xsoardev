@@ -1,0 +1,388 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.10.0
+    itemVersion: 6.1.65
+    packID: CortexXDR
+    packName: Cortex XDR by Palo Alto Networks
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: This is a *sub-playbook* of "Cortex XDR IOCs - Push new IOCs to XDR (Main)".
+  This playbook disables indicators in Cortex XDR after they expire from Cortex XSOAR
+  using a loop and querying on the "xdr_pushed" tag.
+id: Cortex XDR IOCs - Disable expired IOCs in XDR
+inputs:
+- description: ""
+  key: batch_size
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "4000"
+- description: ""
+  key: query
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: expirationStatus:expired and tags:xdr_pushed and -tags:xdr_disabled
+name: Cortex XDR IOCs - Disable expired IOCs in XDR
+outputs: []
+starttaskid: "0"
+system: true
+tags:
+- XDR
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f547ca0b-efe2-4808-8434-55fb0c9bb278
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: f547ca0b-efe2-4808-8434-55fb0c9bb278
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 50
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "false"
+      key:
+        simple: Done
+      value:
+        simple: "True"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 91e5534f-d5ef-4371-87ed-57215ad43e73
+      iscommand: false
+      name: Set Done to True
+      script: Set
+      type: regular
+      version: -1
+    taskid: 91e5534f-d5ef-4371-87ed-57215ad43e73
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 545
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      field:
+        simple: tags
+      fieldValue:
+        simple: xdr_disabled
+      indicatorsValues:
+        simple: ${foundIndicators.value}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Appends values to the specified indicator field. Supported field
+        types are tags and multi-select.
+      id: fc9a2471-17ec-4be1-8dcc-f6cacebe4e2d
+      iscommand: true
+      name: Add xdr_disabled tag
+      script: Builtin|||appendIndicatorField
+      type: regular
+      version: -1
+    taskid: fc9a2471-17ec-4be1-8dcc-f6cacebe4e2d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 720
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query:
+        complex:
+          root: inputs.query
+      size:
+        complex:
+          root: inputs.batch_size
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: |-
+        Searches Cortex XSOAR Indicators.
+
+        Search for XSOAR Indicators and returns the id, indicator_type, value, and score/verdict.
+
+        You can add additional fields from the indicators using the add_field_to_context argument.
+      id: 62ee64c8-2e9d-4324-89f0-d7e329b996c9
+      iscommand: false
+      name: Get Indicators
+      script: SearchIndicator
+      type: regular
+      version: -1
+    taskid: 62ee64c8-2e9d-4324-89f0-d7e329b996c9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 195
+        }
+      }
+  "13":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: foundIndicators
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      "yes":
+      - "36"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks that the IOCs were  set in the context.
+      id: 09e13e67-74d6-44d5-8185-04e67f65c602
+      iscommand: false
+      name: Check results
+      type: condition
+      version: -1
+    taskid: 09e13e67-74d6-44d5-8185-04e67f65c602
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "25"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+      keysToKeep:
+        simple: Done
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.12/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 49ffb7b0-7971-4960-8401-20be15ec4dc5
+      iscommand: false
+      name: DeleteContext
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 49ffb7b0-7971-4960-8401-20be15ec4dc5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 895
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ed316b36-2638-49ea-82a0-20f9ca4eae0a
+      iscommand: false
+      name: Iteration finished
+      type: title
+      version: -1
+    taskid: ed316b36-2638-49ea-82a0-20f9ca4eae0a
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1070
+        }
+      }
+  "26":
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 11bdb79b-5f57-467f-82ec-a374df33a79d
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 11bdb79b-5f57-467f-82ec-a374df33a79d
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 735
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      execution-timeout:
+        simple: "800"
+      indicator:
+        complex:
+          accessor: value
+          root: foundIndicators
+          transformers:
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cortex XDR - IOC
+      description: Disables IOCs in the Cortex XDR server.
+      id: b0de033e-0e54-4d89-8bb2-9c328699e971
+      iscommand: true
+      name: Disable IOCs using xdr-iocs-disable
+      script: Cortex XDR - IOC|||xdr-iocs-disable
+      type: regular
+      version: -1
+    taskid: b0de033e-0e54-4d89-8bb2-9c328699e971
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 545
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1085,
+        "width": 810,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
