@@ -1,0 +1,50 @@
+commonfields:
+  id: 09e0f5fa-b9a2-4eaa-85d1-6be5572967f6
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: EDRUrlHyperlink
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import re
+  def format_text_with_links(text):
+     # Define the regex pattern to find URLs
+     url_pattern = r'(https?://[^\s]+)'
+     # Replace URLs with HTML hyperlink format
+     formatted_text = re.sub(url_pattern, r'<a href="\1">\1</a>', text)
+     return formatted_text
+  def main():
+
+     incident = demisto.incidents()[0]
+     text_field = demisto.get(incident, 'details')
+     if text_field:
+         # Format the text with hyperlinks for URLs
+         formatted_text = format_text_with_links(text_field)
+         # Update the incident with the formatted text
+         incident_id = incident['id']
+         demisto.executeCommand('setIncident', {
+             'id': incident_id,
+             'incidentdetails': formatted_text
+         })
+         return_results("Incident details updated with hyperlinks")
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+     main()
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
