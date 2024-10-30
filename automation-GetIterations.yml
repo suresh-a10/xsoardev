@@ -1,0 +1,70 @@
+args:
+- name: time
+- name: type
+- name: WaitTimer
+commonfields:
+  id: 5d025327-8552-46c1-8dc1-a4eaadd185a1
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: Incident Management Contribution Pack
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetIterations
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  from typing import Dict, Any
+  import time
+  def getIterations(args: Dict[str, Any]) -> CommandResults:
+
+     timer = args.get('time')
+     type_timer = args.get('type')
+     wait_timer = args.get('WaitTimer')
+
+     if not timer or not type_timer or not wait_timer:
+         raise ValueError('Missing required arguments: time, type, and/or WaitTimer')
+
+     try:
+         timer = int(timer)  # Total time in seconds
+         wait_timer = int(wait_timer)  # Wait time in seconds
+     except ValueError:
+         raise ValueError('Time and WaitTimer must be integers')
+
+     if wait_timer > 0:
+         iterations = timer // wait_timer
+     else:
+         raise ValueError('WaitTimer must be greater than zero')
+
+     if type_timer == "assignment":
+         demisto.setContext("Assigniterations", iterations)
+         #readable_output = f"Iterations: {iterations}"
+         #outputs = {"iterations": iterations}
+     else:
+         demisto.setContext("Resolveiterations", iterations)
+         #readable_output = f"IterationsResolver: {iterations}"
+         #outputs = {"iterationsResolver": iterations}
+     # Return the results
+     #return CommandResults(
+     #    readable_output=readable_output,
+     #    outputs_prefix='IterationsResults',
+     #    outputs=outputs
+     #)
+  # Execute the function
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+     return_results(getIterations(demisto.args()))
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
