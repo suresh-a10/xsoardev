@@ -1,0 +1,83 @@
+args:
+- default: true
+  description: source(s) for the query. Multiple values are separated by commas (,).
+  name: source
+  required: true
+- description: destination(s) for the query. Multiple values are separated by commas
+    (,).
+  name: destination
+  required: true
+- description: service(s) for the query. Multiple values are separated by commas (,).
+  name: service
+  required: true
+- description: user for the query.
+  name: user
+- description: application for the query.
+  name: application
+comment: Performs a batch traffic simulation query using Firewall Analyzer.
+commonfields:
+  id: AlgosecQuery
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.0.0
+    itemVersion: 1.0.13
+    packID: Algosec
+    packName: AlgoSec
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dependson:
+  must:
+  - algosec-query
+dockerimage: demisto/python3:3.10.13.83255
+engineinfo: {}
+mainengineinfo: {}
+name: AlgosecQuery
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('AlgosecQuery', 'start', __line__())
+  ### pack version: 1.0.13
+
+
+
+
+  def algosec_query():
+      resp = demisto.executeCommand("algosec-query", demisto.args())
+
+      if isError(resp[0]):
+          result = resp
+      else:
+          data = demisto.get(resp[0], "Contents.QueryResponse.QueryResult")
+          if data:
+              data = data if isinstance(data, list) else [data]
+              data = flattenTable(data)
+              result = {"ContentsFormat": formats["table"], "Type": entryTypes["note"], "Contents": data}
+          else:
+              result = "No results."
+      return_results(result)
+
+
+  def main():  # pragma: no cover
+      try:
+          algosec_query()
+      except Exception as e:
+          err_msg = f'Encountered an error while running the script: [{e}]'
+          return_error(err_msg, error=e)
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+  register_module_line('AlgosecQuery', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- Algosec
+type: python
