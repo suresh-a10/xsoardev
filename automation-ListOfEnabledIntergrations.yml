@@ -1,0 +1,59 @@
+commonfields:
+  id: e952881f-83aa-4859-8660-dc59591b92dd
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.48392
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ListOfEnabledIntergrations
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  incident = demisto.incidents()[0]
+  accountName = incident.get('account')
+  accountName = f"acc_{accountName}" if accountName != "" else ""
+
+  res = demisto.executeCommand(
+      "demisto-api-post",
+      {
+          "uri": f"{accountName}/settings/integration/search",
+          "body": {
+              "size": 500
+          },
+      })[0]["Contents"]["response"]
+
+  enabledInstances = list(filter(lambda x: x['enabled'] == "true", res['instances']))
+  enabledInstancesNames = []
+  for instance in enabledInstances:
+      if instance['name'] in ['testmodule', 'd2']:
+          continue
+      else:
+          enabledInstancesNames.append(instance['name'])
+
+
+  md = tableToMarkdown(name="List of Inetrgations",t=enabledInstancesNames,headers="Instance Name")
+
+  demisto.results({
+      "Contents":enabledInstancesNames,
+      "ContentsFormat":formats['markdown'],
+      "Type":entryTypes["note"],
+      "HumanReadable":md,
+      "ReadableContentsFormat":formats['markdown'],
+      'EntryContext': {'ListOfIntegrations':enabledInstancesNames}
+  })
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
