@@ -1,0 +1,344 @@
+args:
+- description: The Entry ID (File.EntryID) of the file to open and read.
+  name: entry_id
+  required: true
+- description: Comma seperated list of tags to add to the Indicators (i.e "Block,Malware,CNC")
+  name: tags
+- auto: PREDEFINED
+  defaultValue: "False"
+  description: 'Whether to have the create indicators bypass the exclusion list, default
+    is False.  Note: If using the builtin extract, the exclusion list will still apply
+    and indicators on the exclusion list will not be extracted.  '
+  name: bypass_exclusion_list
+  predefined:
+  - "True"
+  - "False"
+- auto: PREDEFINED
+  defaultValue: Unknown
+  description: The verdict to assign to the Indicators that are created. Can be Good,Suspicious,Malicious,Unknown
+    (Default is Unknown)
+  name: verdict
+  predefined:
+  - Good
+  - Suspicious
+  - Malicious
+  - Unknown
+- auto: PREDEFINED
+  defaultValue: "True"
+  description: Whether to use Cortex XSOARs extract indicators regex on the data,
+    default is True.  You may set this to false and specify the indicator_type argument
+    if the file contains just one Indicator Type (i.e all Domains or IP addresses)
+  name: extract_indicators
+  predefined:
+  - "True"
+  - "False"
+- auto: PREDEFINED
+  description: Specify the Indicator Type  contained in the File, used to override
+    extract indicators. File MUST contain a single indicator type, and could possibly
+    create invalid entries as a result.
+  name: indicator_type
+  predefined:
+  - IP
+  - Domain
+  - URL
+  - File
+  - Email
+  - IPv6
+  - CIDR
+  - IPv6CIDR
+  - CVE
+- auto: PREDEFINED
+  defaultValue: "False"
+  description: Whether to preview how many Indicators will be created by Indicator
+    Type.  This will display results but not create the Indicators in Cortex XSOAR.  Default
+    is False.
+  name: preview_only
+  predefined:
+  - "True"
+  - "False"
+comment: "Loads a Text file that contains a list of indicators (one per line), and
+  loads them to the XSOAR Threat Intel Management Database using the /indicators/feed/json
+  API endpoint.\n\nBy default will use extractIndicators to pull the Indicators out
+  of the file and assign to XSOAR Indicator Types.  You can turn this off if the file
+  contains only a single type of Indicator and you want to take the file AS IS. \n\nYou
+  can specify Tags in comma separated format to add to the Indicators as well. \n\nLastly,
+  use the preview_only argument to have the automation show you what it will do before
+  it does it, or if you like to live dangerously, full send.  (BTW there is a sanity
+  limit of 80,000 indicators in place, so only semi-full send.)"
+commonfields:
+  id: cc3c51fd-53e9-4526-8be7-4c72a0d56a1a
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dependson:
+  must: []
+  should:
+  - Demisto REST API|||demisto-api-post
+  - Core REST API|||demisto-api-post
+dockerimage: demisto/python3:3.10.12.63474
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CreateIndicatorsFromTextFile
+outputs:
+- contextPath: ImportIndicators
+  description: 'The results of the import, each indicator type will be under it''s
+    own Key with a count of how many are in the file. '
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  from ipaddress import ip_address
+
+
+  def get_file_path(entry_id):
+      """
+      get the file path of the file on the xsoar server
+      """
+      res = demisto.getFilePath(entry_id)
+      if not res:
+          return_error(f"Entry {entry_id} not found")
+
+      return res.get('path')
+
+
+  def read_file(file_path):
+      """
+      open and read the file
+      """
+      with open(file_path, 'r') as f:
+          try:
+              data = f.read().splitlines()
+          except Exception as e:
+              return_error(e)
+      return data
+
+
+  def extract_indicators(data):
+      """
+      extract indicators from the data in batches of 1000 using the extractIndicators command and return all results
+      """
+
+      batch_size = 1000
+      sanity_limit = 80000
+
+      if len(data) >= sanity_limit:
+          return_error(f"Number of Indicators is greater than {sanity_limit}. Please split the file, this is for both your safety and ours.")
+
+      try:
+          extracted_indicators = {}
+          for i in range(0, len(data), batch_size):
+              indicators = json.loads(demisto.executeCommand("extractIndicators", {"text": data[i:i+batch_size]})[0]["Contents"])
+              for x in indicators.keys():
+                  extracted_indicators[x] = extracted_indicators.get(x,[]) + indicators[x]
+      except Exception as e:
+          return_error(e)
+
+      return extracted_indicators
+
+
+  def create_indicator(value,indicator_type,verdict,tags):
+      """
+      create the indicator for the feed api endpoint
+      """
+      indicator = {
+          "value": value,
+          "type": indicator_type,
+          "fields": {
+              "tags": tags
+          },
+          "score": verdict,
+          "sourceBrand": "ImportFromFile",
+          "sourceInstance": "ImportFromFile"
+      }
+      if indicator_type in ["IP", "IPv6"]:
+          indicator["fields"]["internal"] = check_ip_indicators(value)
+
+      return indicator
+
+
+  def create_indicator_list(indicators,tags,verdict,indicator_type=None):
+      """
+      create the list of indicators that we'll pass to the api endpoint
+      """
+      feed = []
+      if not indicator_type:
+          for x in indicators.keys():
+              for y in indicators[x]:
+                  feed.append(create_indicator(y,x,verdict,tags))
+      else:
+          for x in indicators:
+              feed.append(create_indicator(x,indicator_type,verdict,tags))
+
+      return feed
+
+
+  def check_ip_indicators(ip):
+      """
+      check if the ipv4 or ipv6 address is internal or external
+      """
+
+      try:
+          if ip_address(ip).is_private:
+              return "true"
+          else:
+              return "false"
+      except:
+          return "false"
+
+
+  def create_xsoar_result(indicators,preview_only,tags,indicator_type=None):
+      """
+      Create the XSOAR CommandResult
+      """
+
+      context = {}
+      total = 0
+      if not indicator_type:
+          for x in indicators.keys():
+              context[x] = len(indicators[x])
+              total += len(indicators[x])
+      else:
+          context[indicator_type] = len(indicators)
+          total = len(indicators)
+
+      if preview_only:
+          title = f"Import Indicators from File Preview. Total: {total}\nTags: {tags}"
+      else:
+          title = f"Import Indicators from File Results. Total: {total}\nTags: {tags}"
+
+      readable = tableToMarkdown(title, context)
+      result = CommandResults(
+          readable_output=readable,
+          outputs_prefix="ImportIndicators",
+          outputs=context,
+          ignore_auto_extract=True)
+
+      return result
+
+
+  def full_send_indicators(feed,bypass_exclusion_list):
+      """
+      ok not really full send, but send the indicators in batches of 5000
+      why? Because someone will actually try a full send with like 1 million.
+      """
+
+      batch_size = 5000
+      api_calls = 0
+      try:
+          for i in range(0, len(feed), batch_size):
+              body = {
+                  "bypassExclusionList": bypass_exclusion_list,
+                  "indicators": feed[i:i+batch_size]
+              }
+              demisto.executeCommand("demisto-api-post", {"uri":"/indicators/feed/json", "body": body})
+              api_calls += 1
+      except Exception as e:
+          return_error(e)
+
+      return api_calls
+
+
+
+  def set_argument_condition(arg):
+      """
+      Helper function that sets the boolean on arguments that are True/False
+      """
+      if arg == "True":
+          return True
+      else:
+          return False
+
+
+  def generate_tags(tags=None):
+      """
+      Generates the tags list to add to the Indicator from the tags argument
+      """
+      if tags:
+          tags = tags.split(",")
+          tags = [x.strip() for x in tags]
+      else:
+          tags = []
+
+      return tags
+
+
+  def get_verdict_score(verdict):
+      """
+      Returns the score to assign based on the human readable selection
+      """
+      scores = {
+          "Unknown": 0,
+          "Good": 1,
+          "Suspicious": 2,
+          "Malicious": 3
+      }
+
+      return scores.get(verdict)
+
+
+  def main():
+      """
+      main function - this is where the magic happens
+      """
+
+      try:
+          # get our arguments
+          entry_id = demisto.args().get("entry_id")
+          tags = generate_tags(demisto.args().get("tags"))
+          bypass_exclusion_list = set_argument_condition(demisto.args().get("bypass_exclusion_list"))
+          verdict = get_verdict_score(demisto.args().get("verdict"))
+          extract = set_argument_condition(demisto.args().get("extract_indicators"))
+          indicator_type = demisto.args().get("indicator_type")
+          preview_only = set_argument_condition(demisto.args().get("preview_only"))
+
+          # find the file path on the XSOAR server, and read the data
+          file_path = get_file_path(entry_id)
+          data = read_file(file_path)
+
+          # check if we got data, and then create our indicator data based on extract or for a specific type.
+          if data and extract == True:
+              indicators = extract_indicators(data)
+              feed = create_indicator_list(indicators,tags,verdict,None)
+              result = create_xsoar_result(indicators,preview_only,tags)
+          elif data and indicator_type:
+              feed = create_indicator_list(data,tags,verdict,indicator_type)
+              result = create_xsoar_result(data,preview_only,tags,indicator_type)
+          elif data and not indicator_type:
+              return_error("You need to provide an Indicator Type when not using extract indicators, please set the indicator_type arguement, or set extract_indicators to True.")
+          else:
+              return_results("No data found in file, doing nothing")
+
+          # create the indicators using the /indicators/feed/json api endpoint or provide the preview of what it extracted.
+          if feed and not preview_only:
+              api_calls = full_send_indicators(feed,bypass_exclusion_list)
+              # print(api_calls) # debugging
+              return_results(result)
+          elif feed and preview_only:
+              return_results(result)
+          else:
+              return_results("No Indicators found in the file, doing nothing")
+      except Exception as ex:
+          # this is where the magic went horribly wrong
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags:
+- Utility
+timeout: 600ns
+type: python
