@@ -1,0 +1,63 @@
+comment: This automation is developed to normalize the data returned by the playbook
+  document peice to generate the PDF out of HTML.
+commonfields:
+  id: CortexNormalizePlaybookDetailsForPDFGeneration
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.10.48392
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CortexNormalizePlaybookDetailsForPDFGeneration
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2-
+
+
+  def main():
+      context = demisto.context()
+      if context.get("getPlaybookDetails") == None:
+          return_error("Playbook documentation details not available in the context.")
+
+      playbookDetails = context.get("getPlaybookDetails")
+      output = []
+      for k,v in playbookDetails.items():
+          output.append({
+              "name": k,
+              "html": v.get("html")
+          })
+
+      data = output
+
+      context = {
+          "NormalizedPlaybookInformation": data
+      }
+
+      md = tableToMarkdown("Normalized Playbook Information", output)
+
+      demisto.results({
+          'Type' : entryTypes['note'],
+          'Contents': data,
+          'ContentsFormat' : formats['json'],
+          'HumanReadable': md,
+          'ReadableContentsFormat' : formats['markdown'],
+          'EntryContext': context
+      })
+
+
+  main()
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
