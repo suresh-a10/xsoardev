@@ -1,0 +1,53 @@
+comment: A script that creates a table of all the ToDo tasks assigned to the current
+  user.
+commonfields:
+  id: aae82cb7-72ce-4013-86db-0d4e43cb36c8
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.8.24399
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: MyTasksWidget
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  uri =  "/v2/statistics/widgets/query"
+  getuser = demisto.executeCommand("getUsers", {"current":"true"})[0]['Contents'][0]['username']
+  #print(getuser)
+
+  body = "{\"dataType\": \"tasks\",\"query\": \"assignee:\\\"{me}\\\" and state:waiting\",\"widgetType\": \"list\"}"
+
+  # body2 = "{\"dataType\": \"tasks\",\"query\": \"assignee:\\\"{me}\\\" and state:waiting\",\"widgetType\": \"number\"}"
+
+  # # current user에 따른 demisto_name 지정
+  if getuser == "admin":
+      demisto_name = "Demisto REST API_instance_1"
+  elif  getuser == "admin1":
+      demisto_name = "Demisto REST API_instance_2_admin1"
+  elif getuser == "sec-mon":
+      demisto_name = "Demisto REST API_instance_3_sec-mon"
+
+  res = demisto.executeCommand("demisto-api-post", {"uri":uri,"body":body,"using":demisto_name})
+  # res2 =  demisto.executeCommand("demisto-api-post", {"uri":uri,"body":body2})
+  # print(len(res[0]['Contents']['response']['total']))
+  print(res[0]['Contents']['response']['total'])
+  # print(len(res2))
+  print(res)
+  # print(res2)
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
