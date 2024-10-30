@@ -1,0 +1,66 @@
+args:
+- description: Provide the image file entry ID
+  name: FileEntryID
+  required: true
+commonfields:
+  id: 3288de12-2bcb-4b5a-8fa0-a33e92253c6c
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: docker.io/demisto/python3:3.10.13.87159
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ConvertImageToBase64
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  from typing import Dict, Any
+  import traceback
+  import base64
+
+
+  ''' MAIN FUNCTION '''
+
+  encoded_string=''
+  def main():
+      try:
+          file_entry_id = demisto.args()['FileEntryID']
+          file_path = demisto.executeCommand("getFilePath", {"id":file_entry_id})[0]['Contents']['path']
+
+          with open(file_path, "rb") as img_file:
+              encoded_string=base64.b64encode(img_file.read())
+              demisto.results({
+                          'Contents':encoded_string,
+                          'ContentsFormat': formats['text'],
+                          'EntryContext':{'Base64Encoded':encoded_string}
+              })
+          # TODO: replace the invoked command function with yours
+          #return_results(basescript_dummy_command(demisto.args()))
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+timeout: 180ns
+type: python
