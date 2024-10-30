@@ -1,0 +1,55 @@
+args:
+- description: The old value of the changed field
+  name: old
+- description: The new value of the changed field
+  name: new
+comment: |-
+  Stops the "Time To Assignment" timer once an owner is assigned to the Incident
+  Starts the "Remediation SLA' timer once an owner is assigned to the Incident
+commonfields:
+  id: TimersOnOwnerChange
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.0.0
+    itemVersion: 1.4.8
+    packID: CaseManagement-Generic
+    packName: CaseManagement-Generic
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.14.100715
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: TimersOnOwnerChange
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('TimersOnOwnerChange', 'start', __line__())
+  ### pack version: 1.4.8
+
+
+
+
+  # This script stops the Time to Assignment timer when an Owner is assigned to an Incident, and starts the Remediation
+  # SLA Timer.
+
+  if not demisto.args().get('old') and demisto.args().get('new'):  # If owner was no-one and is now someone:
+      demisto.executeCommand("stopTimer", {"timerField": "timetoassignment"})
+      demisto.executeCommand("startTimer", {"timerField": "remediationsla"})
+      demisto.results(
+          "Assignment of the incident was successful, Time to Assignment has been stopped, and the Remediation timer has"
+          " been started!")
+
+  register_module_line('TimersOnOwnerChange', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- field-change-triggered
+type: python
