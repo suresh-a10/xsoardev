@@ -1,0 +1,64 @@
+args:
+- name: from
+- name: to
+commonfields:
+  id: 20c3a42d-edf2-4db5-87ad-87a8d2c59849
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.6.22912
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: OpenTimeofActiveIncidentsByType
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import json
+  import math
+  from datetime import datetime
+  now = datetime.today().isoformat()
+
+  #provide the incident Type
+  incType = "Email Communication_copy"
+
+  incidents = demisto.executeCommand('getIncidents', {
+      'query': 'status:Active or status:Pending and type:'+incType,
+      "fromdate": demisto.args()["from"],
+      "todate": demisto.args()["to"]
+  })
+
+  incidentsCount = incidents[0]['Contents']['total']
+
+  if isError(incidents) or incidentsCount == 0:
+      demisto.results({ "total": 0, "data": []})
+      sys.exit()
+  else:
+      incidents = incidents[0]['Contents']['data']
+
+  incList = []
+  for inc in incidents:
+      incidentsince = inc['created']
+      inctime = incidentsince.split(".")
+      d1 = datetime.strptime(inctime[0], "%Y-%m-%dT%H:%M:%S")
+      ctime = now.split(".")
+      d2 = datetime.strptime(ctime[0], '%Y-%m-%dT%H:%M:%S')
+      timedelta = ((d2 - d1).total_seconds())
+      incList.append({"Incident ID": inc['id'], "Incident Name": inc['name'], "Created": inc['created'], "Open Time (In Hours)":math.ceil(timedelta/3600)})
+
+  demisto.results({ "total": incidentsCount, "data": incList})
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
