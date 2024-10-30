@@ -1,0 +1,65 @@
+args:
+- name: listName
+  required: true
+commonfields:
+  id: f61cf8fa-001e-425d-82e0-1a4c8f2cc6ae
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.8.39276
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: getAllCommands
+outputs:
+- contextPath: commandsList
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2
+
+  payload = { 'query' : demisto.args().get('query','system:F') }
+
+  res = demisto.executeCommand("demisto-api-post", {"uri":"playbook/search", "body" : json.dumps(payload)})[0]["Contents"]["response"]
+
+  if not res['playbooks']:
+      demisto.results("Playbook query did not return any results")
+      exit(0)
+
+
+  list_name = demisto.args()['listName']
+  searchResults = []
+
+  # Generate list of playbooks
+  for item in res["playbooks"]:
+      commands = []
+      if len(item['commands']):
+          for command in item['commands']:
+              if command not in searchResults:
+                  commands.append(command)
+      if len(item['scriptIds']):
+          for script in item['scriptIds']:
+              if script not in searchResults:
+                  commands.append(script)
+      searchResults.append({item['name'] : commands})
+
+  demisto.executeCommand("setList", {"listName":list_name, "listData" : searchResults})
+
+  demisto.results({
+          'Contents': searchResults,
+          'ContentsFormat': formats['text'],
+          'EntryContext': {'commandsList': [searchResults]}
+      })
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
