@@ -1,4 +1,4 @@
-comment: Widget Script to present the number of BoltDB partitions
+comment: Widget Script to present the number of BoltDB partitions.
 commonfields:
   id: HealthCheckNumberOfPartitions
   version: -1
@@ -6,7 +6,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 6.0.0
-    itemVersion: 2.1.3
+    itemVersion: 3.0.0
     packID: HealthCheck
     packName: System Diagnostics and Health Check
     packPropagationLabels:
@@ -14,7 +14,7 @@ contentitemexportablefields:
     prevname: ""
     propagationLabels: []
     toServerVersion: ""
-dockerimage: demisto/python3:3.10.14.100715
+dockerimage: demisto/python3:3.11.10.113941
 enabled: true
 engineinfo: {}
 mainengineinfo: {}
@@ -24,23 +24,27 @@ runas: DBotWeakRole
 runonce: false
 script: |
   register_module_line('HealthCheckNumberOfPartitions', 'start', __line__())
-  demisto.debug('pack name = System Diagnostics and Health Check, pack version = 2.1.3')
+  demisto.debug('pack name = System Diagnostics and Health Check, pack version = 3.0.0')
+
 
 
   GREEN_HTML_STYLE = "color:#00CD33;text-align:center;font-size:800%;>"
+  XSOARV8_HTML_STYLE = "color:#FFBE98;text-align:center;font-size:150%;>"
 
 
   def main():
-      incident = demisto.incidents()
-      query = incident[0].get('CustomFields', {}).get('xsoarnumberofdbpartitions', 0)
+      if is_demisto_version_ge("8.0.0"):
+          msg = "Not Available for XSOAR v8"
+          html = f"<h3 style={XSOARV8_HTML_STYLE}{str(msg)}</h3>"
+          demisto.results({"ContentsFormat": formats["html"], "Type": entryTypes["note"], "Contents": html})
+          sys.exit()
+      else:
+          incident = demisto.incidents()
+          query = incident[0].get("CustomFields", {}).get("xsoarnumberofdbpartitions", 0)
 
-      html = f"<h1 style={GREEN_HTML_STYLE}{str(query)}</h1>"
+          html = f"<h1 style={GREEN_HTML_STYLE}{str(query)}</h1>"
 
-      demisto.results({
-          'ContentsFormat': formats['html'],
-          'Type': entryTypes['note'],
-          'Contents': html
-      })
+          demisto.results({"ContentsFormat": formats["html"], "Type": entryTypes["note"], "Contents": html})
 
 
   if __name__ in ["__main__", "builtin", "builtins"]:
