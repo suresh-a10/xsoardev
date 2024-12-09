@@ -1,0 +1,573 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: e3e917ea-7b40-4d2e-8215-04a84d7e6c04
+inputs:
+- description: ""
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: TCS-Add New CSOC IP Indicator WAF_v1.0
+outputs: []
+sourceplaybookid: e653e5ab-6658-4f7a-806d-6a79d92d5d98
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 91cab1e9-4d5e-4b8d-8579-01dcd46aa588
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 91cab1e9-4d5e-4b8d-8579-01dcd46aa588
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": -550,
+          "y": -1340
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: indicator.value=value::indicator.tag=CustomFields.tags::indicator.expirystatus=expirationStatus
+      using:
+        simple: InnerServicesModule
+      value:
+        complex:
+          root: inputs.IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.find.indicators
+      id: a50370c6-bde1-49d6-8bed-cff5344b188a
+      iscommand: true
+      name: Check If Indicator Exists
+      script: Builtin|||findIndicators
+      type: regular
+      version: -1
+    taskid: a50370c6-bde1-49d6-8bed-cff5344b188a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -550,
+          "y": -680
+        }
+      }
+  "11":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: value
+                root: indicator
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "13"
+      "yes":
+      - "16"
+      - "22"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: dbe87c00-7c9c-4bf4-8e91-057ad442002e
+      iscommand: false
+      name: Found Indicator ?
+      type: condition
+      version: -1
+    taskid: dbe87c00-7c9c-4bf4-8e91-057ad442002e
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -550,
+          "y": -500
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 17bb52f2-a8e9-4b5a-81f3-f040f6f7e07c
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 17bb52f2-a8e9-4b5a-81f3-f040f6f7e07c
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -530,
+          "y": 930
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      creationdate:
+        simple: ${ISOTimeNow}
+      execution-timeout:
+        simple: "1000000"
+      retry-count:
+        simple: "3"
+      source:
+        simple: ${incident.id}
+      tags:
+        simple: csocblockedip
+      type:
+        simple: IP
+      value:
+        simple: ${inputs.IP}
+      verdict:
+        simple: Malicious
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.new.indicator
+      id: 62011d87-1b1a-411d-8795-66ff2049dd7d
+      iscommand: true
+      name: Tag The Indicator With 'csocblockedip'
+      script: Builtin|||createNewIndicator
+      type: regular
+      version: -1
+    taskid: 62011d87-1b1a-411d-8795-66ff2049dd7d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -1000,
+          "y": 500
+        }
+      }
+  "16":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: certblockipaddress
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: csocblockedip
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: expirystatus
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: active
+      label: "yes"
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "21"
+      "yes":
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f81124cf-6666-4c92-8763-bd3502e6b16f
+      iscommand: false
+      name: Is This Indicator CERT or CSOC Tagged ?
+      type: condition
+      version: -1
+    taskid: f81124cf-6666-4c92-8763-bd3502e6b16f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -550,
+          "y": -270
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      field:
+        simple: tags
+      fieldValue:
+        simple: ${indicator.tag}
+      indicatorsValues:
+        simple: ${inputs.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.remove.values.to.indicator.multi.select.field
+      id: e7e146fc-542a-44f9-8a85-f8dbe93ae992
+      iscommand: true
+      name: Remove Old Tag
+      script: Builtin|||removeIndicatorField
+      type: regular
+      version: -1
+    taskid: e7e146fc-542a-44f9-8a85-f8dbe93ae992
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -550,
+          "y": 290
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      creationdate:
+        simple: ${ISOTimeNow}
+      expiration:
+        simple: ${expirydate}
+      tags:
+        simple: csocblockedip
+      value:
+        simple: ${inputs.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.indicator
+      id: 72a35ea0-0ef3-4425-8f89-cc3c0ea6005b
+      iscommand: true
+      name: Add New CSOC Tag
+      script: Builtin|||setIndicator
+      type: regular
+      version: -1
+    taskid: 72a35ea0-0ef3-4425-8f89-cc3c0ea6005b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -550,
+          "y": 500
+        }
+      }
+  "19":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: indicator
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "10"
+      "yes":
+      - "20"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bfa3488f-21d7-4172-8506-cd16edf4c6bc
+      iscommand: false
+      name: Is Indicator Context Set ?
+      type: condition
+      version: -1
+    taskid: bfa3488f-21d7-4172-8506-cd16edf4c6bc
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -550,
+          "y": -1120
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: indicator
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Delete field from context
+      id: d1bca18e-88e4-407c-8320-5b011b87aef3
+      iscommand: false
+      name: Delete 'Indicator' Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: d1bca18e-88e4-407c-8320-5b011b87aef3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -550,
+          "y": -910
+        }
+      }
+  "21":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "17"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f22a3e04-e3c1-4009-8aff-3fb73a5ebc3c
+      iscommand: false
+      name: Is Indicator Tag Context Defined ?
+      type: condition
+      version: -1
+    taskid: f22a3e04-e3c1-4009-8aff-3fb73a5ebc3c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -550,
+          "y": 10
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: expirydate
+      value:
+        complex:
+          accessor: created
+          root: incident
+          transformers:
+          - args:
+              variation:
+                value:
+                  simple: in 30 days
+            operator: ModifyDateTime
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 12712203-66b8-47e5-8ba5-b530f27d21c8
+      iscommand: false
+      name: Calculate Expiry Date
+      script: Set
+      type: regular
+      version: -1
+    taskid: 12712203-66b8-47e5-8ba5-b530f27d21c8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -120,
+          "y": -270
+        }
+      }
+  "23":
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      listData:
+        complex:
+          root: inputs.IP
+      listName:
+        simple: WAF_IP's_Needtobeblock
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.set
+      id: 078160f9-5dd4-426f-8e18-4cf7b4891158
+      iscommand: true
+      name: Append IP to the WAF list
+      script: Builtin|||setList
+      type: regular
+      version: -1
+    taskid: 078160f9-5dd4-426f-8e18-4cf7b4891158
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -1000,
+          "y": 690
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "16_12_yes": 0.24
+    },
+    "paper": {
+      "dimensions": {
+        "height": 2335,
+        "width": 1260,
+        "x": -1000,
+        "y": -1340
+      }
+    }
+  }
