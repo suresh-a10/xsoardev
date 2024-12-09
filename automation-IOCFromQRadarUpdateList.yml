@@ -1,0 +1,82 @@
+args:
+- name: qradar_list
+  required: true
+- name: ioc_list
+  required: true
+commonfields:
+  id: c7b44517-8bac-4b39-8c31-7cd5905f1bae
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.6.22912
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: IOCFromQRadarUpdateList
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  import datetime
+
+  #Get input arguments
+  q_list_name = demisto.args().get('qradar_list')
+  ioc_list_name = demisto.args().get('ioc_list')
+
+
+  #Get New Info
+  def getQradarData(q_list):
+      res = demisto.executeCommand('qradar-get-reference-by-name', {'ref_name':q_list, 'using-brand':'QRadar_v2'})
+      if is_error(res[0]):
+          return_error(res[0])
+      else:
+          return res[0]['Contents']['NumberOfElements']
+
+
+  #Get The time now
+  rn = datetime.datetime.now().isoformat()
+  # Get the timeline List
+  timeline = json.loads(demisto.executeCommand('getList', {'listName':ioc_list_name})[0]['Contents'])
+
+  #Going over the data to see if data is already set for today, if so, override
+  Exists = None
+  for k,v in timeline.items():
+      if rn.split('T')[0] in k:
+          Exists = k
+
+
+  # Checking if the data is already set
+  setter = ''
+  if Exists:
+      setter = Exists
+  else:
+      setter = rn
+
+  # Getting the data and setting the timeline
+  number = str(getQradarData(q_list_name))
+  timeline[setter] = number
+
+
+  # Putting the timeline back
+  res = demisto.executeCommand('setList', {'listName':ioc_list_name, 'listData':timeline})
+  if is_error(res[0]):
+      return_error(res[0])
+  else:
+      return_results('done')
+
+
+
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
