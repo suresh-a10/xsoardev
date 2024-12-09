@@ -1,0 +1,92 @@
+commonfields:
+  id: d14a7808-c825-4fe2-8e20-4ee5b6e1e2c8
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ExtractFromTo
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2-
+
+
+
+  def extract_text_from_context(start_strings, end_strings, context_key):
+
+      context_value = demisto.context().get(context_key, "")
+      if not context_value:
+          return_error(f"No value found in context for key: {context_key}")
+
+      extracted_text = ""
+
+      for start_string in start_strings:
+          start_index = context_value.find(start_string)
+          if start_index != -1:
+              # Adjust start index to start after the start_string
+              start_index += len(start_string)
+              break
+      else:
+          return_error(f"None of the start strings found in the context value.")
+
+
+      for end_string in end_strings:
+          end_index = context_value.find(end_string, start_index)
+          if end_index != -1:
+              # Extract text from start_index to end_index
+              extracted_text = context_value[start_index:end_index].strip()
+              break
+      else:
+          return_error(f"None of the end strings found in the context value after the start string.")
+
+      return extracted_text
+
+  def main():
+      try:
+
+          args = demisto.args()
+          #start_strings = argToList(args.get('start_strings'))
+          #end_strings = argToList(args.get('end_strings'))
+          start_strings = ['ioc start','iocs start']
+          end_strings = ['ioc end','iocs end']
+          context_key = 'emailtest'
+         #parent_key = args.get('context_key')
+
+         # context = demisto.context()
+          #parent_key = context.get('incident')
+          #context_key = parent_key.get('emailtext')
+
+          if not start_strings or not end_strings or not context_key:
+              return_error("Missing required arguments. Ensure 'start_strings', 'end_strings', and 'context_key' are provided.")
+
+          # Extract the text
+          extracted_text = extract_text_from_context(start_strings, end_strings, context_key)
+
+          # Return the extracted text
+          #return_results(extracted_text)
+          demisto.results(demisto.executeCommand('Set', { 'key' : "FinalText" ,  'value' : extracted_text , 'append' : True}))
+
+
+      except Exception as e:
+          return_error(f"An error occurred: {str(e)}")
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags:
+- transformer
+- string
+type: python
