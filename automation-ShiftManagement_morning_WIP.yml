@@ -1,0 +1,349 @@
+args:
+- name: entryID
+  required: true
+commonfields:
+  id: b7b8e52f-db4d-4122-8ce8-c622355458ee
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: pandapack:latest
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ShiftManagement_morning_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2
+
+  import pandas as pd
+  import csv
+  from datetime import date,timedelta
+
+
+  args=demisto.args()
+
+  entryID=args.get("entryID")
+
+  file_info = demisto.getFilePath(entryID)
+  file_path = file_info['path']
+
+  shifts={}
+  next_day_shifts={}
+  weekoffs={}
+
+  today = date.today()
+  tomorrow = today + timedelta(1)
+  # cur_day = today.strftime("%d-%b")
+  cur_day = today.strftime("%m/%d")
+  print("today is =", cur_day)
+  # tom_day = tomorrow.strftime("%d-%b")
+  tom_day = tomorrow.strftime("%m/%d")
+  print("tomorrow is =", tom_day)
+
+
+
+
+  #code for finding the index of the current day
+
+  with open(file_path, newline='') as csvfile:
+      spamreader = csv.reader(csvfile, delimiter=',')
+      header = []
+      header = next(spamreader)
+      #print(header)
+
+  for i in header:
+      try:
+          #i=i[:4]
+          dt = datetime.strptime(i, "%m/%d/%Y").strftime('%m/%d')
+          header = list(map(lambda x: x.replace(i, dt), header))
+      except ValueError:
+          pass
+  # print(header)
+
+  cur_index = header.index(cur_day)
+  tom_index = header.index(tom_day)
+  print(cur_index,tom_index)
+
+  if (cur_day in header):
+      cur_index = header.index(cur_day)
+      # if(cur_index==6):
+      #     tom_index = header.index(cur_day)
+  else:
+      print("Todays date not found in sheet")
+
+  if (tom_day in header):
+      tom_index = header.index(tom_day)
+  else:
+      print("Tommorows date not found in sheet")
+      tom_index = header.index(cur_day)
+
+
+
+
+  userlist=json.loads(demisto.executeCommand('getList', {'listName':"CSOC Team"})[0]['Contents'])
+
+  with open(file_path, newline='') as csvfile:
+
+      spamreader = csv.reader(csvfile, delimiter=',')
+      for col in spamreader:
+          if col[4].strip().upper()=="L2" or col[4].strip().upper()=="MANAGER" or col[1].strip()=="1749059" or col[1].strip()=="1318949" or col[1].strip()=="1315535" or col[1].strip()=="1838252":
+              pass
+          else:
+              try:
+                  username=userlist.get(col[1].strip())
+              except Exception, e:
+                  #Fetch users ad details and add in the username in the userlist and the orignal list
+                  #username=userlist.get(col[1])
+
+              shifts[username]=col[cur_index]#Todays shifts for all-->While mapping will be for noon n night
+              next_day_shifts[username]=col[tom_index]# Tomorrows shifts for all-->while mapping will be for morning
+
+
+
+
+
+
+  def getKeysByValue(dictOfElements, valueToFind):
+      listOfKeys = list()
+      listOfItems = dictOfElements.items()
+      for item  in listOfItems:
+          if item[1] == valueToFind:
+              listOfKeys.append(item[0])
+      return  listOfKeys
+
+  # #will have to think about general shift people where to add them
+
+
+
+
+  first_shift=getKeysByValue(next_day_shifts,"E1")
+  second_shift=getKeysByValue(shifts,"N1")
+  third_shift=getKeysByValue(shifts,"T2")
+  weekoffs=getKeysByValue(shifts,"WO")
+  weekoffs.extend(getKeysByValue(shifts,"CO"))
+  weekoffs.extend(getKeysByValue(shifts,"L"))
+  weekoffs.extend(getKeysByValue(shifts,"Holiday"))
+
+
+
+
+  print("Below are the list of people in 3 shift")
+  print(first_shift)
+  print(second_shift)
+  print(third_shift)
+  print(weekoffs)
+  demisto.setContext('FirstShift',first_shift)
+  demisto.setContext('SecondShift',second_shift)
+  demisto.setContext('ThirdShift',third_shift)
+
+
+  """
+  We can enter a small code that will fetech the username of these emp id present in list
+  using azure ad integration comand and get the fist name and last name from context data which is our nomenclature for username
+  and then run the integration command
+
+  """
+
+  def maproles(shiftrole,shiftlist):
+      if shiftrole=='WeekOff':
+          roles=["Operator"]
+      else:
+          roles=[shiftrole,"Operator"]
+      for i in shiftlist:
+          body={
+              'id':i,
+              'roles':{
+                  'roles':roles,
+                  'defaultAdmin':False
+              }
+          }
+          demisto.executeCommand('demisto-api-post', {'body':body,'uri':"/users/update"})
+
+
+  # maproles('Second-Shift',second_shift)
+  # maproles('Third-Shift',third_shift)
+  # maproles('WeekOff',weekoffs)
+  # maproles('First-Shift',first_shift)
+  # maproles('WeekOff',weekoffs_nextday)
+
+
+
+
+
+
+
+
+
+
+
+
+  # """
+  # 1) Check General Shift and Weekend Shift logics
+  # 2) If any new person is added in roaster/ any existing person changes name/surname add them to list
+  # 3) Adding exception for Aman
+  # 4) Mail should be sent to demisto with the data of one week buffer time since last sheet(tom_index logic)
+  # """
+
+
+  # import pandas as pd
+  # import csv
+  # from datetime import date,timedelta
+
+
+  # args=demisto.args()
+
+  # entryID=args.get("entryID")
+
+  # file_info = demisto.getFilePath(entryID)
+  # file_path = file_info['path']
+
+  # shifts={}
+  # next_day_shifts={}
+  # weekoffs={}
+
+  # today = date.today()
+  # tomorrow = today + timedelta(1)
+  # # cur_day = today.strftime("%d-%b")
+  # cur_day = today.strftime("%m/%d")
+  # print("today is =", cur_day)
+  # # tom_day = tomorrow.strftime("%d-%b")
+  # tom_day = tomorrow.strftime("%m/%d")
+  # print("tomorrow is =", tom_day)
+
+
+
+
+  # #code for finding the index of the current day
+
+  # with open(file_path, newline='') as csvfile:
+  #     spamreader = csv.reader(csvfile, delimiter=',')
+  #     header = []
+  #     header = next(spamreader)
+  #     #print(header)
+
+  # for i in header:
+  #     try:
+  #         #i=i[:4]
+  #         dt = datetime.strptime(i, "%m/%d/%Y").strftime('%m/%d')
+  #         header = list(map(lambda x: x.replace(i, dt), header))
+  #     except ValueError:
+  #         pass
+  # # print(header)
+
+  # cur_index = header.index(cur_day)
+  # tom_index = header.index(tom_day)
+  # print(cur_index,tom_index)
+
+  # if (cur_day in header):
+  #     cur_index = header.index(cur_day)
+  #     # if(cur_index==6):
+  #     #     tom_index = header.index(cur_day)
+  # else:
+  #     print("Todays date not found in sheet")
+
+  # if (tom_day in header):
+  #     tom_index = header.index(tom_day)
+  # else:
+  #     print("Tommorows date not found in sheet")
+  #     tom_index = header.index(cur_day)
+
+
+
+
+  # userlist=json.loads(demisto.executeCommand('getList', {'listName':"CSOC Team"})[0]['Contents'])
+
+  # with open(file_path, newline='') as csvfile:
+
+  #     spamreader = csv.reader(csvfile, delimiter=',')
+  #     for col in spamreader:
+  #         if col[4]=="L2" or col[4]=="Manager" or col[1]=="1749059" or col[1]=="1318949" or col[1]=="1315535" or col[1]=="1838252":
+  #             pass
+  #         else:
+  #             username=userlist.get(col[1])
+  #             shifts[username]=col[cur_index]#Todays shifts for all-->While mapping will be for noon n night
+  #             next_day_shifts[username]=col[tom_index]# Tomorrows shifts for all-->while mapping will be for morning
+
+
+
+
+
+
+  # def getKeysByValue(dictOfElements, valueToFind):
+  #     listOfKeys = list()
+  #     listOfItems = dictOfElements.items()
+  #     for item  in listOfItems:
+  #         if item[1] == valueToFind:
+  #             listOfKeys.append(item[0])
+  #     return  listOfKeys
+
+  # # #will have to think about general shift people where to add them
+
+
+
+
+  # first_shift=getKeysByValue(shifts,"E1")
+  # second_shift=getKeysByValue(shifts,"N1")
+  # third_shift=getKeysByValue(shifts,"T2")
+  # weekoffs=getKeysByValue(shifts,"WO")
+  # weekoffs.extend(getKeysByValue(shifts,"CO"))
+  # weekoffs.extend(getKeysByValue(shifts,"L"))
+  # weekoffs.extend(getKeysByValue(shifts,"Holiday"))
+  # # weekoffs_nextday=getKeysByValue(next_day_shifts,"WO"))
+  # # weekoffs_nextday.extend(getKeysByValue(next_day_shifts,"CO"))
+  # # weekoffs_nextday.extend(getKeysByValue(next_day_shifts,"L"))
+  # # weekoffs_nextday.extend(getKeysByValue(next_day_shifts,"Holiday"))
+
+
+
+  # print("Below are the list of people in 3 shift")
+  # print(first_shift)
+  # print(second_shift)
+  # print(third_shift)
+  # print(weekoffs)
+  # demisto.setContext('FirstShift',first_shift)
+  # demisto.setContext('SecondShift',second_shift)
+  # demisto.setContext('ThirdShift',third_shift)
+
+
+  # """
+  # We can enter a small code that will fetech the username of these emp id present in list
+  # using azure ad integration comand and get the fist name and last name from context data which is our nomenclature for username
+  # and then run the integration command
+
+  # """
+
+  # def maproles(shiftrole,shiftlist):
+  #     if shiftrole=='WeekOff':
+  #         roles=["Operator"]
+  #     else:
+  #         roles=[shiftrole,"Operator"]
+  #     for i in shiftlist:
+  #         body={
+  #             'id':i,
+  #             'roles':{
+  #                 'roles':roles,
+  #                 'defaultAdmin':False
+  #             }
+  #         }
+  #         demisto.executeCommand('demisto-api-post', {'body':body,'uri':"/users/update"})
+
+  # maproles('First-Shift',first_shift)
+  # maproles('Second-Shift',second_shift)
+  # maproles('Third-Shift',third_shift)
+  # maproles('WeekOff',weekoffs)
+
+  # #maproles('WeekOff',weekoffs_nextday)
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
