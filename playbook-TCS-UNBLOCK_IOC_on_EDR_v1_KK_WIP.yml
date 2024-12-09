@@ -1,0 +1,267 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 6b4ff4d4-ec7b-4661-8cd3-ef4cfcbb5ffc
+inputs:
+- description: ""
+  key: File
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: ${BELOWSIXFIVE.File}
+name: TCS-UNBLOCK IOC on EDR v1_KK_WIP
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a0db1967-3f06-43e5-8d52-127562fd09b5
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: a0db1967-3f06-43e5-8d52-127562fd09b5
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      using:
+        simple: Crowdstrike Falcon v2.0_instance_1
+      value:
+        simple: ${BELOWSIXFIVE.File}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Crowdstrike Falcon v2.0
+      description: Searches for the IDs of indicators
+      id: e572f2fd-9fcd-41a3-891e-af6f41bb1119
+      iscommand: true
+      name: Search For Hash In CS IOC Inventory
+      script: Crowdstrike Falcon v2.0|||csfalcon-search-iocs
+      type: regular
+      version: -1
+    taskid: e572f2fd-9fcd-41a3-891e-af6f41bb1119
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 220
+        }
+      }
+  "2":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: CrowdStrike
+          operator: isExists
+          right:
+            value: {}
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.file
+          operator: isEqualString
+          right:
+            iscontext: true
+            value:
+              complex:
+                accessor: Value
+                root: CrowdStrike.IOC
+      label: "yes"
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "yes":
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 65e6a8ac-0590-4424-89bd-c617960e64b6
+      iscommand: false
+      name: Is Hash Found In The Block List?
+      type: condition
+      version: -1
+    taskid: 65e6a8ac-0590-4424-89bd-c617960e64b6
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 430
+        }
+      }
+  "3":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      using:
+        simple: CrowdstrikeFalcon_Detections
+      values:
+        complex:
+          root: inputs.File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Returns a list of your uploaded IOCs that match the search criteria.
+      id: 4efd5f2a-6391-4afb-881b-4f2a40509712
+      iscommand: true
+      name: Look For IOC In CS Block List
+      script: CrowdstrikeFalcon|||cs-falcon-search-custom-iocs
+      type: regular
+      version: -1
+    taskid: 4efd5f2a-6391-4afb-881b-4f2a40509712
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 630
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "yes":
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryId:
+        simple: ${lastCompletedTaskEntries}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check whether given entry/entries returned an error. Use ${lastCompletedTaskEntries}
+        to check the previous task entries. If array is provided, will return yes
+        if one of the entries returned an error.
+      id: fa5297e1-ed3b-481b-83fb-a90d2d292a22
+      iscommand: false
+      name: Did The Previous Task Encounter Error ?
+      script: isError
+      type: condition
+      version: -1
+    taskid: fa5297e1-ed3b-481b-83fb-a90d2d292a22
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 800
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: Bocked.Hash
+      value:
+        simple: ${inputs.file}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: ba54cdfa-101f-42c6-8176-2a03bbda5710
+      iscommand: false
+      name: Set Error IOC in Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: ba54cdfa-101f-42c6-8176-2a03bbda5710
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 990
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1035,
+        "width": 380,
+        "x": 450,
+        "y": 50
+      }
+    }
+  }
