@@ -1,0 +1,672 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: |-
+  Enrich email addresses.
+  - Get information from Active Directory for internal addresses
+  - Get the domain-squatting reputation for external addresses
+id: 7df4e2ac-7ff8-4991-8ffd-93c553d188e9
+inputs:
+- description: A CSV list of internal domains. The list will be used to determine
+    whether an email address is internal or external.
+  key: InternalDomains
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      root: inputs.InternalDomains
+      transformers:
+      - operator: uniq
+- description: The email addresses to enrich.
+  key: Email
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: Email.Address
+      root: Account
+      transformers:
+      - operator: uniq
+- description: The domains associated with the incident. These domains will be checked
+    for domain-squatting.
+  key: Domain
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      filters:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.Domain
+          operator: isNotEmpty
+      root: inputs.Domain
+      transformers:
+      - operator: uniq
+name: TCS-Email Address Enrichment v2.0
+outputs:
+- contextPath: Account
+  description: The Account object.
+  type: unknown
+- contextPath: Account.Email.NetworkType
+  description: The email account NetworkType (Internal/External).
+  type: string
+- contextPath: Account.Email.Distance.Domain
+  description: The compared domain.
+  type: string
+- contextPath: Account.Email.Distance.Value
+  description: 'The distance between the email domain and the compared domain. '
+  type: number
+- contextPath: DBotScore
+  description: The DBotScore object.
+  type: unknown
+sourceplaybookid: Email Address Enrichment - Generic v2.1
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4d62aab1-e235-4e81-8625-6c354b3eba5b
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 4d62aab1-e235-4e81-8625-6c354b3eba5b
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 50
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query:
+        simple: entry.contents:${Account.Username}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4ac27c32-a6ae-41dd-8554-0f7d93f54642
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 4ac27c32-a6ae-41dd-8554-0f7d93f54642
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 1390
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              simple: inputs.Email
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.Email
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "20"
+      "yes":
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determines whether the playbook's input contains at least one email
+        address.
+      id: 998dc2bd-5588-4e3f-8c88-9e9128e76c5b
+      iscommand: false
+      name: Are there email addresses to check?
+      type: condition
+      version: -1
+    taskid: 998dc2bd-5588-4e3f-8c88-9e9128e76c5b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 200
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+      - "14"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      domain:
+        complex:
+          root: inputs.InternalDomains
+          transformers:
+          - operator: uniq
+      email:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: inputs.Email
+              operator: isNotEmpty
+          root: inputs.Email
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Adds a NetworkType attribute to all email addresses. The NetworkType
+        attribute determines whether the email address is an internal or external
+        email address, according to the domains that were passed as arguments to this
+        playbook.
+      id: a543eb03-cc1e-4150-87e7-eb8f51195e47
+      iscommand: false
+      name: Classify email addresses as internal or external
+      script: IsEmailAddressInternal
+      type: regular
+      version: -1
+    taskid: a543eb03-cc1e-4150-87e7-eb8f51195e47
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 400
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c4978903-a980-4f4e-8b77-e72ab51c633b
+      iscommand: false
+      name: Internal
+      type: title
+      version: -1
+    taskid: c4978903-a980-4f4e-8b77-e72ab51c633b
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 672.5,
+          "y": 785
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3d1892f4-a220-42f1-82bf-eabe360cbb0c
+      iscommand: false
+      name: External
+      type: title
+      version: -1
+    taskid: 3d1892f4-a220-42f1-82bf-eabe360cbb0c
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 100.5,
+          "y": 785
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      email:
+        complex:
+          accessor: Email
+          root: Account
+          transformers:
+          - args:
+              equalTo:
+                value:
+                  simple: Internal
+              field:
+                value:
+                  simple: NetworkType
+              getField:
+                value:
+                  simple: Address
+            operator: WhereFieldEquals
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Uses Active Directory to get user information for internal email
+        addresses.
+      id: f1f4e925-5801-479a-85a8-9a61dbd0664f
+      iscommand: true
+      name: Get email address info from Active Directory
+      script: '|||ad-get-user'
+      type: regular
+      version: -1
+    taskid: f1f4e925-5801-479a-85a8-9a61dbd0664f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 672.5,
+          "y": 1195
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        complex:
+          accessor: Email
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: Account.Email.NetworkType
+              operator: isEqualString
+              right:
+                value:
+                  simple: External
+          root: Account
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether there are email addresses with a NetworkType attribute
+        value of "External".
+      id: ac2b265f-1b6e-4fbb-8537-42f0b1d60e07
+      iscommand: false
+      name: Are there any external email addresses?
+      script: Exists
+      type: condition
+      version: -1
+    taskid: ac2b265f-1b6e-4fbb-8537-42f0b1d60e07
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 100.5,
+          "y": 580
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        complex:
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: Account.Email
+              operator: containsGeneral
+              right:
+                value:
+                  simple: TCS.com
+          - - left:
+                iscontext: true
+                value:
+                  simple: Account.Email
+              operator: containsGeneral
+              right:
+                value:
+                  simple: tcs.com
+          root: Account.Email
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4dafd085-e41e-4164-8e0d-8b86c1e3c54e
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 4dafd085-e41e-4164-8e0d-8b86c1e3c54e
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 672.5,
+          "y": 580
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      domain:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: inputs.Domain
+              operator: isNotEmpty
+          root: inputs.Domain
+          transformers:
+          - operator: uniq
+      email:
+        complex:
+          accessor: Email
+          root: Account
+          transformers:
+          - args:
+              equalTo:
+                value:
+                  simple: External
+              field:
+                value:
+                  simple: NetworkType
+              getField:
+                value:
+                  simple: Address
+            operator: WhereFieldEquals
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if an email address's domain is trying to squat other domains
+        using Levenshtein distance algorithm.
+      id: 999531e9-b37b-44c0-8055-d67a408ae540
+      iscommand: false
+      name: Check email addresses for domain-squatting
+      script: EmailDomainSquattingReputation
+      type: regular
+      version: -1
+    taskid: 999531e9-b37b-44c0-8055-d67a408ae540
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 100.5,
+          "y": 1195
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        complex:
+          accessor: brand
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: modules.brand
+              operator: isEqualString
+              right:
+                value:
+                  simple: Active Directory Query v2
+          - - left:
+                iscontext: true
+                value:
+                  simple: modules.state
+              operator: isEqualString
+              right:
+                value:
+                  simple: active
+          root: modules
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if there's an active instance of the Active Directory Query
+        v2 integration enabled.
+      id: 05a6bf28-f62f-4a33-8e8b-7096a22b6c57
+      iscommand: false
+      name: Is Active Directory Query v2 enabled?
+      script: Exists
+      type: condition
+      version: -1
+    taskid: 05a6bf28-f62f-4a33-8e8b-7096a22b6c57
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 672.5,
+          "y": 960
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "15"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: inputs.Domain
+              operator: isNotEmpty
+          root: inputs.Domain
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if there is at least one domain to check for domain-squatting.
+      id: 574c2548-64e9-42e7-8e78-94ee172738b4
+      iscommand: false
+      name: Is there a domain list input?
+      script: Exists
+      type: condition
+      version: -1
+    taskid: 574c2548-64e9-42e7-8e78-94ee172738b4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 100.5,
+          "y": 960
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d463472a-f90f-46ec-8d24-9b19e154b3a9
+      iscommand: false
+      name: No Email Addresses
+      type: title
+      version: -1
+    taskid: d463472a-f90f-46ec-8d24-9b19e154b3a9
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -380,
+          "y": 785
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "13_11_yes": 0.64,
+      "13_4_#default#": 0.16,
+      "14_10_yes": 0.65,
+      "14_4_#default#": 0.17,
+      "17_4_#default#": 0.23,
+      "18_4_#default#": 0.23,
+      "5_20_#default#": 0.35
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1405,
+        "width": 1432.5,
+        "x": -380,
+        "y": 50
+      }
+    }
+  }
