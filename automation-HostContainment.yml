@@ -1,0 +1,129 @@
+args:
+- auto: PREDEFINED
+  description: Specify which action to be performed
+  name: Action
+  predefined:
+  - Containment
+  - LiftContainment
+  - Refresh
+  required: true
+- description: CS Instance name
+  name: Instance
+- auto: PREDEFINED
+  name: Are_You_Sure
+  predefined:
+  - "Yes"
+  - "No"
+commonfields:
+  id: ddec4fda-e683-4fd7-8b6b-3b070cc50f3f
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: HostContainment
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  def Refresh():
+      res=demisto.executeCommand("cs-falcon-search-device",{"ids":crowdstrikedeviceid,"using":Instance})
+      status=res[0]['Contents']['resources'][0]['status']
+      print(status)
+      return status
+
+  def ContainHost():
+      res=demisto.executeCommand("cs-falcon-contain-host",{"ids":crowdstrikedeviceid,"using":Instance})
+      print(res)
+      status=Refresh()
+      CreateHtml(status)
+      if status=='normal' or status=='lift_containment_pending':
+          sleep(30)
+          ContainHost()
+
+
+  def LiftContain():
+      res=demisto.executeCommand("cs-falcon-lift-host-containment",{"ids":crowdstrikedeviceid,"using":Instance})
+      print(res[0]['HumanReadable'])
+      status=Refresh()
+      CreateHtml(status)
+      if status=='contained' or status=='containment_pending':
+          sleep(30)
+          LiftContain()
+
+  def CreateHtml(status):
+      if status =="normal":
+          demisto.executeCommand("setIncident",{"actionnotification":"<h1 style=\"text-align: center;\"><strong><span style=\"color: #00bfe6;\">Host Status:</span><span style=\"color: #00ff55;\"> Normal </span></strong></h1>"})
+      elif status=="containment_pending":
+          demisto.executeCommand("setIncident",{"actionnotification":"<h1 style=\"text-align: center;\"><strong><span style=\"color: #1637a1;\">Host Status:</span><span style=\"color: #ff0000;\"> Containment Pending </span></strong></h1>"})
+      elif status=="contained":
+          demisto.executeCommand("setIncident",{"actionnotification":"<h1 style=\"text-align: center;\"><strong><span style=\"color: #1637a1;\">Host Status:</span><span style=\"color: #ff0000;\"> Contained </span></strong></h1>"})
+      elif status=="lift_containment_pending":
+          demisto.executeCommand("setIncident",{"actionnotification":"<h1 style=\"text-align: center;\"><strong><span style=\"color: #1637a1;\">Host Status:</span><span style=\"color: #008000;\">  Lift Containment Pending </span></strong></h1>"})
+      else:
+          demisto.executeCommand("setIncident",{"actionnotification":"<h1 style=\"text-align: center;\"><strong><span style=\"color: #1637a1;\">Host Status:</span><span style=\"color: #ff0000;\"> Not Found </span></strong></h1>"})
+
+
+  Action= demisto.args()['Action']
+  Instance= demisto.args()['Instance']
+  contain=demisto.args()['Are_You_Sure']
+
+  # crowdstrikedeviceid = demisto.incidents()[0]['crowdstrikedeviceid']
+
+  if (demisto.incidents()[0]['CustomFields'].get('crowdstrikedeviceid')):
+      crowdstrikedeviceid = demisto.incidents()[0]['CustomFields'].get('crowdstrikedeviceid')
+
+      if Action=="Containment" and contain == "Yes":
+          status=Refresh()
+          if status=="containment_pending" or status == "contained":
+              CreateHtml(status)
+          else:
+              ContainHost()
+          print("Contain: Yes")
+      elif Action=="Containment" and contain == "No":
+          print("Contain: No")
+
+
+      elif Action =="LiftContainment" and contain == "Yes":
+          status=Refresh()
+          if status=="lift_containment_pending" or status == "normal":
+              CreateHtml(status)
+          else:
+              LiftContain()
+          print("Lift Containment: Yes")
+      elif Action =="LiftContainment" and contain == "No":
+          print("Lift Containment: No")
+
+      elif Action=="Refresh":
+          status=Refresh()
+          CreateHtml(status)
+
+      else:
+          demisto.results("The given Action can not be processed ",Action)
+
+  else:
+      print("No device id found")
+      demisto.executeCommand("setIncident",{"actionnotification":"<h1 style=\"text-align: center;\"><strong><span style=\"color: #ff0000;\">Host ID Not Found </span></strong></h1>"})
+      crowdstrikedeviceid=None
+
+
+
+
+
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
