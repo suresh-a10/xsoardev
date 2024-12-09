@@ -1,0 +1,93 @@
+args:
+- default: true
+  defaultValue: "45"
+  description: Specify break time(in mins) after which users will be removed from
+    break and added to auto assignment in the shift. Default is 45 mins.
+  name: breaktime
+commonfields:
+  id: e4d8c3bf-4368-497b-88b2-a03f7bc2fcce
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: IsBreakTimeOver_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  '''
+
+  from datetime import datetime, time
+  import pytz
+
+  a={"1838252":{"End Time":["21:30:52","21:31:11"],"Name":"Naeema Halim","Start Time":["20:30:45","21:30:45","21:31:05"]}}
+
+  frmt="%H:%M:%S"
+  CURRENT_TIME=datetime.now(pytz.timezone('Asia/Kolkata')).strftime(frmt)
+  # print(datetime.strptime(CURRENT_TIME,frmt))
+  # print(type(CURRENT_TIME))
+  # print(type(datetime.strptime(a["1838252"]["Start Time"][0],frmt)))
+
+  for i in range(len(a["1838252"]["Start Time"])):
+      # if
+      diff=datetime.strptime(CURRENT_TIME,frmt)-datetime.strptime(a["1838252"]["Start Time"][i],frmt)
+      # print(diff)
+      print(divmod(diff.seconds, 60)[0])
+      # print(datetime.strptime(a["1838252"]["End Time"][i],frmt)-datetime.strptime(a["1838252"]["Start Time"][i],frmt))
+      # print(CURRENT_TIME)
+      # print(type(CURRENT_TIME))
+
+  # if a["1838252"]["End Time"]:
+  #     for i in a["1838252"]["End Time"]:
+
+
+  '''
+  from datetime import datetime, time
+  import pytz
+
+  FORMAT="%H:%M:%S"
+  CURRENT_TIME=datetime.now(pytz.timezone('Asia/Kolkata')).strftime(FORMAT)
+
+  def main():
+      try:
+          # TODO:
+          breaktime=int(demisto.args().get("breaktime"))
+          BreakList="Break Details"
+          break_details=json.loads(demisto.executeCommand('getList', {'listName':BreakList})[0]['Contents'])
+
+          for i in break_details:
+              if len(break_details[i]["Start Time"])!=len(break_details[i]["End Time"]):
+                  # print(break_details[i]["Start Time"][-1])
+                  diff=datetime.strptime(CURRENT_TIME,FORMAT)-datetime.strptime(break_details[i]["Start Time"][-1],FORMAT)
+                  minute_diff=divmod(diff.seconds, 60)[0]
+                  if minute_diff>=breaktime:
+                      demisto.executeCommand('BreakEnd_WIP',{'empid':i,'username':break_details[i]["Name"]})
+
+
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
