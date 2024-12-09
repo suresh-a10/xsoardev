@@ -1,0 +1,1574 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 0145ce32-f60e-409a-89b4-ee2311a9ac51
+inputs:
+- description: ""
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: TCS-Blacklist Report CyberSOC_Shared IOC Above RiskScore 65 v3.0_KK_WIP
+outputs: []
+quiet: true
+sourceplaybookid: 232d5d44-d909-4dfd-879c-d8b9d153dc0a
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 661b873c-2233-409c-8714-26501395a406
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 661b873c-2233-409c-8714-26501395a406
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 1420,
+          "y": -530
+        }
+      }
+  "1":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.Domain
+          operator: isExists
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "29"
+      "yes":
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5de82ca8-561f-4f61-891f-f708e7c8ebbb
+      iscommand: false
+      name: Is There Domains For Blocking?
+      type: condition
+      version: -1
+    taskid: 5de82ca8-561f-4f61-891f-f708e7c8ebbb
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1030,
+          "y": 330
+        }
+      }
+  "2":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.IP
+          operator: isExists
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "29"
+      "yes":
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: fa56cd01-0fa0-43ea-82a0-0cb5f6b45445
+      iscommand: false
+      name: Is There IP Address For Blocking?
+      type: condition
+      version: -1
+    taskid: fa56cd01-0fa0-43ea-82a0-0cb5f6b45445
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 310,
+          "y": 330
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      IP:
+        simple: ${inputs.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1c93278a-341c-4406-85e1-11304a16266d
+      iscommand: false
+      name: TCS-Add New CSOC IP Indicator v1.0_Kunal
+      playbookId: e653e5ab-6658-4f7a-806d-6a79d92d5d98
+      type: playbook
+      version: -1
+    taskid: 1c93278a-341c-4406-85e1-11304a16266d
+    timertriggers:
+    - action: stop
+      fieldname: mitigationsla
+    - action: stop
+      fieldname: blockioctimer
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 310,
+          "y": 540
+        }
+      }
+  "4":
+    continueonerror: true
+    continueonerrortype: errorPath
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_132
+      ip:
+        simple: ${SIXFIVE.IP}
+      using:
+        simple: Zscaler_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds IP address to the specified category.
+      id: c48c6d49-1bca-4e7d-8ab1-2cb764b34e86
+      iscommand: true
+      name: block IP on Zscaler Corporate tenant
+      script: Zscaler|||zscaler-category-add-ip
+      type: regular
+      version: -1
+    taskid: c48c6d49-1bca-4e7d-8ab1-2cb764b34e86
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 310,
+          "y": 755
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: blockiocon
+                root: incident
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: email only
+      label: Email Only
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: blockiocon
+                root: incident
+          operator: isEqualString
+          right:
+            value:
+              simple: internet only
+      label: Internet Only
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      Email Only:
+      - "25"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3d93b6b3-0d13-4340-86b3-6cd5d2e9c2c5
+      iscommand: false
+      name: Where Should The IOC Be Blacklisted ?
+      type: condition
+      version: -1
+    taskid: 3d93b6b3-0d13-4340-86b3-6cd5d2e9c2c5
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1030,
+          "y": 540
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_126
+      execution-timeout:
+        simple: "1000000"
+      url:
+        complex:
+          root: inputs.Domain
+          transformers:
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      using:
+        simple: Zscaler_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds URLs to the specified category.
+      id: 426ef04d-79dc-4051-86c5-d39b647b2ed1
+      iscommand: true
+      name: Blacklist Domain on ZScalar Proxy - Corp
+      script: Zscaler|||zscaler-category-add-url
+      type: regular
+      version: -1
+    taskid: 426ef04d-79dc-4051-86c5-d39b647b2ed1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1030,
+          "y": 755
+        }
+      }
+  "7":
+    continueonerror: true
+    continueonerrortype: errorPath
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#error#':
+      - "10"
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_126
+      execution-timeout:
+        simple: "1000000"
+      url:
+        complex:
+          root: inputs.URL
+          transformers:
+          - args:
+              from:
+                value:
+                  simple: //
+            operator: substringFrom
+          - args:
+              delimiter:
+                value:
+                  simple: ' '
+            operator: splitAndTrim
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      using:
+        simple: Zscaler_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds URLs to the specified category.
+      id: bb9362bd-27c8-463a-8ec3-939a197d2b1e
+      iscommand: true
+      name: Blacklist CSOC Shared URL on ZScalar Proxy - Corp
+      script: Zscaler|||zscaler-category-add-url
+      type: regular
+      version: -1
+    taskid: bb9362bd-27c8-463a-8ec3-939a197d2b1e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1690,
+          "y": 730
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_240
+      execution-timeout:
+        simple: "1000000"
+      url:
+        complex:
+          root: inputs.URL
+          transformers:
+          - args:
+              from:
+                value:
+                  simple: //
+            operator: substringFrom
+          - args:
+              delimiter:
+                value:
+                  simple: ' '
+            operator: splitAndTrim
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      using:
+        simple: Zscaler_instance_BPS
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds URLs to the specified category.
+      id: 0a3592b7-eca9-42ed-8082-cc929632267d
+      iscommand: true
+      name: Blacklist CSOC Shared URL on ZScalar Proxy - BPS
+      script: Zscaler|||zscaler-category-add-url
+      type: regular
+      version: -1
+    taskid: 0a3592b7-eca9-42ed-8082-cc929632267d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1690,
+          "y": 540
+        }
+      }
+  "9":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.URL
+          operator: isExists
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "29"
+      "yes":
+      - "8"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 55b056dc-1848-4d19-8e90-c08a1775d356
+      iscommand: false
+      name: Is There URLs For Blocking?
+      type: condition
+      version: -1
+    taskid: 55b056dc-1848-4d19-8e90-c08a1775d356
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1690,
+          "y": 330
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      listData:
+        complex:
+          accessor: URL
+          root: SIXFIVE
+      listName:
+        simple: Zscaler_Corp
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.add
+      id: 7904302d-e4e6-4fec-8d14-e237c547949b
+      iscommand: true
+      name: Create a List of URLs That Failed To Blacklist
+      script: Builtin|||addToList
+      type: regular
+      version: -1
+    taskid: 7904302d-e4e6-4fec-8d14-e237c547949b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2040,
+          "y": 920
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 5
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      file:
+        complex:
+          root: inputs.Hash
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f2f35473-d406-4ee5-80c8-edc947f1577c
+      iscommand: false
+      name: TCS-CSOC Block Malicious Hash on CS v1.0_Kunal
+      playbookId: 9d6b9cb3-059d-4b12-865c-f73bed1daa8a
+      type: playbook
+      version: -1
+    taskid: f2f35473-d406-4ee5-80c8-edc947f1577c
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 2410,
+          "y": 530
+        }
+      }
+  "12":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.Hash
+          operator: isExists
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "29"
+      "yes":
+      - "11"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f18583c2-e5d0-4e2a-87d3-0ed68a2e93af
+      iscommand: false
+      name: Is There Hash For Blocking ?
+      type: condition
+      version: -1
+    taskid: f18583c2-e5d0-4e2a-87d3-0ed68a2e93af
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2410,
+          "y": 330
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      ref_name:
+        simple: TCS_StandardRiskScore_Hash
+      using:
+        simple: QRadar v3_Typosquat Offences
+      value:
+        simple: ${inputs.Hash}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Adds or updates an element in a reference set.
+      id: 832b3713-fccb-46ea-8582-53169ee31f0d
+      iscommand: true
+      name: Update IP address Reference set "TCS_StandardRiskScore_Hash"
+      script: QRadar v3|||qradar-reference-set-value-upsert
+      type: regular
+      version: -1
+    taskid: 832b3713-fccb-46ea-8582-53169ee31f0d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2410,
+          "y": 2000
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "27"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      creationdate:
+        simple: ${ISOTimeNow}
+      reputation:
+        simple: Bad
+      source:
+        simple: ${incident.id}
+      tags:
+        simple: CSOCBlockDomain
+      type:
+        simple: Domain
+      value:
+        simple: ${inputs.Domain}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Change the properties of an indicator
+      id: efa2f235-34b6-4c3e-8bf1-335ec9d848f0
+      iscommand: true
+      name: Tag 'CSOC' Bad Domain Indicator
+      script: Builtin|||createNewIndicator
+      tags:
+      - ProxyBlockDomain
+      type: regular
+      version: -1
+    taskid: efa2f235-34b6-4c3e-8bf1-335ec9d848f0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1480,
+          "y": 1740
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      creationdate:
+        simple: ${ISOTimeNow}
+      reputation:
+        simple: Bad
+      source:
+        simple: ${incident.id}
+      tags:
+        simple: CSOCBlockURL
+      type:
+        simple: URL
+      value:
+        simple: ${inputs.URL}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Change the properties of an indicator
+      id: bcd8aac7-145c-4c16-8b35-4ff0de0ddbc6
+      iscommand: true
+      name: Tag 'CSOC' Bad URL Indicator
+      script: Builtin|||createNewIndicator
+      tags:
+      - ProxyBlockDomain
+      type: regular
+      version: -1
+    taskid: bcd8aac7-145c-4c16-8b35-4ff0de0ddbc6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1690,
+          "y": 1300
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_09
+      execution-timeout:
+        simple: "1000000"
+      url:
+        complex:
+          root: inputs.URL
+          transformers:
+          - args:
+              from:
+                value:
+                  simple: //
+            operator: substringFrom
+          - args:
+              delimiter:
+                value:
+                  simple: ' '
+            operator: splitAndTrim
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      using:
+        simple: Zscaler_instance_GNDM
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds URLs to the specified category.
+      id: 0fb273d4-4375-4a0a-86d0-10652739d6d2
+      iscommand: true
+      name: Blacklist CSOC Shared URL on ZScalar Proxy - GNDM
+      script: Zscaler|||zscaler-category-add-url
+      type: regular
+      version: -1
+    taskid: 0fb273d4-4375-4a0a-86d0-10652739d6d2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1690,
+          "y": 1100
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      ref_name:
+        simple: TCS_StandardRiskScore_Domain
+      using:
+        simple: QRadar v3_Typosquat Offences
+      value:
+        simple: ${inputs.URL}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Adds or updates an element in a reference set.
+      id: 8db592e5-060c-4f2a-84d1-3eee6852973e
+      iscommand: true
+      name: Update IP address Reference set "TCS_StandardRiskScore_Domain"
+      script: QRadar v3|||qradar-reference-set-value-upsert
+      type: regular
+      version: -1
+    taskid: 8db592e5-060c-4f2a-84d1-3eee6852973e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1570,
+          "y": 2070
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "27"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      creationdate:
+        simple: ${ISOTimeNow}
+      reputation:
+        simple: Bad
+      source:
+        simple: ${incident.id}
+      tags:
+        simple: CSOCBlockDomain,emailblock
+      type:
+        simple: Domain
+      value:
+        simple: ${inputs.Domain}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Change the properties of an indicator
+      id: d26f9f16-d64f-4efa-8767-61bb8a6dd95b
+      iscommand: true
+      name: Tag 'CSOC' and 'emailblock' Bad Domain Indicator
+      script: Builtin|||createNewIndicator
+      tags:
+      - ProxyBlockDomain
+      type: regular
+      version: -1
+    taskid: d26f9f16-d64f-4efa-8767-61bb8a6dd95b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1030,
+          "y": 1740
+        }
+      }
+  "19":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: blockiocon
+                root: incident
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: internet only
+      label: Internet Only
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      Internet Only:
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: aff4afc9-9a8a-4b94-8a62-0da41cb15b91
+      iscommand: false
+      name: To Be Blacklisted Only on Internet ?
+      type: condition
+      version: -1
+    taskid: aff4afc9-9a8a-4b94-8a62-0da41cb15b91
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1030,
+          "y": 1510
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alert_time:
+        complex:
+          accessor: created
+          root: incident
+          transformers:
+          - operator: 8726aa62-638b-41b0-8fd7-8d8892145289
+          - args:
+              delimiter:
+                value:
+                  simple: .
+              fields:
+                value:
+                  simple: "1"
+            operator: Cut
+          - args:
+              prefix: {}
+              suffix:
+                value:
+                  simple: .0Z
+            operator: concat
+      destination_domain:
+        complex:
+          root: inputs.Domain
+      destination_url:
+        simple: http://abc.com
+      device_id:
+        simple: abcdefghij
+      device_version:
+        simple: "1.0"
+      using:
+        simple: Cisco Umbrella Enforcement Block Domain_instance,Cisco Umbrella Enforcement
+          Block Domain GNDM
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cisco Umbrella Enforcement Block Domain
+      description: Posts a malware event to the API for processing and optionally
+        adding to a customer's domain lists.
+      id: 06613c4b-89e3-43ab-8bf4-8ca89e69ff8b
+      iscommand: true
+      name: Block Domain on Cisco Umbrella (opendns)
+      script: Cisco Umbrella Enforcement Block Domain|||umbrella-domain-event-add
+      type: regular
+      version: -1
+    taskid: 06613c4b-89e3-43ab-8bf4-8ca89e69ff8b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1030,
+          "y": 1325
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_09
+      execution-timeout:
+        simple: "1000000"
+      url:
+        complex:
+          root: inputs.Domain
+          transformers:
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      using:
+        simple: Zscaler_instance_GNDM
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds URLs to the specified category.
+      id: 1ad7ab22-cfc8-4eba-886b-fb0f2be99f42
+      iscommand: true
+      name: Blacklist Domain on ZScalar Proxy - GNDM
+      script: Zscaler|||zscaler-category-add-url
+      type: regular
+      version: -1
+    taskid: 1ad7ab22-cfc8-4eba-886b-fb0f2be99f42
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1030,
+          "y": 1135
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_240
+      execution-timeout:
+        simple: "1000000"
+      url:
+        complex:
+          root: inputs.Domain
+          transformers:
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      using:
+        simple: Zscaler_instance_BPS
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds URLs to the specified category.
+      id: 0719eb06-66c2-4e63-8b78-0392979208bf
+      iscommand: true
+      name: Blacklist Domain on ZScalar Proxy - BPS
+      script: Zscaler|||zscaler-category-add-url
+      type: regular
+      version: -1
+    taskid: 0719eb06-66c2-4e63-8b78-0392979208bf
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1030,
+          "y": 945
+        }
+      }
+  "23":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_241
+      ip:
+        simple: ${SIXFIVE.IP}
+      using:
+        simple: Zscaler_instance_BPS
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds IP address to the specified category.
+      id: 7245ec88-ec6b-4c9a-8240-cd942037dcfc
+      iscommand: true
+      name: Block IP on Zscaler BPS tenant
+      script: Zscaler|||zscaler-category-add-ip
+      type: regular
+      version: -1
+    taskid: 7245ec88-ec6b-4c9a-8240-cd942037dcfc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 310,
+          "y": 935
+        }
+      }
+  "24":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_57
+      ip:
+        simple: ${SIXFIVE.IP}
+      using:
+        simple: Zscaler_instance_GNDM
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds IP address to the specified category.
+      id: 44e18654-38ba-4892-8400-f2f45f170006
+      iscommand: true
+      name: Block IP on Zscaler GNDM tenant
+      script: Zscaler|||zscaler-category-add-ip
+      type: regular
+      version: -1
+    taskid: 44e18654-38ba-4892-8400-f2f45f170006
+    timertriggers:
+    - action: stop
+      fieldname: mitigationsla
+    - action: stop
+      fieldname: blockioctimer
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 310,
+          "y": 1145
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "27"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      creationdate:
+        simple: ${ISOTimeNow}
+      reputation:
+        simple: Bad
+      source:
+        simple: ${incident.id}
+      tags:
+        simple: emailblock
+      type:
+        simple: Domain
+      value:
+        simple: ${inputs.Domain}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Change the properties of an indicator
+      id: e40f426f-6e3e-4644-885f-6b38b1035687
+      iscommand: true
+      name: Tag 'emailblock' Bad Domain Indicator
+      script: Builtin|||createNewIndicator
+      tags:
+      - ProxyBlockDomain
+      type: regular
+      version: -1
+    taskid: e40f426f-6e3e-4644-885f-6b38b1035687
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 620,
+          "y": 1740
+        }
+      }
+  "26":
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      ref_name:
+        simple: TCS_StandardRiskScore_IP
+      using:
+        simple: QRadar v3_Typosquat Offences
+      value:
+        simple: ${inputs.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Adds or updates an element in a reference set.
+      id: 6d06b9f5-0b96-424d-81d6-208ff9635d20
+      iscommand: true
+      name: Update IP address Reference set "TCS_IOC_StandardRiskScore_IP"
+      script: QRadar v3|||qradar-reference-set-value-upsert
+      type: regular
+      version: -1
+    taskid: 6d06b9f5-0b96-424d-81d6-208ff9635d20
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 310,
+          "y": 2000
+        }
+      }
+  "27":
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      ref_name:
+        simple: TCS_StandardRiskScore_Domain
+      using:
+        simple: QRadar v3_Typosquat Offences
+      value:
+        simple: ${inputs.Domain}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Adds or updates an element in a reference set.
+      id: c174514d-514c-467f-8103-273a92a05992
+      iscommand: true
+      name: Update IP address Reference set "TCS_StandardRiskScore_Domain"
+      script: QRadar v3|||qradar-reference-set-value-upsert
+      type: regular
+      version: -1
+    taskid: c174514d-514c-467f-8103-273a92a05992
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1030,
+          "y": 2000
+        }
+      }
+  "29":
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4d0fb0da-d95c-40b7-808a-d2482fee9770
+      iscommand: false
+      name: The End
+      type: title
+      version: -1
+    taskid: 4d0fb0da-d95c-40b7-808a-d2482fee9770
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 3110,
+          "y": 2370
+        }
+      }
+  "30":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: ISOTimeNow
+          operator: isExists
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "32"
+      "yes":
+      - "31"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b1575d6d-80f8-4713-8128-e0bf3a42a9c9
+      iscommand: false
+      name: Is ISO Time Context Set?
+      type: condition
+      version: -1
+    taskid: b1575d6d-80f8-4713-8128-e0bf3a42a9c9
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1420,
+          "y": -350
+        }
+      }
+  "31":
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "32"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: ISOTimeNow
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-2/cortex-xsoar-admin/playbooks/automations.html
+      id: 312409a0-b181-428c-8db1-95a139ef76ae
+      iscommand: false
+      name: Delete Old Time Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 312409a0-b181-428c-8db1-95a139ef76ae
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1420,
+          "y": -140
+        }
+      }
+  "32":
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      contextKey:
+        simple: ISO
+      dateFormat:
+        simple: ISO
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        Retrieves the current date and time.
+      id: e62c4d4d-86b1-421c-8a71-ccb6136aff6c
+      iscommand: false
+      name: Set Current Date In Context
+      script: GetTime
+      type: regular
+      version: -1
+    taskid: e62c4d4d-86b1-421c-8a71-ccb6136aff6c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1420,
+          "y": 30
+        }
+      }
+  "33":
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+      - "9"
+      - "2"
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 13fc0f03-8cc4-4007-897f-239003228294
+      iscommand: false
+      name: Stop Block IOC and Mitigation SLA  Timer
+      type: title
+      version: -1
+    taskid: 13fc0f03-8cc4-4007-897f-239003228294
+    timertriggers:
+    - action: stop
+      fieldname: mitigationsla
+    - action: stop
+      fieldname: blockioctimer
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1420,
+          "y": 190
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "12_29_#default#": 0.15,
+      "1_29_#default#": 0.12,
+      "2_29_#default#": 0.1,
+      "9_29_#default#": 0.14
+    },
+    "paper": {
+      "dimensions": {
+        "height": 2965,
+        "width": 3180,
+        "x": 310,
+        "y": -530
+      }
+    }
+  }
