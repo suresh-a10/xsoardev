@@ -1,0 +1,85 @@
+args:
+- name: ScanTeam
+commonfields:
+  id: 17cd9f82-0776-4c04-88ab-e0b66de5d3c8
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SetOperatorProfiles_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  ##  ----------------- Code to Set absent users when incident is created -------------------------------------------
+  # AvailableAnalyst=demisto.executeCommand('getUsers', {'onCall': True})[0]['Contents']
+  current_user_list=json.loads(demisto.executeCommand('getList', {'listName':'PresentInCurrentShift'})[0]['Contents'])
+  absent_user_list=json.loads(demisto.executeCommand('getList', {'listName':'AbsentInCurrentShift'})[0]['Contents'])
+  ScanTeam=demisto.args().get('ScanTeam')
+  MailOp=demisto.args().get('MailOp')
+  OPLead=demisto.args().get('OPLead')
+  empidList=[]
+  absentList=[]
+  # presentList=[]
+  absentDashboardData={}
+
+  AvailableAnalyst=json.loads(demisto.executeCommand('getList', {'listName':'UsersOnCall'})[0]['Contents'])
+
+  # for i in AvailableAnalyst:
+  #     empid=i.get('phone').split('@')[0]
+  #     username=i.get('username')
+  #     # Make a list of on call users employee id
+  #     empidList.append(empid)
+  #     # Check if the user is in Present users list; if not then add user to absent list
+  #     if empid not in current_user_list:
+  #         absentList.append(empid)
+  #         # Set data for absent dashboard
+  #         absentDashboardData[empid]=username
+
+  for k,v in AvailableAnalyst.items():
+      empid=k
+      username=v
+          # Make a list of on call users employee id
+      empidList.append(empid)
+      # Check if the user is in Present users list; if not then add user to absent list
+      if empid not in current_user_list:
+          absentList.append(empid)
+          # Set data for absent dashboard
+          absentDashboardData[empid]=username
+
+
+  # Exists = None
+  # if current_user_list:
+  #     #Going over the data to see if data is already set for today, if so, override
+  #     for k,v in current_user_list.items():
+  #         presentList.append(k)
+
+  if absentList:
+      # res=demisto.executeCommand('ShiftUpdate_v2_WIP',{'AddOrRemove':'On Leave/Not in Shift','EmpID':absentList,'RanInIncident':'Yes','ScanTeam':ScanTeam,'MailOp':MailOp,'OPLead':OPLead})
+      res=demisto.executeCommand('ShiftUpdate_v2_WIP',{'AddOrRemove':'On Leave/Not in Shift','EmpID':absentList,'RanInIncident':'No'})
+      print(res)
+      demisto.executeCommand('setList', {'listName':'AbsentInCurrentShift','listData':absentDashboardData})
+
+  print(empidList)
+  # print(presentList)
+  print(absentList)
+
+
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
