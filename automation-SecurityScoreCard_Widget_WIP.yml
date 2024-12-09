@@ -1,0 +1,52 @@
+args:
+- name: to
+- name: from
+commonfields:
+  id: b7022bc0-bb2d-48f2-8de7-f17c41267e79
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SecurityScoreCard_Widget_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2-
+
+  to_arg = demisto.args().get('to')
+  from_arg = demisto.args().get('from')
+  # to_arg=2022-04-14
+  # from_arg=2022-04-11
+  timeline = json.loads(demisto.executeCommand('getList', {'listName':'SecurityScoreCard'})[0]['Contents'])
+
+  widget=[]
+  for k,v in timeline.items():
+      k_formatted=datetime.strptime(k, '%Y-%m-%d').strftime('%d %b %Y')
+      # Checking if 'To' is not set in the widget
+      if to_arg == '0001-01-01T00:00:00Z':
+          if k >= from_arg[0:10]:
+              widget.append(v)
+      else:
+          if k > from_arg[0:10] and k <= to_arg[0:10]:
+              widget.append(v)
+
+
+  # return_results(widget)
+  demisto.results(json.dumps(widget))
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
