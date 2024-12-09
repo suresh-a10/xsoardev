@@ -1,0 +1,471 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 0d355061-d7ce-49ac-8412-cc4802c1a785
+inputs:
+- description: ""
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: IP
+      root: ExtractedIndicators
+      transformers:
+      - operator: uniq
+- description: ""
+  key: Domain
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: Domain
+      root: ExtractedIndicators
+- description: ""
+  key: Hash
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: File
+      root: ExtractedIndicators
+name: TCS-VirusTotal IOC Enrichment Playbook v 1.0_copy
+outputs:
+- contextPath: ExtractedIndicators.IP
+  description: IP address
+- contextPath: DBotScore
+  description: DBot Score
+  type: unknown
+- contextPath: ExtractedIndicators.Domain
+  description: Domain
+- contextPath: ExtractedIndicators.File
+  description: Hash
+  type: unknown
+sourceplaybookid: 08c3b260-77a7-4316-8c5d-802cc55f4e22
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e3b11264-8702-4f2a-8621-ed1c6738a460
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: e3b11264-8702-4f2a-8621-ed1c6738a460
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 600
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 0a043bad-dc65-4b88-848c-e0740ec9d2a9
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 0a043bad-dc65-4b88-848c-e0740ec9d2a9
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 270,
+          "y": 1620
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.IP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.IP
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "34"
+      "yes":
+      - "40"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: 80f4c004-8a85-460f-8645-a167980887a1
+      iscommand: false
+      name: Are there any IP addresses ?
+      type: condition
+      version: -1
+    taskid: 80f4c004-8a85-460f-8645-a167980887a1
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 960
+        }
+      }
+  "26":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: brand
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: VirusTotal (API v3)
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if there is an active instance of the ThreatCrowd integration
+        enabled.
+      id: e6000460-074c-4b9d-8042-f29dc8bcd68d
+      iscommand: false
+      name: Is VirusTotal enabled?
+      type: condition
+      version: -1
+    taskid: e6000460-074c-4b9d-8042-f29dc8bcd68d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -690,
+          "y": 780
+        }
+      }
+  "27":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+      using:
+        simple: VirusTotal (API v3)_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: VirusTotal (API v3)
+      description: Checks the reputation of an IP address.
+      id: a891a814-28aa-4a27-81c3-6ec9420fc51a
+      iscommand: true
+      name: Get IP Report From VirusTotal
+      script: VirusTotal (API v3)|||ip
+      type: regular
+      version: -1
+    taskid: a891a814-28aa-4a27-81c3-6ec9420fc51a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -520,
+          "y": 1080
+        }
+      }
+  "34":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.Domain
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.Domain
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "38"
+      "yes":
+      - "36"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: 2478d54a-5cf8-4ac8-8f74-beb5d8b2751d
+      iscommand: false
+      name: Are there any Domains ?
+      type: condition
+      version: -1
+    taskid: 2478d54a-5cf8-4ac8-8f74-beb5d8b2751d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 780
+        }
+      }
+  "36":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "38"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domain:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+      using:
+        simple: VirusTotal (API v3)_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: VirusTotal (API v3)
+      description: Checks the reputation of a domain.
+      id: 22a8ee61-d6e0-4629-87ce-014a731aeb41
+      iscommand: true
+      name: Get Domain Report From VirusTotal
+      script: VirusTotal (API v3)|||domain
+      type: regular
+      version: -1
+    taskid: 22a8ee61-d6e0-4629-87ce-014a731aeb41
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 960
+        }
+      }
+  "38":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.File
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.File
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "39"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: 0cf52014-f04f-4864-8901-7d893603536a
+      iscommand: false
+      name: Are there any Hash Values ?
+      type: condition
+      version: -1
+    taskid: 0cf52014-f04f-4864-8901-7d893603536a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1140
+        }
+      }
+  "39":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      file:
+        complex:
+          accessor: File
+          root: ExtractedIndicators
+      using:
+        simple: VirusTotal (API v3)_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: VirusTotal (API v3)
+      description: Checks the file reputation of the specified hash.
+      id: e8a4aa0f-a8f2-4c18-84bd-2257a0439ad5
+      iscommand: true
+      name: Get Hash Report From VirusTotal
+      script: VirusTotal (API v3)|||file
+      type: regular
+      version: -1
+    taskid: e8a4aa0f-a8f2-4c18-84bd-2257a0439ad5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1330
+        }
+      }
+  "40":
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      reportID:
+        simple: ${Report.ID}
+      using:
+        simple: FireEye iSIGHT_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: FireEye iSIGHT
+      description: Get specific report
+      id: 4375f353-0ceb-4f65-8347-3267b5d6de75
+      iscommand: true
+      name: Fetch the Report using Report ID
+      script: FireEye iSIGHT|||isight-get-report
+      type: regular
+      version: -1
+    taskid: 4375f353-0ceb-4f65-8347-3267b5d6de75
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1150
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1085,
+        "width": 1550,
+        "x": -690,
+        "y": 600
+      }
+    }
+  }
