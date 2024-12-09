@@ -1,0 +1,96 @@
+args:
+- name: new
+- name: old
+commonfields:
+  id: 6a1f49c7-e678-4c28-8225-1262a4e7c8de
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CloseActionButton
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  # investigationconclusion=demisto.incidents()[0].get('investigationconclusion')
+  investigationconclusion=demisto.args().get('new')
+
+  # closenotes = demisto.args()['closenotes']
+  # closeReason = demisto.args()['incidentclosingreason']
+  # res = demisto.executeCommand("setIncident", {"incidentId":current_incident_id, "closenotes": closeNotes, "incidentclosingreason":closeReason,"forensicsdone":"No","remediationrequired":"No"})
+  # #res = demisto.executeCommand("setIncident", {"incidentId":current_incident_id, "closeNotes": closeNotes, "closeReason":closeReason})
+  # demisto.results(res)
+
+  #true_positive false_positive
+  if investigationconclusion=="False Positive":
+      cs_conclusion="false_positive"
+      qreasonid="55"
+  elif investigationconclusion=="True Positive":
+      cs_conclusion="true_positive"
+      qreasonid="54"
+  elif investigationconclusion=="Benign-True Positive":
+      cs_conclusion="ignored"
+      qreasonid="105"
+  elif investigationconclusion=="Duplicate":
+      cs_conclusion="closed"
+      qreasonid="104"
+
+
+  # instance=demisto.executeCommand("GetByIncidentId", {"incident_id":current_incident_id, "get_key": "incident.sourceInstance"})
+  instance=demisto.incidents()[0].get('sourceInstance')
+  print(instance)
+
+  if "crowdstrike" in instance.lower():
+      # csid=demisto.executeCommand("GetByIncidentId", {"incident_id":current_incident_id, "get_key": "crowdstrikedetectionid"})
+      csid=demisto.incidents()[0]['CustomFields']
+      csid=csid.get('crowdstrikedetectionid')
+      print(csid)
+      res=demisto.executeCommand("cs-falcon-resolve-detection",{"ids":csid,"status":cs_conclusion,"using":instance})
+      if isError(res):
+          print(f"Could not update value in CS {str(get_error(res))}")
+      else:
+          demisto.results(res)
+          print("Updated in cs")
+
+
+  elif "qradar" in instance.lower():
+      # qrid=demisto.executeCommand("GetByIncidentId", {"incident_id":current_incident_id, "get_key": "idoffense"})
+      #qrid=demisto.incidents()[0].get('idoffense')
+      qrid=demisto.incidents()[0].get('dbotMirrorId')
+
+      #labels.id
+      print(qrid)
+      # try:
+
+      #     res=demisto.executeCommand("qradar-offense-update",{"offense_id":qrid,"closing_reason_id":qreasonid, "closing_reason_name":investigationconclusion, "status":"CLOSED","using":instance})
+      # except:
+      #     demisto.results(res)
+      #demisto.executeCommand("qradar-offense-update",{"offense_id":qrid,"closing_reason_id":"2", "status":"CLOSED","using":"QRadar v3_siem_offence_onboarding"})
+      # if isError(res):
+      #     print(f"Could not update value in Qradar {str(get_error(res))}")
+      # else:
+      #     demisto.results(res)
+      #     print("Updated in QRadar")
+
+
+  # res = demisto.executeCommand("closeInvestigation",{})
+  # demisto.results(res)
+
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
