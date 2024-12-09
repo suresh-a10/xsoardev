@@ -1,0 +1,115 @@
+args:
+- auto: PREDEFINED
+  description: Add or remove an IP from the block list. Possible values are "Add"
+    and "Remove".
+  name: option
+  predefined:
+  - add
+  - remove
+  required: true
+- defaultValue: "7"
+  description: Number of days the IP will be in list. Default is 7.
+  name: days_inList
+  required: true
+- description: List containing IPs to be temporarily blocked/removed
+  name: listname
+  required: true
+- description: takes an input ip
+  name: ip
+  required: true
+comment: Adds or removes an IP for particular days from the IP block list in XSOAR.
+commonfields:
+  id: d71144c9-ca9e-4752-8576-215bcab1bcde
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.1.14969
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ManageIOCTempList
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2
+
+
+
+  def main():
+      # get current time
+      now = datetime.now()
+
+      # args
+      list_name = demisto.getArg("listname")
+      ip = demisto.getArg("ip")
+
+      option = demisto.getArg("option")
+
+      days_inList = now + timedelta(days=int(demisto.getArg("days_inList")))
+      inList_until = days_inList.strftime("%Y-%m-%d")
+
+      #get the current list
+      ipList = demisto.executeCommand("getList", {"listName": list_name})[0]["Contents"]
+
+
+      if "Item not found" in ipList:
+          demisto.results(demisto.executeCommand("createList", {"listName": list_name, "listData": []}))
+          ipList = demisto.executeCommand("getList", {"listName": list_name})[0]["Contents"]
+
+
+      if not ipList:
+          list_data = []
+      else:
+          list_data=json.loads(ipList)
+
+
+      if option=="add":
+          #first check if ip is already present in list, if yes remove it, to allow updating list
+          temp=[]
+          for i in list_data:
+              ##list_data = [i for i in list_data if (i.get('ip') != str(ip))]
+              if i.get('ip')!=str(ip):
+                  temp.append(i)
+          list_data=temp
+          list_data.append({"ip": ip, "inList_until": inList_until})
+
+
+
+      else:
+          # remove the ip from the list.
+          #list_data = [i for i in list_data if (i.get('ip') != str(ip))]
+          temp=[]
+          for i in list_data:
+              if i.get('ip')!=ip:
+                  temp.append(i)
+          list_data=temp
+
+
+      #set the new updated list
+      set_list_res = demisto.executeCommand("setList", {"listName": list_name, "listData": json.dumps(list_data)})
+      if isError(set_list_res):
+          return_error(f'Failed to update the list {list_name}: {str(get_error(set_list_res))}')
+      elif option=='add':
+          demisto.results(f'IP {ip} added to the list until {inList_until}.')
+      else:
+          demisto.results(f'IP {ip} removed from the list.')
+
+
+
+  if __name__ in ('__builtin__', 'builtins', '__main__'):
+      main()
+scripttarget: 0
+subtype: python3
+tags:
+- ooo
+- Shift Management
+type: python
