@@ -1,0 +1,259 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 781f8111-fc1a-462a-8213-0906ea056f0d
+inputs:
+- description: ""
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: IP
+      root: ExtractedIndicators
+      transformers:
+      - operator: uniq
+- description: ""
+  key: Domain
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: Domain
+      root: ExtractedIndicators
+name: TCS-Shodan IOC Enrichment Playbook v 1.0
+outputs:
+- contextPath: ExtractedIndicators.IP
+  description: IP address
+- contextPath: DBotScore
+  description: DBot Score
+  type: unknown
+- contextPath: ExtractedIndicators.Domain
+  description: Domain
+sourceplaybookid: 08c3b260-77a7-4316-8c5d-802cc55f4e22
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "24"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 155646be-041d-48e2-853d-b2433ec59736
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 155646be-041d-48e2-853d-b2433ec59736
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 600
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 36beb522-18c9-485f-8ab2-ddb2140f6605
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 36beb522-18c9-485f-8ab2-ddb2140f6605
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1370
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.IP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.IP
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "25"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: 46cd3f31-3629-4c46-86fa-9d493fde2f1b
+      iscommand: false
+      name: Are there any IP addresses ?
+      type: condition
+      version: -1
+    taskid: 46cd3f31-3629-4c46-86fa-9d493fde2f1b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 960
+        }
+      }
+  "24":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: brand
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Shodan_v2
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if there is an active instance of the ThreatCrowd integration
+        enabled.
+      id: 703ba94d-4335-4618-8008-fcaf78b605fb
+      iscommand: false
+      name: Is Shodan v2 enabled?
+      type: condition
+      version: -1
+    taskid: 703ba94d-4335-4618-8008-fcaf78b605fb
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 780
+        }
+      }
+  "25":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Shodan_v2
+      description: Returns all services that have been found on the IP address of
+        the searched host.
+      id: a2b3cb57-fc10-47fd-8e96-ae1e45fbcf61
+      iscommand: true
+      name: Get IP Report From Shodan v2
+      script: Shodan_v2|||ip
+      type: regular
+      version: -1
+    taskid: a2b3cb57-fc10-47fd-8e96-ae1e45fbcf61
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1140
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 835,
+        "width": 380,
+        "x": 50,
+        "y": 600
+      }
+    }
+  }
