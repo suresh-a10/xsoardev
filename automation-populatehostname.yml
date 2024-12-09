@@ -1,0 +1,41 @@
+commonfields:
+  id: 6717af06-5671-4ebd-8f2c-95d2f2dbc478
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.2.17246
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: populatehostname
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  incs = demisto.executeCommand('GetIncidentsByQueryV3', {'query':'type:crowdstrike*', 'populateFields':'id', 'saveFile':'no'})[0]['Contents']
+  for inc in incs:
+      context = demisto.executeCommand("getContext", {"id":inc['id']})[0]['Contents']
+      hostname = ''
+      cs = context.get('CrowdStrike')
+      if cs:
+          d = cs.get('Device')
+          if d:
+              hostname = d.get('Hostname')
+      res = demisto.executeCommand("executeCommandAt", {'command':'setIncident', 'incidents':inc['id'], 'arguments':{'srchostname':hostname}})
+      if isError(res):
+          demisto.results(res)
+      if hostname is not '':
+          demisto.results('done with inc id:'+inc['id'])
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
