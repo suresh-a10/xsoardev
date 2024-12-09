@@ -1,0 +1,54 @@
+args:
+- name: entryID
+- name: submissionID
+commonfields:
+  id: 9b3b61d2-2280-4781-8658-44318f0a4743
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: pandapack:latest
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SetUsersOnCallList_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  ##  ----------------- Code to Set On call users in the present users list when incident is created -------------------------------------------
+
+  AvailableAnalyst=demisto.executeCommand('getUsers', {'onCall': True})[0]['Contents']
+  current_user_list=json.loads(demisto.executeCommand('getList', {'listName':'UsersOnCall'})[0]['Contents'])
+
+
+  presentList=[]
+  presentDashboardData={}
+
+  for i in AvailableAnalyst:
+      empid=i.get('phone').split('@')[0]
+      username=i.get('username')
+
+      # Check if the user is in Present users list; if not then add user to present list
+      if empid not in current_user_list:
+          presentList.append(empid)
+
+          # Set data for present dashboard
+          presentDashboardData[empid]=username
+
+
+  if presentList:
+      demisto.executeCommand('setList', {'listName':'UsersOnCall','listData':presentDashboardData})
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
