@@ -1,0 +1,383 @@
+args:
+- description: Updates the list of people by emp id who have took leave or swapped
+    the shift. Multiple emp id can be added  by comma separated
+  isArray: true
+  name: Leaves
+- description: Updates the list of people by emp id wo have either joined the shift
+    on demand or swapped. Multiple emp id can be added  by comma separated
+  isArray: true
+  name: Joined
+- auto: PREDEFINED
+  description: 'Which shift emp joined i.e '
+  name: CurrentShift
+  predefined:
+  - First-Shift
+  - Second-Shift
+  - Third-Shift
+- description: Employee who will work as Scan team member for the current shift. Multiple
+    emp id can be added  by comma separated
+  name: ScanTeam
+- name: MailOp
+- name: OPLead
+commonfields:
+  id: 1f310579-df3e-4ff6-838f-5ff2c92607ea
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ShiftUpdate_v1
+pswd: ""
+runas: DBotRole
+runonce: false
+script: |2+
+
+  userlist=json.loads(demisto.executeCommand('getList', {'listName':"CSOC Team"})[0]['Contents'])
+  profiles=json.loads(demisto.executeCommand('getList', {'listName':"Operators Profile"})[0]['Contents'])
+  context=demisto.incident()
+  # print(context)
+  left_shift=[]
+  joined_shift=[]
+  seniorL1=json.loads(demisto.executeCommand('getList', {'listName':"SeniorL1"})[0]['Contents'])
+  # seniorL1=["ravi","mayuri","sonam"]
+
+  CurrentShift=context.get('CustomFields').get('selectshift')
+  scanteammember=context.get('CustomFields').get('scanteammemberinshift')
+  MailOperator=context.get('CustomFields').get('mailboxmonitor')
+  shiftleaves=context.get('CustomFields').get('manageshiftleaves')
+  OPLead=context.get('CustomFields').get('operatorlead')
+
+
+
+  def fetchUserName(empid):
+      for i in empid:
+          username=userlist.get(i.strip())
+          empid = list(map(lambda x: x.replace(i, username), empid))
+      return empid
+
+  def fetchIndex(username,profiles):
+      value="No user found"
+      # print(profiles)
+      for e in profiles:
+          #print(username)
+          if e.get('name')==username:
+              value=profiles.index(e)
+              # print(profiles.index(e))
+
+
+          else:
+              pass
+
+      return value
+  def dict_func(name, role, assigned, condition):
+          temp={}
+          temp["name"] = name
+          temp["role"] = role
+          temp["assigned"] = assigned
+          temp["condition"] = condition
+          return temp
+
+
+  def updateLeaves(left_shift,profiles):
+      for username in left_shift:
+          profileIndex=fetchIndex(username,profiles)
+          # print(profileIndex)
+          if(profileIndex=="No user found"):
+              print(username+" No found in profile list")
+          else:
+              profiles[int(profileIndex)]['condition']="Leave"
+
+      return profiles
+
+  def adduserprofile(joined_shift,profiles):
+      for username in joined_shift:
+          profileIndex=fetchIndex(username,profiles)
+          if(profileIndex=="No user found"):
+              if username in seniorL1:
+                  profiles.append(dict_func(username,"Senior",[],"Perfect"))
+              else:
+                  profiles.append(dict_func(username,"L1",[],"Perfect"))
+          else:
+              print(username+" Already present in profile list")
+              if profiles[profileIndex].get('condition')=="Leave":
+                  profiles[profileIndex]['condition']="Perfect"
+              else:
+                  print(username+" Already present in profile list is currently being assigned tickets")
+
+      return profiles
+
+  def maproles(shiftrole,shiftlist):
+      if shiftrole=='WeekOff':
+          roles=["Operator"]
+      else:
+          roles=[shiftrole,"Operator"]
+          # roles=["Third-Shift","Operator"]
+          #shiftlist=['Karan Bhagat', 'Mustafa Rampurawala', 'Porkodi G', 'Jyoti Pawar1']
+      for i in shiftlist:
+          if i=="Porkodi G":
+              body={
+              'id':i,
+              'roles':{
+                  'roles':["Operator","CSOC-XSOAR-Architect"]
+              },
+              'defaultAdmin':"False"
+          }
+          else:
+              body={
+                  'id':i,
+                  'roles':{
+                      'roles':roles
+                  },
+                  'defaultAdmin':"False"
+              }
+          # print(body)
+          demisto.executeCommand('demisto-api-post', {'body':body,'uri':"/users/update"})
+
+
+  def removeuser(left_shift,profiles):
+      left_shift=fetchUserName(left_shift)
+      #maproles("WeekOff",left_shift)
+      profiles=updateLeaves(left_shift,profiles)
+      print("have removed users from shift",left_shift)
+      return profiles
+
+  def adduser(joined_shift,profiles,seniorL1):
+      joined_shift=fetchUserName(joined_shift)
+      # print("Added names")
+      # print(joined_shift)
+      # print(CurrentShift)
+
+      profiles=adduserprofile(joined_shift,profiles)
+      maproles(CurrentShift,joined_shift)
+      #maproles("Third-Shift",['Karan Bhagat', 'Mustafa Rampurawala', 'Porkodi G', 'Jyoti Pawar1'])
+      # print("have added users from shift",joined_shift, " To ",CurrentShift)
+      return profiles
+
+
+
+  if shiftleaves:
+      for e in shiftleaves:
+          if e.get("addremovefromshift")=="Add to Shift":
+              joined_shift.append(e.get("employeeid"))
+          else:
+              left_shift.append(e.get("employeeid"))
+      if left_shift:
+          profiles=removeuser(left_shift,profiles)
+          # print(left_shift)
+
+      if joined_shift:
+          profiles=adduser(joined_shift,profiles,seniorL1)
+          # print(joined_shift)
+
+
+
+
+  if scanteammember:
+      if scanteammember.strip().upper()!="NA":
+          scanteammember=scanteammember.split(",")
+          empid=fetchUserName(scanteammember)
+          for i in empid:
+              profileIndex=int(fetchIndex(i,profiles))
+              # print(type(profileIndex))
+              # print(profileIndex)
+              profiles[profileIndex]['role']="Scan"
+              print("Scan operator for today is ",empid)
+
+
+  if MailOperator:
+      if MailOperator.strip().upper()!="NA":
+          MailOperator=MailOperator.split(",")
+          empid=fetchUserName(MailOperator)
+          profileIndex=(fetchIndex(empid[0],profiles))
+          #print(type(profileIndex))
+          profiles[profileIndex]['role']="Mail"
+          print("Mail operator for today is ",empid)
+
+
+  if OPLead:
+      if OPLead.strip().upper()!="NA":
+          OPLead=OPLead.split(",")
+          empid=fetchUserName(OPLead)
+          profileIndex=fetchIndex(empid[0],profiles)
+          #print(type(profileIndex))
+          #print(profileIndex)
+          profiles[profileIndex]['role']="OPLead"
+          print("Operator Lead for today is ",empid)
+          #print(profiles[profileIndex])
+  # demisto.results('Done')
+
+  res=demisto.executeCommand('setList', {'listName':"Operators Profile",'listData':profiles})
+  if isError(res):
+      return_error(f'Failed to set list {str(get_error(res))}')
+  print(profiles)
+
+
+
+
+  '''
+  args=demisto.args()
+  left_shift=args.get("Leaves")
+  joined_shift=args.get("Joined")
+  CurrentShift=args.get("CurrentShift")
+  ScanTeam=args.get("ScanTeam")
+  MailOperator=args.get("MailOp")
+  OPLead=args.get("OPLead")
+
+  seniorL1=["Medha Mannur","Ravi Gupta","Pallavi Barad","Kishor Bansi","Aamir Pasha","Kaustubh Bondane","Aman Sinha","Prathamesh Khande","Kamali Renganathan","Mustafa Rampurawala","Supriya Patil","PRAJAKTA MISAL","Nita Sahane","Mayuri Nikam","Hitesh Poojari"]
+  userlist=json.loads(demisto.executeCommand('getList', {'listName':"CSOC Team"})[0]['Contents'])
+  profiles=json.loads(demisto.executeCommand('getList', {'listName':"Operators Profile"})[0]['Contents'])
+
+  # print(type(left_shift))
+  #print(joined_shift)
+  #print(left_shift)
+  # print(type(joined_shift))
+
+  def fetchUserName(empid):
+      for i in empid:
+          username=userlist.get(i.strip())
+          empid = list(map(lambda x: x.replace(i, username), empid))
+      return empid
+
+
+  def dict_func(name, role, assigned, condition):
+          temp={}
+          temp["name"] = name
+          temp["role"] = role
+          temp["assigned"] = assigned
+          temp["condition"] = condition
+          return temp
+
+  def maproles(shiftrole,shiftlist):
+      if shiftrole=='WeekOff':
+          roles=["Operator"]
+      else:
+          roles=[shiftrole,"Operator"]
+      for i in shiftlist:
+          body={
+              'id':i,
+              'roles':{
+                  'roles':roles,
+                  'defaultAdmin':False
+              }
+          }
+          demisto.executeCommand('demisto-api-post', {'body':body,'uri':"/users/update"})
+
+
+  def fetchIndex(username,profiles):
+      value="No user found"
+      print(profiles)
+      for e in profiles:
+          #print(username)
+          if e.get('name')==username:
+              value=profiles.index(e)
+              print(profiles.index(e))
+
+
+          else:
+              pass
+
+      return value
+
+
+  def updateLeaves(left_shift,profiles):
+      for username in left_shift:
+          profileIndex=fetchIndex(username,profiles)
+          print(profileIndex)
+          if(profileIndex=="No user found"):
+              print(username+" No found in profile list")
+          else:
+              profiles[int(profileIndex)]['condition']="Leave"
+
+      return profiles
+
+
+
+  def adduserprofile(joined_shift,profiles):
+      for username in joined_shift:
+          profileIndex=fetchIndex(username,profiles)
+          if(profileIndex=="No user found"):
+              if username in seniorL1:
+                  profiles.append(dict_func(username,"Senior",[],"Perfect"))
+              else:
+                  profiles.append(dict_func(username,"L1",[],"Perfect"))
+          else:
+              print(username+" Already present in profile list")
+              if profiles[profileIndex].get('condition')=="Leave":
+                  profiles[profileIndex]['condition']=="Perfect"
+              else:
+                  print(username+" Already present in profile list is currently being assigned tickets")
+
+      return profiles
+
+
+
+  def removeuser(left_shift,profiles):
+      left_shift=fetchUserName(left_shift)
+      #maproles("WeekOff",left_shift)
+      profiles=updateLeaves(left_shift,profiles)
+      print("have removed users from shift",left_shift)
+      return profiles
+
+  def adduser(joined_shift,profiles,):
+      joined_shift=fetchUserName(joined_shift)
+      #maproles(CurrentShift,joined_shift)
+      profiles=adduserprofile(joined_shift,profiles)
+      print("have added users from shift",joined_shift, " To ",CurrentShift)
+      return profiles
+
+
+
+  if left_shift:
+      left_shift=left_shift.split(",")
+      profiles=removeuser(left_shift,profiles)
+
+  if joined_shift:
+      joined_shift=joined_shift.split(",")
+      profiles=adduser(joined_shift,profiles,seniorL1)
+
+  if ScanTeam:
+      ScanTeam=ScanTeam.split(",")
+      #addition of the scan team member in a scan team member list which will be used in assignign scan offense
+  if MailOperator:
+      MailOperator=MailOperator.split(",")
+      empid=fetchUserName(MailOperator)
+      profileIndex=(fetchIndex(empid[0],profiles))
+      print(type(profileIndex))
+      profiles[profileIndex]['role']="Mail"
+
+  if OPLead:
+      OPLead=OPLead.split(",")
+      empid=fetchUserName(OPLead)
+      profileIndex=fetchIndex(empid[0],profiles)
+      print(type(profileIndex))
+      print(profileIndex)
+      profiles[profileIndex]['role']="OPLead"
+      #print(profiles[profileIndex])
+
+  #res=demisto.executeCommand('setList', {'listName':"Operators Profile",'listData':profiles})
+  #if isError(res):
+  #    return_error(f'Failed to set list {str(get_error(res))}')
+  print(profiles)
+
+
+
+
+
+  '''
+
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
