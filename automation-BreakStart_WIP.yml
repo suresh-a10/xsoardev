@@ -1,0 +1,140 @@
+args:
+- name: empid
+- name: username
+commonfields:
+  id: 4ae43b1d-f6fc-4a62-81eb-45dc971d03b4
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: BreakStart_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  from datetime import datetime, time
+  import pytz
+
+  CURRENT_TIME=datetime.now(pytz.timezone('Asia/Kolkata')).time()
+
+  def get_current_user_details():
+      empid,username,time=None,None,None
+      get_current_user=demisto.executeCommand("getUsers",{"current":True})[0]['Contents']
+
+      if get_current_user:
+          empid=(get_current_user[0].get('phone')).split('@')[0]
+          username=get_current_user[0].get('username')
+          time=CURRENT_TIME.strftime("%H:%M:%S")
+      return empid,username,time
+
+  def addUserToBreak(breakDetailsList,empid,username,time,onBreakList):
+      # break_details_list=json.loads(demisto.executeCommand('getList', {'listName':breakDetailsList})[0]['Contents'])
+      current_break_list=json.loads(demisto.executeCommand('getList', {'listName':onBreakList})[0]['Contents'])
+      current_present_user_list=json.loads(demisto.executeCommand('getList', {'listName':"PresentInCurrentShift"})[0]['Contents'])
+      # print(len(current_break_list))
+      userPresent=None
+      if current_present_user_list:
+          #Going over the data to see if data is already set for today, if so, override
+          for k,v in current_present_user_list.items():
+              if empid in k:
+                  userPresent = k
+
+      if userPresent:
+          Exists = None
+          if current_break_list:
+              #Going over the data to see if data is already set for today, if so, override
+              for k,v in current_break_list.items():
+                  if empid in k:
+                      Exists = k
+
+          # Checking if the data is already set
+          if not Exists:
+              data=username
+              current_break_list[empid]=data
+              res = demisto.executeCommand('setList', {'listName':onBreakList, 'listData':current_break_list})
+
+          else:
+              demisto.results(f"Hey {username}, You are already on break!")
+              userPresent=None
+      else:
+          demisto.results(f"Hey {username}, I did not find you in the On-Call users in Shift Dashboard! If you are in shift, Run the !Present command before taking a break.")
+      return userPresent
+
+  '''
+      # Checking if the data is already set
+      if not Exists:
+          break_data={"Name":username,"Start Time":[time]}
+          break_details_list[empid]=break_data
+
+          res = demisto.executeCommand('setList', {'listName':breakDetailsList, 'listData':break_details_list})
+          # res = demisto.executeCommand('setList', {'listName':listName, 'listData':{}})
+          demisto.results("Added to List")
+      else:
+          break_details_list[empid]["Start Time"].append(time)
+          demisto.results("Enjoy your break!")
+
+  '''
+
+
+  def main():
+      try:
+          empid,username,time=get_current_user_details()
+          onBreakList='On Break'
+          breakDetailsList='Break Details'
+          userPresent=addUserToBreak(breakDetailsList,empid,username,time,onBreakList)
+          if userPresent:
+              res=demisto.executeCommand('ShiftUpdate_v2_WIP',{'AddOrRemove':'Start Break Time','EmpID':empid,'RanInIncident':'No'})
+              print(res)
+              Exists=None
+              break_details_list=json.loads(demisto.executeCommand('getList', {'listName':breakDetailsList})[0]['Contents'])
+              # Checking if the data is already set
+              if break_details_list:
+                  #Going over the data to see if data is already set for today, if so, override
+                  for k,v in break_details_list.items():
+                      if empid in k:
+                          Exists = k
+
+              # if not Exists:
+              #     break_data={"Name":username,"Start Time":[time],"End Time":[]}
+              #     break_details_list[empid]=break_data
+              # else:
+              #     break_details_list[empid]["Start Time"].append(time)
+              # if not Exists:
+              #     break_data={"Name":username,"Start Time":[time]}
+              #     break_details_list[empid]=break_data
+
+
+              # else:
+              #     break_details_list[empid]["Start Time"].append(time)
+
+              res = demisto.executeCommand('setList', {'listName':breakDetailsList, 'listData':break_details_list})
+              # res = demisto.executeCommand('setList', {'listName':listName, 'listData':{}})
+              # demisto.results("Added to List")
+
+              demisto.results(f"Enjoy your Break, {username}!")
+
+      except Exception as e:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute script. Error: {str(e)}')
+
+
+  ''' ENTRY POINT '''
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
