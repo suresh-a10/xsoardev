@@ -1,0 +1,61 @@
+args:
+- description: The old value of the changed field
+  name: old
+- description: The new value of the changed field
+  name: new
+comment: |-
+  Stops the "Response SLA" timer once an owner is assigned to the Incident
+  Starts the "Remediation SLA' timer once an owner is assigned to the Incident
+commonfields:
+  id: 696c2f86-5408-4807-8898-75f5dd1dd878
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.8.24399
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: UpdateCSDetection_TimersOnOwnerChange_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2-
+
+
+  # This script stops the Time to Assignment timer when an Owner is assigned to an Incident, and starts the Remediation
+  # SLA Timer.
+
+  context=demisto.incident()
+  label=context.get('labels')
+  csdetectionid=list(filter(lambda label: label['type'] == 'detection_id', label))[0]['value']
+  demisto.results(csdetectionid)
+  newowner=demisto.args().get('new')
+
+
+  if not demisto.args().get('old') and demisto.args().get('new'):  # If owner was no-one and is now someone:
+      demisto.executeCommand("stopTimer", {"timerField": "responsesla"})
+      demisto.executeCommand("startTimer", {"timerField": "remediationsla"})
+      demisto.results(
+          "Assignment of the incident was successful, Time to Assignment has been stopped, and the Remediation timer has"
+          " been started!")
+
+  users=demisto.executeCommand('getUsers', {})[0]['Contents']
+  useremail=list(filter(lambda users: users['username'] == newowner, users))[0]['email']
+  demisto.results(useremail)
+
+  if csdetectionid:
+      demisto.executeCommand("cs-falcon-resolve-detection",{"ids":csdetectionid,"status":"in_progress","username":useremail})
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
