@@ -1,0 +1,70 @@
+args:
+- description: Entry ID of YAML File
+  isArray: true
+  name: entry_id
+  required: true
+commonfields:
+  id: 10c3bd99-5aaf-4ed9-8d3e-dc3ed449a4d4
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.6.22912
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ExcludeReferenceLinks_SigmaRules
+pswd: ""
+runas: DBotRole
+runonce: false
+script: |
+  import io
+
+  def main():
+      entry_ids = argToList(demisto.args().get("entry_id"))
+
+      for entry_id in entry_ids:
+          file_info = {}  # type: dict
+          try:
+              file_info = demisto.getFilePath(entry_id)
+          except Exception as e:
+              return_error('Failed to get the file path for entry: {} the error message was {}'.format(entry_id, str(e)))
+
+          file_path = file_info['path']
+
+          filedata=''
+          ref=False
+
+          # open file and read data
+          with open(file_path, 'r') as f:
+              for line in f.readlines():
+                  if 'references'.lower() in line:
+                      ref=True
+                      continue
+                  if ref and line.strip():
+                      if line.strip()[0]=='-':
+                          continue
+                      else:
+                          ref=False
+
+                  filedata=filedata+line
+
+          f.close()
+          res=demisto.executeCommand('extractIndicators',{'text':filedata})
+          demisto.results(res)
+
+  if __name__ in ('__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
