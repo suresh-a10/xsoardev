@@ -1,0 +1,425 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 3a683a30-f508-4b82-8c29-e654204aa039
+inputs:
+- description: ""
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: IP
+      root: ExtractedIndicators
+      transformers:
+      - operator: uniq
+- description: ""
+  key: Domain
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: Domain
+      root: ExtractedIndicators
+- description: ""
+  key: Hash
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: File
+      root: ExtractedIndicators
+name: TCS-VirusTotal IOC Enrichment Playbook v 1.1
+outputs:
+- contextPath: ExtractedIndicators.IP
+  description: IP address
+- contextPath: DBotScore
+  description: DBot Score
+  type: unknown
+- contextPath: ExtractedIndicators.Domain
+  description: Domain
+- contextPath: ExtractedIndicators.File
+  description: Hash
+  type: unknown
+sourceplaybookid: 08c3b260-77a7-4316-8c5d-802cc55f4e22
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f629e717-3c49-40c4-8191-2f46f2efa3ef
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: f629e717-3c49-40c4-8191-2f46f2efa3ef
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 600
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2dd676cf-ed08-43c6-8e0e-e42f6fef90c1
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 2dd676cf-ed08-43c6-8e0e-e42f6fef90c1
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 270,
+          "y": 1620
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.IP
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "34"
+      "yes":
+      - "27"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: b02e2143-d049-44c6-8985-97dc27925997
+      iscommand: false
+      name: Are there any IP addresses ?
+      type: condition
+      version: -1
+    taskid: b02e2143-d049-44c6-8985-97dc27925997
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 960
+        }
+      }
+  "26":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: brand
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: VirusTotal
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if there is an active instance of the ThreatCrowd integration
+        enabled.
+      id: 455ead3c-ba69-450c-8268-8b001d6fa021
+      iscommand: false
+      name: Is VirusTotal enabled?
+      type: condition
+      version: -1
+    taskid: 455ead3c-ba69-450c-8268-8b001d6fa021
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 780
+        }
+      }
+  "27":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      fullResponse:
+        simple: "true"
+      ip:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: VirusTotal - Private API
+      description: Retrieves a report on a given IP address (including the information
+        recorded by VirusTotal's Passive DNS infrastructure).
+      id: c4c554d3-e10b-48b0-81dd-e27b3d196949
+      iscommand: true
+      name: Get IP Report From VirusTotal
+      script: VirusTotal - Private API|||vt-private-get-ip-report
+      type: regular
+      version: -1
+    taskid: c4c554d3-e10b-48b0-81dd-e27b3d196949
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1140
+        }
+      }
+  "34":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.Domain
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "38"
+      "yes":
+      - "36"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: 842b6a5a-5509-4849-8f84-69c52bc052fe
+      iscommand: false
+      name: Are there any Domains ?
+      type: condition
+      version: -1
+    taskid: 842b6a5a-5509-4849-8f84-69c52bc052fe
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 780
+        }
+      }
+  "36":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "38"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domain:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: VirusTotal - Private API
+      description: Retrieves a report on a given domain (including the information
+        recorded by VirusTotal's passive DNS infrastructure). If the domain doesn't
+        exist in VT's dataset you would need to use Virus Total's (Public API integration)
+        url-scan command
+      id: 221c33b5-7123-46c4-8b3f-10e8c045210b
+      iscommand: true
+      name: Get Domain Report From VirusTotal
+      script: VirusTotal - Private API|||vt-private-get-domain-report
+      type: regular
+      version: -1
+    taskid: 221c33b5-7123-46c4-8b3f-10e8c045210b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 960
+        }
+      }
+  "38":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.File
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "39"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: 06e71649-3d83-4872-8ae6-96ba00fde0ff
+      iscommand: false
+      name: Are there any Hash Values ?
+      type: condition
+      version: -1
+    taskid: 06e71649-3d83-4872-8ae6-96ba00fde0ff
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1140
+        }
+      }
+  "39":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: VirusTotal - Private API
+      description: Retrieves a concluded file scan report for a given file.
+      id: 97d728ff-16a0-4131-84a7-2a7bb7acc908
+      iscommand: true
+      name: Get Hash Report From VirusTotal
+      script: VirusTotal - Private API|||vt-private-get-file-report
+      type: regular
+      version: -1
+    taskid: 97d728ff-16a0-4131-84a7-2a7bb7acc908
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1330
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1085,
+        "width": 810,
+        "x": 50,
+        "y": 600
+      }
+    }
+  }
