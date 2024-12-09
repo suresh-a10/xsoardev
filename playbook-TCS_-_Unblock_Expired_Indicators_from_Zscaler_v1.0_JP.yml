@@ -1,0 +1,1550 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: e8884c64-6060-490e-8f63-6e0a473d292f
+inputs: []
+name: TCS - Unblock Expired Indicators from Zscaler v1.0_JP
+outputs: []
+sourceplaybookid: adb966ce-2063-44da-8cf1-5b0829ca88bc
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+      - "15"
+      - "29"
+      - "17"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ee01cbc6-cf68-4923-8bed-d14a824f961b
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: ee01cbc6-cf68-4923-8bed-d14a824f961b
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 1060,
+          "y": -320
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: output=value
+      fromdate:
+        complex:
+          accessor: created
+          root: incident
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: T
+              fields:
+                value:
+                  simple: "1"
+            operator: Cut
+          - args:
+              item:
+                value:
+                  simple: 00:00:00+05:30
+            operator: append
+          - args:
+              separator:
+                value:
+                  simple: T
+            operator: join
+      query:
+        simple: expirationStatus:expired and type:IP and tags:CSPIOCBlocked
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.find.indicators
+      id: 7ad7d084-7ecc-463e-8086-5665cc280d6d
+      iscommand: true
+      name: find expired indicators
+      script: Builtin|||findIndicators
+      type: regular
+      version: -1
+    taskid: 7ad7d084-7ecc-463e-8086-5665cc280d6d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 120
+        }
+      }
+  "2":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_132
+      ip:
+        simple: ${output}
+      using:
+        simple: Zscaler_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Removes IP address from the specified category.
+      id: b6a233b4-7372-42e8-81ef-edc4d0acece0
+      iscommand: true
+      name: Unblock IP from Zscaler Corporate tenant
+      script: Zscaler|||zscaler-category-remove-ip
+      type: regular
+      version: -1
+    taskid: b6a233b4-7372-42e8-81ef-edc4d0acece0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 60,
+          "y": 570
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 6f3e273a-318b-4771-8eab-030da157cdc5
+      iscommand: true
+      name: Close investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 6f3e273a-318b-4771-8eab-030da157cdc5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 600,
+          "y": 1345
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b14b1de2-3ef6-43a5-86ce-245b63182f9d
+      iscommand: false
+      name: End
+      type: title
+      version: -1
+    taskid: b14b1de2-3ef6-43a5-86ce-245b63182f9d
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 600,
+          "y": 1510
+        }
+      }
+  "6":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${output}
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d158d461-4203-4f4f-80f6-8d9f7140e409
+      iscommand: false
+      name: Is an expired indicator
+      type: condition
+      version: -1
+    taskid: d158d461-4203-4f4f-80f6-8d9f7140e409
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 290
+        }
+      }
+  "7":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_241
+      ip:
+        simple: ${output}
+      using:
+        simple: Zscaler_instance_BPS
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Removes IP address from the specified category.
+      id: 09fb428b-b9ac-4f59-880b-55bf41d02dbb
+      iscommand: true
+      name: Unblock IP from Zscaler BPS tenant
+      script: Zscaler|||zscaler-category-remove-ip
+      type: regular
+      version: -1
+    taskid: 09fb428b-b9ac-4f59-880b-55bf41d02dbb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 720
+        }
+      }
+  "8":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        simple: ${output}
+      using:
+        simple: Zscaler_instance_1,Zscaler_instance_BPS
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Removes the specified IP addresses from the allow list.
+      id: 26aa945f-4ab3-4350-8e63-050eac9c6bc4
+      iscommand: true
+      name: Unblock IP from Zscaler Blacklist
+      script: Zscaler|||zscaler-undo-blacklist-ip
+      type: regular
+      version: -1
+    taskid: 26aa945f-4ab3-4350-8e63-050eac9c6bc4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -790,
+          "y": 510
+        }
+      }
+  "9":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: error
+          operator: containsGeneral
+          right:
+            value:
+              simple: Given IP address is not blacklisted
+      label: "yes"
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check whether given entry/entries returned an error. Use ${lastCompletedTaskEntries}
+        to check the previous task entries. If array is provided, will return yes
+        if one of the entries returned an error.
+      id: 23099375-d092-4087-80f4-c5e72d70a49f
+      iscommand: false
+      name: Is the error Given IP address is not blacklisted
+      type: condition
+      version: -1
+    taskid: 23099375-d092-4087-80f4-c5e72d70a49f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -1020,
+          "y": 930
+        }
+      }
+  "11":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f9daacd5-be48-4d0f-8d0f-20dd51a5f0e2
+      iscommand: false
+      name: store error in context
+      script: dfaf73eb-0458-4817-86b5-7588ccf04c64
+      type: regular
+      version: -1
+    taskid: f9daacd5-be48-4d0f-8d0f-20dd51a5f0e2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -1020,
+          "y": 750
+        }
+      }
+  "12":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_57
+      ip:
+        simple: ${output}
+      using:
+        simple: Zscaler_instance_GNDM
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Removes IP address from the specified category.
+      id: a1c573a5-d4aa-4caa-8d77-d53d5e46553a
+      iscommand: true
+      name: Unblock IP from Zscaler GNDM tenant
+      script: Zscaler|||zscaler-category-remove-ip
+      type: regular
+      version: -1
+    taskid: a1c573a5-d4aa-4caa-8d77-d53d5e46553a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 880
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      field:
+        simple: tags
+      fieldValue:
+        simple: ${indicator.tag}
+      indicatorsValues:
+        simple: ${inputs.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.remove.values.to.indicator.multi.select.field
+      id: 2f5ab636-b3cc-41d1-8f83-7da595fa0704
+      iscommand: true
+      name: Remove Old Tag
+      script: Builtin|||removeIndicatorField
+      type: regular
+      version: -1
+    taskid: 2f5ab636-b3cc-41d1-8f83-7da595fa0704
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -540,
+          "y": 1170
+        }
+      }
+  "14":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_126
+      url:
+        simple: ${output1}
+      using:
+        simple: Zscaler_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Removes URLs from the specified category.
+      id: 331f6b71-8cfc-4f54-8bea-1c071c0f18fe
+      iscommand: true
+      name: Unblock URL  from Zscaler Corporate tenant
+      script: Zscaler|||zscaler-category-remove-url
+      type: regular
+      version: -1
+    taskid: 331f6b71-8cfc-4f54-8bea-1c071c0f18fe
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 660,
+          "y": 570
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: output1=value
+      fromdate:
+        complex:
+          accessor: created
+          root: incident
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: T
+              fields:
+                value:
+                  simple: "1"
+            operator: Cut
+          - args:
+              item:
+                value:
+                  simple: 00:00:00+05:30
+            operator: append
+          - args:
+              separator:
+                value:
+                  simple: T
+            operator: join
+      query:
+        simple: expirationStatus:expired and type:url and tags:CSPIOCBlocked
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.find.indicators
+      id: dadb9a91-cfbc-4828-84fa-6516494e878f
+      iscommand: true
+      name: find expired indicators
+      script: Builtin|||findIndicators
+      type: regular
+      version: -1
+    taskid: dadb9a91-cfbc-4828-84fa-6516494e878f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 680,
+          "y": 120
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: output3=value
+      fromdate:
+        complex:
+          accessor: created
+          root: incident
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: T
+              fields:
+                value:
+                  simple: "1"
+            operator: Cut
+          - args:
+              item:
+                value:
+                  simple: 00:00:00+05:30
+            operator: append
+          - args:
+              separator:
+                value:
+                  simple: T
+            operator: join
+      query:
+        simple: expirationStatus:expired and type:File and tags:CSPIOCBlocked
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.find.indicators
+      id: 707069c4-c2c3-4fcd-8adc-67c8fa4fea33
+      iscommand: true
+      name: find expired indicators
+      script: Builtin|||findIndicators
+      type: regular
+      version: -1
+    taskid: 707069c4-c2c3-4fcd-8adc-67c8fa4fea33
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1740,
+          "y": 125
+        }
+      }
+  "18":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${output1}
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 799690f7-1593-41b3-810e-f7d075b895aa
+      iscommand: false
+      name: Is an expired indicator
+      type: condition
+      version: -1
+    taskid: 799690f7-1593-41b3-810e-f7d075b895aa
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 670,
+          "y": 300
+        }
+      }
+  "20":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${output3}
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "24"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: eb6f9926-03ff-4a1e-8f06-e1a9ae179581
+      iscommand: false
+      name: Is an expired indicator
+      type: condition
+      version: -1
+    taskid: eb6f9926-03ff-4a1e-8f06-e1a9ae179581
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1750,
+          "y": 310
+        }
+      }
+  "21":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_240
+      url:
+        simple: ${output1}
+      using:
+        simple: Zscaler_instance_BPS
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Removes URLs from the specified category.
+      id: 8792b03d-92a7-473d-8d70-6581180824bd
+      iscommand: true
+      name: Unblock URL from Zscaler BPS tenant
+      script: Zscaler|||zscaler-category-remove-url
+      type: regular
+      version: -1
+    taskid: 8792b03d-92a7-473d-8d70-6581180824bd
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 660,
+          "y": 750
+        }
+      }
+  "23":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_57
+      url:
+        simple: ${output1}
+      using:
+        simple: Zscaler_instance_GNDM
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Removes URLs from the specified category.
+      id: 8ad0c8e7-7eb2-43f5-830c-75d45c270bde
+      iscommand: true
+      name: Unblock URL from Zscaler GNDM tenant
+      script: Zscaler|||zscaler-category-remove-url
+      type: regular
+      version: -1
+    taskid: 8ad0c8e7-7eb2-43f5-830c-75d45c270bde
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 650,
+          "y": 930
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "25"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      values:
+        simple: ${output3}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Returns a list of your uploaded IOCs that match the search criteria.
+      id: 53a625ed-c051-46f8-8a89-c7aff2ab3f66
+      iscommand: true
+      name: Search indicator in CS
+      script: CrowdstrikeFalcon|||cs-falcon-search-custom-iocs
+      type: regular
+      version: -1
+    taskid: 53a625ed-c051-46f8-8a89-c7aff2ab3f66
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1750,
+          "y": 540
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "35"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ioc_id:
+        simple: ${CrowdStrike.IOC.ID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Deletes a monitored indicator.
+      id: 4470c2f1-bf64-4547-8ef9-f3c8bfb35b9c
+      iscommand: true
+      name: Unblock hash on CS
+      script: CrowdstrikeFalcon|||cs-falcon-delete-custom-ioc
+      type: regular
+      version: -1
+    taskid: 4470c2f1-bf64-4547-8ef9-f3c8bfb35b9c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1750,
+          "y": 770
+        }
+      }
+  "26":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: certblockipaddress
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: csocblockedip
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: CERTBlockURL
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: COSCBlockURL
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: COSCBlockDomain
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: emailblock
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: CERTBlockDomain
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: expirystatus
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: active
+      label: "yes"
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a360bf75-00e3-4667-8764-9ee5c714adc9
+      iscommand: false
+      name: Is This Indicator CERT or CSOC Tagged ?
+      type: condition
+      version: -1
+    taskid: a360bf75-00e3-4667-8764-9ee5c714adc9
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -870,
+          "y": 350
+        }
+      }
+  "27":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: certblockipaddress
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: csocblockedip
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: CERTBlockURL
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: COSCBlockURL
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: COSCBlockDomain
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: emailblock
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: CERTBlockDomain
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: expirystatus
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: active
+      label: "yes"
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b1c5783c-134c-4298-801b-718cb947716a
+      iscommand: false
+      name: Is This Indicator CERT or CSOC Tagged ?
+      type: condition
+      version: -1
+    taskid: b1c5783c-134c-4298-801b-718cb947716a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -910,
+          "y": 430
+        }
+      }
+  "28":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: CSPIOCBlocked
+      label: "yes"
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "yes":
+      - "34"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ae22c4d5-4705-41df-8b0c-c951cc0e0682
+      iscommand: false
+      name: Is This Indicator CSPIOCBlocked Tagged ?
+      type: condition
+      version: -1
+    taskid: ae22c4d5-4705-41df-8b0c-c951cc0e0682
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -390,
+          "y": 220
+        }
+      }
+  "29":
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: output2=value
+      fromdate:
+        complex:
+          accessor: created
+          root: incident
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: T
+              fields:
+                value:
+                  simple: "1"
+            operator: Cut
+          - args:
+              item:
+                value:
+                  simple: 00:00:00+05:30
+            operator: append
+          - args:
+              separator:
+                value:
+                  simple: T
+            operator: join
+      query:
+        simple: expirationStatus:expired and type:Domain and tags:CSPIOCBlocked
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.find.indicators
+      id: e0bd00a2-1e11-4bd6-8880-82b3e867c440
+      iscommand: true
+      name: find expired indicators
+      script: Builtin|||findIndicators
+      type: regular
+      version: -1
+    taskid: e0bd00a2-1e11-4bd6-8880-82b3e867c440
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1190,
+          "y": 120
+        }
+      }
+  "30":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${output2}
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "31"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9529adc0-4efe-4738-8110-d6f4e3445488
+      iscommand: false
+      name: Is an expired indicator
+      type: condition
+      version: -1
+    taskid: 9529adc0-4efe-4738-8110-d6f4e3445488
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1180,
+          "y": 300
+        }
+      }
+  "31":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "32"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_126
+      url:
+        simple: ${output2}
+      using:
+        simple: Zscaler_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Removes URLs from the specified category.
+      id: 71d66fe9-4b72-46f9-8add-a4b0c505f26c
+      iscommand: true
+      name: Unblock Domain  from Zscaler Corporate tenant
+      script: Zscaler|||zscaler-category-remove-url
+      type: regular
+      version: -1
+    taskid: 71d66fe9-4b72-46f9-8add-a4b0c505f26c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1170,
+          "y": 570
+        }
+      }
+  "32":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_240
+      url:
+        simple: ${output2}
+      using:
+        simple: Zscaler_instance_BPS
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Removes URLs from the specified category.
+      id: a22e5115-0ebb-43b1-8679-30d0fc0c028c
+      iscommand: true
+      name: Unblock Domain from Zscaler BPS tenant
+      script: Zscaler|||zscaler-category-remove-url
+      type: regular
+      version: -1
+    taskid: a22e5115-0ebb-43b1-8679-30d0fc0c028c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1170,
+          "y": 750
+        }
+      }
+  "33":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_57
+      url:
+        simple: ${output2}
+      using:
+        simple: Zscaler_instance_GNDM
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Removes URLs from the specified category.
+      id: 6d5a0f26-780c-47fe-8c21-5a595cf03e2c
+      iscommand: true
+      name: Unblock IP from Zscaler GNDM tenant
+      script: Zscaler|||zscaler-category-remove-url
+      type: regular
+      version: -1
+    taskid: 6d5a0f26-780c-47fe-8c21-5a595cf03e2c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1160,
+          "y": 930
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: ip
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: a8b79e3d-feb0-4c15-89bb-ed289b728241
+      iscommand: false
+      name: print
+      script: Print
+      type: regular
+      version: -1
+    taskid: a8b79e3d-feb0-4c15-89bb-ed289b728241
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -480,
+          "y": 475
+        }
+      }
+  "35":
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hash_list:
+        simple: ${output3}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cortex XDR - IR
+      description: Removes requested files from block list.
+      id: 19a37c87-5a77-4501-8d03-c15772c794c1
+      iscommand: true
+      name: Unblock hash on XDR
+      script: Cortex XDR - IR|||xdr-remove-blocklist-files
+      type: regular
+      version: -1
+    taskid: 19a37c87-5a77-4501-8d03-c15772c794c1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1750,
+          "y": 960
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      field:
+        simple: tags
+      fieldValue:
+        simple: CSPIOCBlocked
+      indicatorsValues:
+        simple: ${output1}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.remove.values.to.indicator.multi.select.field
+      id: 2a378fff-cb34-4a6f-8a55-9a0061bb8be9
+      iscommand: true
+      name: Remove  Tag
+      script: Builtin|||removeIndicatorField
+      type: regular
+      version: -1
+    taskid: 2a378fff-cb34-4a6f-8a55-9a0061bb8be9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1250,
+          "y": 1550
+        }
+      }
+  "37":
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      field:
+        simple: tags
+      fieldValue:
+        simple: CSPIOCBlocked
+      indicatorsValues:
+        simple: ${output2}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.remove.values.to.indicator.multi.select.field
+      id: 297c9cec-8acf-4919-8efc-086a7000aa29
+      iscommand: true
+      name: Remove  Tag
+      script: Builtin|||removeIndicatorField
+      type: regular
+      version: -1
+    taskid: 297c9cec-8acf-4919-8efc-086a7000aa29
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1940,
+          "y": 1440
+        }
+      }
+  "38":
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      field:
+        simple: tags
+      fieldValue:
+        simple: CSPIOCBlocked
+      indicatorsValues:
+        simple: ${output3}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.remove.values.to.indicator.multi.select.field
+      id: a746723d-dd32-4f6e-8ced-2d933ba25d56
+      iscommand: true
+      name: Remove  Tag
+      script: Builtin|||removeIndicatorField
+      type: regular
+      version: -1
+    taskid: a746723d-dd32-4f6e-8ced-2d933ba25d56
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1680,
+          "y": 1540
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1965,
+        "width": 3340,
+        "x": -1020,
+        "y": -320
+      }
+    }
+  }
