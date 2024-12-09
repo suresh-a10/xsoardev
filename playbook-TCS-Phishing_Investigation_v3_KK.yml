@@ -1,0 +1,2819 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: |-
+  Use this playbook to investigate and remediate a potential phishing incident. The playbook simultaneously engages with the user that triggered the incident, while investigating the incident itself.
+
+  The final remediation tasks are always decided by a human analyst.
+id: 53e8bdba-aa2b-4e9e-8df0-d976024d48c5
+inputs:
+- description: The default role to assign the incident to.
+  key: Role
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: Administrator
+- description: |-
+    Enable the "Search and Delete" capability (can be either "True" or "False").
+    In case of a malicious email, the "Search and Delete" sub-playbook will look for other instances of the email and delete them pending analyst approval.
+  key: SearchAndDelete
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "False"
+- description: |-
+    Enable the "Block Indicators" capability (can be either "True" or "False").
+    In case of a malicious email, the "Block Indicators" sub-playbook will block all malicious indicators in the relevant integrations.
+  key: BlockIndicators
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "False"
+- description: Whether the authenticity of the email should be verified, using SPF,
+    DKIM and DMARC.
+  key: AuthenticateEmail
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "False"
+name: TCS-Phishing Investigation v3_KK
+outputs: []
+sourceplaybookid: Phishing Investigation - Generic v2
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "155"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9f1e6fb5-3925-4c65-88bc-8098601e5a50
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 9f1e6fb5-3925-4c65-88bc-8098601e5a50
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 7.5,
+          "y": -940
+        }
+      }
+  "52":
+    continueonerrortype: ""
+    id: "52"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "97"
+      - "98"
+      - "99"
+      - "118"
+      - "119"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8e0e6efe-6b67-4ef7-897e-900c05851d28
+      iscommand: false
+      name: Indicator Enrichment
+      type: title
+      version: -1
+    taskid: 8e0e6efe-6b67-4ef7-897e-900c05851d28
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -670,
+          "y": 560
+        }
+      }
+  "92":
+    continueonerrortype: ""
+    id: "92"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "121"
+      - "52"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      text:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: Email.HTML
+              operator: isNotEmpty
+          root: Email.HTML
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 620c926a-ca86-4d75-8528-0e0a05ba09c0
+      iscommand: true
+      name: Extract Indicators From Email Body
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 620c926a-ca86-4d75-8528-0e0a05ba09c0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -442.5,
+          "y": 225
+        }
+      }
+  "96":
+    continueonerrortype: ""
+    id: "96"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "120"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      File:
+        complex:
+          root: File
+      Interval:
+        simple: "1"
+      Timeout:
+        simple: "15"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Detonate one or more files using the Wildfire integration. This playbook
+        returns relevant reports to the War Room and file reputations to the context data.
+        The detonation supports the following file types -
+        APK, JAR, DOC, DOCX, RTF, XLS, XLSX, PPT, PPTX, OOXML, PE32, PDF, DMG, PKG, RAR, 7Z
+      id: d159c498-67af-4377-8968-a01e66f0429d
+      iscommand: false
+      name: 'Sub-Playbook: Sandbox The File'
+      playbookId: d3596cd5-648f-40d2-8cc9-5829b6672242
+      type: playbook
+      version: -1
+    taskid: d159c498-67af-4377-8968-a01e66f0429d
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 470,
+          "y": 1455
+        }
+      }
+  "97":
+    continueonerrortype: ""
+    id: "97"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "129"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Domain:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+      Hash:
+        complex:
+          accessor: File
+          root: ExtractedIndicators
+      IP:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 82cc7667-bc89-4fb3-8f1a-969e495d36e2
+      iscommand: false
+      name: TCS-Recorded Future IOC Enrichment Playbook v 1.0
+      playbookId: 1328b1fc-695e-4f06-8272-d3223a7640c2
+      type: playbook
+      version: -1
+    taskid: 82cc7667-bc89-4fb3-8f1a-969e495d36e2
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -900,
+          "y": 820
+        }
+      }
+  "98":
+    continueonerrortype: ""
+    id: "98"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "129"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Domain:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+      IP:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 48276bca-9246-42fd-8028-be38b2963036
+      iscommand: false
+      name: TCS-Cisco Umbrella  IOC Enrichment Playbook v 1.0
+      playbookId: 801a53c2-3def-4a8d-811e-97ddfb6d0f99
+      type: playbook
+      version: -1
+    taskid: 48276bca-9246-42fd-8028-be38b2963036
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -340,
+          "y": 820
+        }
+      }
+  "99":
+    continueonerrortype: ""
+    id: "99"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "129"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Domain:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+      Hash:
+        complex:
+          accessor: File
+          root: ExtractedIndicators
+      IP:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 70d82485-f44e-41ab-8e2b-ee4037721f8d
+      iscommand: false
+      name: TCS-Auto Focus IOC Enrichment Playbook v 1.0
+      playbookId: ff9792aa-d59f-4a0d-8cf4-d23be764eed7
+      type: playbook
+      version: -1
+    taskid: 70d82485-f44e-41ab-8e2b-ee4037721f8d
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -900,
+          "y": 1040
+        }
+      }
+  "102":
+    continueonerrortype: ""
+    id: "102"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "131"
+      "yes":
+      - "122"
+      - "137"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if the investigation found any malicious indicators (file,
+        URL, IP address, domain, or email). Returns "yes" if at least one malicious
+        indicator is found.
+      id: 60aeef5e-8164-4737-88bd-f54752a31aed
+      iscommand: false
+      name: Are Indicators Malicious
+      script: IsMaliciousIndicatorFound
+      type: condition
+      version: -1
+    taskid: 60aeef5e-8164-4737-88bd-f54752a31aed
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -410,
+          "y": 1625
+        }
+      }
+  "104":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: File
+                root: Attachment
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "104"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "131"
+      "yes":
+      - "107"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8269e247-8e84-42ad-8fd0-28119102e19f
+      iscommand: false
+      name: Is There an Attachment in The Email ?
+      type: condition
+      version: -1
+    taskid: 8269e247-8e84-42ad-8fd0-28119102e19f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 470,
+          "y": 590
+        }
+      }
+  "107":
+    continueonerrortype: ""
+    id: "107"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "108"
+      - "114"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      file:
+        complex:
+          accessor: SHA256
+          root: Attachment.File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with a file.
+      id: 13bee465-93ca-41cb-8027-691e3ba0ea91
+      iscommand: true
+      name: Check Attachment Risk Score In Recorded Future
+      script: Recorded Future v2|||file
+      type: regular
+      version: -1
+    taskid: 13bee465-93ca-41cb-8027-691e3ba0ea91
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 700,
+          "y": 810
+        }
+      }
+  "108":
+    continueonerrortype: ""
+    id: "108"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "112"
+      "no":
+      - "96"
+      "yes":
+      - "127"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if the investigation found any malicious indicators (file,
+        URL, IP address, domain, or email). Returns "yes" if at least one malicious
+        indicator is found.
+      id: 43a2f3f7-eb6c-4b96-84d5-d3f0e840f713
+      iscommand: false
+      name: Attachment Found Malicious ?
+      script: IsMaliciousIndicatorFound
+      type: condition
+      version: -1
+    taskid: 43a2f3f7-eb6c-4b96-84d5-d3f0e840f713
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 470,
+          "y": 1020
+        }
+      }
+  "110":
+    continueonerrortype: ""
+    id: "110"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "111"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hash:
+        complex:
+          accessor: SHA256
+          root: WildFire.Report
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: WildFire-v2
+      description: Returns a verdict for a hash.
+      id: 209edfc1-8a94-45bb-8b65-be57c4d37c0d
+      iscommand: true
+      name: Get WildFire Report Verdict
+      script: WildFire-v2|||wildfire-get-verdict
+      type: regular
+      version: -1
+    taskid: 209edfc1-8a94-45bb-8b65-be57c4d37c0d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 470,
+          "y": 1850
+        }
+      }
+  "111":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: VerdictDescription
+                root: WildFire.Verdicts
+          operator: isEqualString
+          right:
+            value:
+              simple: benign
+      label: Benign
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: VerdictDescription
+                root: WildFire.Verdicts
+          operator: isEqualString
+          right:
+            value:
+              simple: malicious
+      label: Malicious
+    continueonerrortype: ""
+    id: "111"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "112"
+      Benign:
+      - "131"
+      Malicious:
+      - "125"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 24902119-e169-4ae1-885a-1f2f16d03ceb
+      iscommand: false
+      name: Is The WildFire Report Verdict Benign or Malicious?
+      type: condition
+      version: -1
+    taskid: 24902119-e169-4ae1-885a-1f2f16d03ceb
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 470,
+          "y": 2020
+        }
+      }
+  "112":
+    continueonerrortype: ""
+    id: "112"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "145"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 258637b6-8fc1-4d3e-815d-c09c838d7575
+      iscommand: false
+      name: Generate Report & Notify
+      type: title
+      version: -1
+    taskid: 258637b6-8fc1-4d3e-815d-c09c838d7575
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 890,
+          "y": 2470
+        }
+      }
+  "113":
+    continueonerrortype: ""
+    id: "113"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "156"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${File.EntryID}
+      bcc:
+        simple: kunal.krushev@tcs.com
+      body:
+        simple: |-
+          Hello Human,
+
+          I found a suspicious email reported by user - ${incident.labels.Email/from}
+
+          Following are the investigation findings:
+
+          Suspicious Email Sent By: ${Email.From}
+
+          Email subject: ${Email.Subject}
+
+          Malicious attachment hash: ${Malicious.Attachment}
+
+          XSOAR investigation Id : ${incident.id}
+
+
+          Regards,
+          CSOC Cyber AutoBot
+      cc:
+        simple: kunal.krushev@tcs.com,jha.sweta1@tcs.com,yogesh.gholap@tcs.com,nimisha.prajapati@tcs.com
+      subject:
+        simple: Found Suspicious Email Reported By User - ${incident.labels.Email/from}
+      to:
+        simple: internalis.cybersecurityops@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: c63e406f-2ccd-4aef-8718-12c8a2fd32f2
+      iscommand: true
+      name: Notify Suspicious Email With Attachment
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: c63e406f-2ccd-4aef-8718-12c8a2fd32f2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 890,
+          "y": 3160
+        }
+      }
+  "114":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.File
+          operator: greaterThan
+          right:
+            value:
+              simple: "24"
+      label: "yes"
+    continueonerrortype: ""
+    id: "114"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "108"
+      "yes":
+      - "126"
+      - "140"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if the investigation found any malicious indicators (file,
+        URL, IP address, domain, or email). Returns "yes" if at least one malicious
+        indicator is found.
+      id: d079e9f1-3445-4036-8620-da0742db9a9a
+      iscommand: false
+      name: Is Risk Score Greater Than 24 ?
+      type: condition
+      version: -1
+    taskid: d079e9f1-3445-4036-8620-da0742db9a9a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 930,
+          "y": 1020
+        }
+      }
+  "117":
+    continueonerrortype: ""
+    id: "117"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "156"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${File.EntryID}
+      bcc:
+        simple: kunal.krushev@tcs.com
+      body:
+        simple: |-
+          Hello Human,
+
+          I found a suspicious email reported by user - ${incident.labels.Email/from}
+
+          Following are the investigation findings:
+
+          Suspicious Email Sent By: ${Email.From}
+
+          Email subject: ${Email.Subject}
+
+          Malicious IOC: ${Malicious.IOC}
+
+          XSOAR investigation Id : ${incident.id}
+
+          Regards,
+          CSOC Cyber AutoBot
+      cc:
+        simple: kunal.krushev@tcs.com,jha.sweta1@tcs.com,yogesh.gholap@tcs.com,nimisha.prajapati@tcs.com
+      subject:
+        simple: Found Suspicious Email Reported By User - ${incident.labels.Email/from}
+      to:
+        simple: internalis.cybersecurityops@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: 94cfbe0f-1080-494c-8047-86d7305f0205
+      iscommand: true
+      name: Notify Suspicious Email Found
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: 94cfbe0f-1080-494c-8047-86d7305f0205
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 430,
+          "y": 3160
+        }
+      }
+  "118":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "118"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "129"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      url:
+        complex:
+          accessor: URL
+          root: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: OpenPhish_v2
+      description: Checks the reputation of a URL.
+      id: 7e085b67-a9e5-4435-8b92-714946007639
+      iscommand: true
+      name: Check if Known Phishing URL Using OpenPhish Data
+      script: OpenPhish_v2|||url
+      type: regular
+      version: -1
+    taskid: 7e085b67-a9e5-4435-8b92-714946007639
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -340,
+          "y": 1040
+        }
+      }
+  "119":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "119"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "129"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      url:
+        complex:
+          accessor: URL
+          root: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: PhishTank V2
+      description: Checks the reputation of the supplied URLs.
+      id: 5fbb222a-cadd-4203-89e8-691b09069155
+      iscommand: true
+      name: Check if Known  Phishing URL Using PhishTank Data
+      script: PhishTank V2|||url
+      type: regular
+      version: -1
+    taskid: 5fbb222a-cadd-4203-89e8-691b09069155
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -890,
+          "y": 1240
+        }
+      }
+  "120":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: SHA256
+                root: WildFire.Report
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "120"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "112"
+      "yes":
+      - "110"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: cbd2b740-1906-4eb0-8770-24593cba459b
+      iscommand: false
+      name: Is There a WildFire Report?
+      type: condition
+      version: -1
+    taskid: cbd2b740-1906-4eb0-8770-24593cba459b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 470,
+          "y": 1640
+        }
+      }
+  "121":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "121"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      emailBodyHTML:
+        simple: ${Email.HTML}
+      emailSubject:
+        simple: ${Email.Subject}
+      retry-count:
+        simple: "2"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Predict phishing incidents using the out-of-the-box pre-trained
+        model.
+      id: 5b9c1d70-71e7-40a0-880c-677485a616de
+      iscommand: false
+      name: Machine Learning Analysis
+      script: DBotPredictOutOfTheBoxV2
+      type: regular
+      version: -1
+    taskid: 5b9c1d70-71e7-40a0-880c-677485a616de
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -442.5,
+          "y": 385
+        }
+      }
+  "122":
+    continueonerrortype: ""
+    id: "122"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Malicious.IOC
+      value:
+        complex:
+          accessor: Indicator
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: isEqualString
+              right:
+                value:
+                  simple: "3"
+          root: DBotScore
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 7371f36c-5822-4e73-8c58-948db8f492a8
+      iscommand: false
+      name: Set Context Key For Malicious IOC
+      script: Set
+      type: regular
+      version: -1
+    taskid: 7371f36c-5822-4e73-8c58-948db8f492a8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -410,
+          "y": 1830
+        }
+      }
+  "123":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: IOC
+                root: Malicious
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Attachment
+                root: Malicious
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "123"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "131"
+      "yes":
+      - "124"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 46791485-048a-43b0-88ff-7b7086278c1c
+      iscommand: false
+      name: Check If Malicious Indicators Were Detected  In Email Body & Attachment
+        Is Malicious
+      type: condition
+      version: -1
+    taskid: 46791485-048a-43b0-88ff-7b7086278c1c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1340,
+          "y": 2920
+        }
+      }
+  "124":
+    continueonerrortype: ""
+    id: "124"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "156"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${File.EntryID}
+      bcc:
+        simple: kunal.krushev@tcs.com
+      body:
+        simple: |-
+          Hello Human,
+
+          I found a suspicious email reported by user - ${incident.labels.Email/from}
+
+          Following are the investigation findings:
+
+          Suspicious Email Sent By: ${Email.From}
+
+          Email subject: ${Email.Subject}
+
+          Malicious attachment hash: ${Malicious.Attachment}
+
+          Malicious IOCs found in the email body: ${Malicious.IOC}
+
+          XSOAR investigation Id : ${incident.id}
+
+
+          Regards,
+          CSOC Cyber AutoBot
+      cc:
+        simple: kunal.krushev@tcs.com,jha.sweta1@tcs.com,yogesh.gholap@tcs.com,nimisha.prajapati@tcs.com
+      subject:
+        simple: Found Suspicious Email Reported By User - ${incident.labels.Email/from}
+      to:
+        simple: internalis.cybersecurityops@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: 7d9279f5-a6ae-4513-89c7-696e045dac19
+      iscommand: true
+      name: Notify Suspicious Email With Attachment
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: 7d9279f5-a6ae-4513-89c7-696e045dac19
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1340,
+          "y": 3160
+        }
+      }
+  "125":
+    continueonerrortype: ""
+    id: "125"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Malicious.Attachment
+      value:
+        complex:
+          accessor: SHA256
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: WildFire.Verdicts.VerdictDescription
+              operator: isNotEqualString
+              right:
+                value:
+                  simple: benign
+          root: WildFire.Verdicts
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 5ea60b30-d07d-4bb1-86e6-eae86b20d9c5
+      iscommand: false
+      name: Set Context Key For Malicious Attachment Hash
+      script: Set
+      type: regular
+      version: -1
+    taskid: 5ea60b30-d07d-4bb1-86e6-eae86b20d9c5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 470,
+          "y": 2300
+        }
+      }
+  "126":
+    continueonerrortype: ""
+    id: "126"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Malicious.Attachment
+      value:
+        complex:
+          accessor: name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: RecordedFuture.File.riskScore
+              operator: greaterThan
+              right:
+                value:
+                  simple: "24"
+          root: RecordedFuture.File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 1d3d0ffb-04b4-45e4-8225-a0eeef8cf6cc
+      iscommand: false
+      name: Set Context Key For Malicious Attachment
+      script: Set
+      type: regular
+      version: -1
+    taskid: 1d3d0ffb-04b4-45e4-8225-a0eeef8cf6cc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1360,
+          "y": 1455
+        }
+      }
+  "127":
+    continueonerrortype: ""
+    id: "127"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Malicious.Attachment
+      value:
+        complex:
+          accessor: Indicator
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: isEqualString
+              right:
+                value:
+                  simple: "3"
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Vendor
+              operator: isEqualString
+              right:
+                value:
+                  simple: Recorded Future v2
+          root: DBotScore
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 9f06c152-4468-4a3e-8adb-aff1df001283
+      iscommand: false
+      name: Set Context Key For Malicious Attachment
+      script: Set
+      type: regular
+      version: -1
+    taskid: 9f06c152-4468-4a3e-8adb-aff1df001283
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 930,
+          "y": 1455
+        }
+      }
+  "128":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Attachment
+                root: Malicious
+          operator: isNotExists
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: IOC
+                root: Malicious
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "128"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "131"
+      "yes":
+      - "117"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d9de63bf-5d1b-4443-84c7-37674235eefb
+      iscommand: false
+      name: Check If Only Malicious IOCs Were Detected  In Email Body
+      type: condition
+      version: -1
+    taskid: d9de63bf-5d1b-4443-84c7-37674235eefb
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 430,
+          "y": 2920
+        }
+      }
+  "129":
+    continueonerrortype: ""
+    id: "129"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "102"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 57069ddf-c7ce-4ad3-8bcd-993d383a1892
+      iscommand: false
+      name: Check If Indicator Is Malicious
+      type: title
+      version: -1
+    taskid: 57069ddf-c7ce-4ad3-8bcd-993d383a1892
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -410,
+          "y": 1440
+        }
+      }
+  "130":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Attachment
+                root: Malicious
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: IOC
+                root: Malicious
+          operator: isNotExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "130"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "131"
+      "yes":
+      - "113"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 0bf86a81-9d0b-4975-8039-a225ceaf60fc
+      iscommand: false
+      name: Check If Only  Malicious Attachments Found
+      type: condition
+      version: -1
+    taskid: 0bf86a81-9d0b-4975-8039-a225ceaf60fc
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 890,
+          "y": 2920
+        }
+      }
+  "131":
+    continueonerrortype: ""
+    id: "131"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "147"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a16285eb-b034-4461-83a7-c8b17cc37b3e
+      iscommand: false
+      name: Close Investigation
+      type: title
+      version: -1
+    taskid: a16285eb-b034-4461-83a7-c8b17cc37b3e
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -492.5,
+          "y": 4910
+        }
+      }
+  "132":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Label
+                root: DBotPredictPhishingWords
+          operator: isEqualString
+          right:
+            value:
+              simple: malicious
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: IOC
+                root: Malicious
+          operator: isNotExists
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Attachment
+                root: Malicious
+          operator: isNotExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "132"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "131"
+      "yes":
+      - "133"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 07322548-1b9d-42b2-82d4-2fdfc0346425
+      iscommand: false
+      name: Check If Malicious Indicators Were Detected  In Email Body & Attachment
+        Is Malicious
+      type: condition
+      version: -1
+    taskid: 07322548-1b9d-42b2-82d4-2fdfc0346425
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1780,
+          "y": 2920
+        }
+      }
+  "133":
+    continueonerrortype: ""
+    id: "133"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "156"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${File.EntryID}
+      bcc:
+        simple: kunal.krushev@tcs.com
+      body:
+        simple: |-
+          Hello Human,
+
+          My machine learning algorithm  found a suspected malicious email reported by user - ${incident.labels.Email/from}
+
+          Following are the investigation findings:
+
+          Suspicious Email Sent By: ${Email.From}
+
+          Email subject: ${Email.Subject}
+
+          XSOAR investigation Id : ${incident.id}
+
+
+          Regards,
+          CSOC Cyber AutoBot
+      cc:
+        simple: kunal.krushev@tcs.com,jha.sweta1@tcs.com,yogesh.gholap@tcs.com,nimisha.prajapati@tcs.com
+      subject:
+        simple: Found Suspicious Email Reported By User - ${incident.labels.Email/from}
+      to:
+        simple: internalis.cybersecurityops@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: 5939a95a-baa9-458d-81f8-1a0707c4dd20
+      iscommand: true
+      name: Notify Suspicious Email With Attachment
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: 5939a95a-baa9-458d-81f8-1a0707c4dd20
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1780,
+          "y": 3160
+        }
+      }
+  "134":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: AttachmentNames
+                root: Email
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: AttachmentNames
+                root: Email
+          operator: isNotEmpty
+      label: "Yes"
+    continueonerrortype: ""
+    id: "134"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "131"
+      "Yes":
+      - "135"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 69045688-8e0d-443a-88bf-f0f754d8cb31
+      iscommand: false
+      name: 'Is There an Attachment In The Reported Email ? '
+      type: condition
+      version: -1
+    taskid: 69045688-8e0d-443a-88bf-f0f754d8cb31
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": 70
+        }
+      }
+  "135":
+    continueonerrortype: ""
+    id: "135"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "104"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Attachment.File
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Info
+              operator: notContainsGeneral
+              right:
+                value:
+                  simple: msg,eml
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Name
+              operator: isNotEqualString
+              right:
+                value:
+                  simple: email.png
+          root: File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 9f1cf280-cffc-4114-8192-bbfad2ed6291
+      iscommand: false
+      name: Set Attachment Info To Context Field
+      script: Set
+      type: regular
+      version: -1
+    taskid: 9f1cf280-cffc-4114-8192-bbfad2ed6291
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 470,
+          "y": 370
+        }
+      }
+  "136":
+    continueonerrortype: ""
+    id: "136"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "153"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      severity:
+        simple: "1"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 0afa5bb3-d107-42f3-8d7f-5c296a6a62b5
+      iscommand: true
+      name: Set Incident Severity Low
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 0afa5bb3-d107-42f3-8d7f-5c296a6a62b5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 7.5,
+          "y": -500
+        }
+      }
+  "137":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Score
+                root: DBotScore
+          operator: isEqualNumber
+          right:
+            value:
+              simple: "2"
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Score
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: "3"
+                root: DBotScore.Score
+          operator: isNotExists
+      label: High
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Score
+                root: DBotScore
+          operator: isEqualNumber
+          right:
+            value:
+              simple: "3"
+      label: Critical
+    continueonerrortype: ""
+    id: "137"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "112"
+      Critical:
+      - "144"
+      High:
+      - "139"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Check whether the values provided in arguments are equal. If either
+        of the arguments are missing, no is returned.
+      id: 0466bd72-6957-412f-8030-7a19eec14890
+      iscommand: false
+      name: 'Check Risk Score To Set Severity '
+      type: condition
+      version: -1
+    taskid: 0466bd72-6957-412f-8030-7a19eec14890
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -822.5,
+          "y": 1830
+        }
+      }
+  "139":
+    continueonerrortype: ""
+    id: "139"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      severity:
+        simple: "3"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 7a846e7c-4831-462b-8986-dd0eb5dc81fd
+      iscommand: true
+      name: Set Severity High
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 7a846e7c-4831-462b-8986-dd0eb5dc81fd
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -822.5,
+          "y": 2040
+        }
+      }
+  "140":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.File
+          operator: greaterThan
+          right:
+            value:
+              simple: "24"
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.File
+          operator: lessThan
+          right:
+            value:
+              simple: "65"
+      label: Medium
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.File
+          operator: greaterThan
+          right:
+            value:
+              simple: "65"
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.File
+          operator: lessThan
+          right:
+            value:
+              simple: "90"
+      label: High
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.File
+          operator: greaterThan
+          right:
+            value:
+              simple: "89"
+      label: Critical
+    continueonerrortype: ""
+    id: "140"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "112"
+      Critical:
+      - "142"
+      High:
+      - "141"
+      Medium:
+      - "143"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Check whether the values provided in arguments are equal. If either
+        of the arguments are missing, no is returned.
+      id: af0a0267-ae94-4479-8b39-0acbed6fefc4
+      iscommand: false
+      name: 'Check DBot Indicator Score To Set Severity '
+      type: condition
+      version: -1
+    taskid: af0a0267-ae94-4479-8b39-0acbed6fefc4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1350,
+          "y": 1020
+        }
+      }
+  "141":
+    continueonerrortype: ""
+    id: "141"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      severity:
+        simple: "3"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 46b23957-3ff6-4a96-8d8e-d9c805a018f9
+      iscommand: true
+      name: Set Severity High
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 46b23957-3ff6-4a96-8d8e-d9c805a018f9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1350,
+          "y": 1230
+        }
+      }
+  "142":
+    continueonerrortype: ""
+    id: "142"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      severity:
+        simple: "4"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 4868fd26-6610-42af-83c9-303e35c42fb6
+      iscommand: true
+      name: Set Severity Critical
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 4868fd26-6610-42af-83c9-303e35c42fb6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1760,
+          "y": 1230
+        }
+      }
+  "143":
+    continueonerrortype: ""
+    id: "143"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      severity:
+        simple: "2"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: ae2405e9-7b8a-464f-8df1-0240f59a6473
+      iscommand: true
+      name: Set Severity Medium
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: ae2405e9-7b8a-464f-8df1-0240f59a6473
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 930,
+          "y": 1230
+        }
+      }
+  "144":
+    continueonerrortype: ""
+    id: "144"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      severity:
+        simple: "4"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: afb54165-d26a-4a6b-8ce8-797c9059637d
+      iscommand: true
+      name: Set Severity Critical
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: afb54165-d26a-4a6b-8ce8-797c9059637d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -410,
+          "y": 2040
+        }
+      }
+  "145":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: EntryID
+                root: InfoFile
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "145"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "128"
+      - "130"
+      - "123"
+      - "132"
+      "yes":
+      - "146"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 75fb752e-b2f8-4d4e-8805-a20ef21be736
+      iscommand: false
+      name: Check If InfoFile Context Is Set ?
+      type: condition
+      version: -1
+    taskid: 75fb752e-b2f8-4d4e-8805-a20ef21be736
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 890,
+          "y": 2590
+        }
+      }
+  "146":
+    continueonerrortype: ""
+    id: "146"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "128"
+      - "130"
+      - "123"
+      - "132"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: File
+      value:
+        complex:
+          root: InfoFile
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 8ef3f0db-e05b-41ea-8999-c4576393a4d8
+      iscommand: false
+      name: Combine InfoFile & File Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 8ef3f0db-e05b-41ea-8999-c4576393a4d8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 890,
+          "y": 2750
+        }
+      }
+  "147":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "147"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "148"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 07f63a05-e8bb-4256-8bb7-b9a820c85b40
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 07f63a05-e8bb-4256-8bb7-b9a820c85b40
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -492.5,
+          "y": 5150
+        }
+      }
+  "148":
+    continueonerrortype: ""
+    id: "148"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 32282af6-11c7-4461-807d-d1c1667939d2
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 32282af6-11c7-4461-807d-d1c1667939d2
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -492.5,
+          "y": 5340
+        }
+      }
+  "149":
+    continueonerrortype: ""
+    id: "149"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "152"
+      - "52"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      text:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: Email.Text
+              operator: isNotEmpty
+          root: Email.Text
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 33defb17-66a6-41fd-8aa8-7079607de23f
+      iscommand: true
+      name: Extract Indicators From Email Body
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 33defb17-66a6-41fd-8aa8-7079607de23f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -892.5,
+          "y": 225
+        }
+      }
+  "150":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: HTML
+                root: Email
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "150"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "52"
+      "yes":
+      - "92"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 11b54248-8b55-4b0f-8c06-5122504ad163
+      iscommand: false
+      name: Is There A Email HTML
+      type: condition
+      version: -1
+    taskid: 11b54248-8b55-4b0f-8c06-5122504ad163
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -442.5,
+          "y": 70
+        }
+      }
+  "151":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Text
+                root: Email
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "151"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "52"
+      "yes":
+      - "149"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7f513d59-5594-45fe-838a-adf3b484deb6
+      iscommand: false
+      name: 'Is There A Email Text '
+      type: condition
+      version: -1
+    taskid: 7f513d59-5594-45fe-838a-adf3b484deb6
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -892.5,
+          "y": 70
+        }
+      }
+  "152":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "152"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      emailBody:
+        simple: ${Email.Text}
+      emailSubject:
+        simple: ${Email.Subject}
+      retry-count:
+        simple: "2"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Predict phishing incidents using the out-of-the-box pre-trained
+        model.
+      id: fbc4b428-f9df-4e42-8e8c-18762090055b
+      iscommand: false
+      name: Machine Learning Analysis
+      script: DBotPredictOutOfTheBoxV2
+      type: regular
+      version: -1
+    taskid: fbc4b428-f9df-4e42-8e8c-18762090055b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -892.5,
+          "y": 385
+        }
+      }
+  "153":
+    continueonerrortype: ""
+    id: "153"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "154"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Email:
+        complex:
+          accessor: labels.Email
+          root: incident
+      Email/cc:
+        complex:
+          accessor: labels.CC
+          root: incident
+      Email/format:
+        complex:
+          accessor: labels.Email/format
+          root: incident
+      Email/from:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+      Email/headers:
+        complex:
+          accessor: labels.Email/headers
+          root: incident
+      Email/html:
+        complex:
+          accessor: labels.Email/html
+          root: incident
+      Email/subject:
+        complex:
+          accessor: labels.Email/subject
+          root: incident
+      Email/text:
+        complex:
+          accessor: labels.Email/text
+          root: incident
+      File:
+        complex:
+          root: File
+      GetOriginalEmail:
+        simple: "False"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Add email details to the relevant context entities and handle the
+        case where original emails are attached.
+      id: 20347f3d-d69b-4b16-8a8c-af5d48a536d5
+      iscommand: false
+      name: 'Sub-Playbook: Process Email'
+      playbookId: 46473380-0d67-4bd2-8d5c-3a787c6c40d3
+      type: playbook
+      version: -1
+    taskid: 20347f3d-d69b-4b16-8a8c-af5d48a536d5
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 7.5,
+          "y": -330
+        }
+      }
+  "154":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: From
+                root: Email.HeadersMap
+          operator: containsGeneral
+          right:
+            value:
+              simple: '@tcs'
+      label: "yes"
+    continueonerrortype: ""
+    id: "154"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "151"
+      - "150"
+      - "134"
+      "yes":
+      - "131"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 574a841f-2f8d-41c2-89e9-1df9499a9c0d
+      iscommand: false
+      name: Original Mail Sender From TCS ?
+      type: condition
+      version: -1
+    taskid: 574a841f-2f8d-41c2-89e9-1df9499a9c0d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 7.5,
+          "y": -160
+        }
+      }
+  "155":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: sourceBrand
+                root: incident
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: manual
+      label: Manual
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: rawType
+                root: incident
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: malware investigation
+      label: From Malware Investigation Playbook
+    continueonerrortype: ""
+    id: "155"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "136"
+      From Malware Investigation Playbook:
+      - "153"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1c56175e-6213-4cf4-8797-e8c5e3688202
+      iscommand: false
+      name: Manual or Tool Triggered ?
+      type: condition
+      version: -1
+    taskid: 1c56175e-6213-4cf4-8797-e8c5e3688202
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 7.5,
+          "y": -750
+        }
+      }
+  "156":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: owner
+                root: incident
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "156"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "157"
+      "yes":
+      - "160"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: aca84054-94c7-42a1-8165-6e56237e63df
+      iscommand: false
+      name: Has Owner Been Assigned
+      type: condition
+      version: -1
+    taskid: aca84054-94c7-42a1-8165-6e56237e63df
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": 3490
+        }
+      }
+  "157":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "157"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "158"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      name:
+        simple: AutoAssignment_Lock
+      timeout:
+        simple: "600"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Demisto Lock
+      description: Gets a specific lock. If the lock doesn't exist, it creates one.
+        If the lock is already in use, the command waits until the lock is released
+        or until timeout is reached. If timeout is reached and the lock hasn't been
+        released, the command fails to get the lock.
+      id: 29eeca87-ba59-4155-800e-7c0d75eef39b
+      iscommand: true
+      name: Locking the Assignment Task
+      script: Demisto Lock|||demisto-lock-get
+      type: regular
+      version: -1
+    taskid: 29eeca87-ba59-4155-800e-7c0d75eef39b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": 3690
+        }
+      }
+  "158":
+    continueonerrortype: ""
+    id: "158"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "159"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      desc:
+        complex:
+          accessor: crowdstriketactic
+          root: incident
+      incidentid:
+        complex:
+          accessor: id
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6439ed84-2d91-4961-86d3-63a04ea68348
+      iscommand: false
+      name: AutoAssign Analyst To Incident
+      script: 0021cb92-321d-4754-81a1-66fc6a41635d
+      type: regular
+      version: -1
+    taskid: 6439ed84-2d91-4961-86d3-63a04ea68348
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": 3870
+        }
+      }
+  "159":
+    continueonerrortype: ""
+    id: "159"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "160"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      name:
+        simple: AutoAssignment_Lock
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Demisto Lock
+      description: Release a lock
+      id: 37a43766-8ba5-4330-8803-106162ff8f0e
+      iscommand: true
+      name: Release the Assignment Task
+      script: Demisto Lock|||demisto-lock-release
+      type: regular
+      version: -1
+    taskid: 37a43766-8ba5-4330-8803-106162ff8f0e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": 4040
+        }
+      }
+  "160":
+    continueonerrortype: ""
+    id: "160"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "161"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      username:
+        complex:
+          accessor: owner
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.get.user.by.username
+      id: 7f2efb07-a5f8-407f-8be1-8617c4f91cd5
+      iscommand: true
+      name: Get Incident Owner Details
+      script: Builtin|||getUserByUsername
+      type: regular
+      version: -1
+    taskid: 7f2efb07-a5f8-407f-8be1-8617c4f91cd5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": 4230
+        }
+      }
+  "161":
+    continueonerrortype: ""
+    id: "161"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "131"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      roles:
+        complex:
+          accessor: roles
+          root: UserByUsername
+          transformers:
+          - args:
+              from:
+                value:
+                  simple: '['
+            operator: substringFrom
+          - args:
+              to:
+                value:
+                  simple: ']'
+            operator: substringTo
+          - args:
+              delimiter:
+                value:
+                  simple: ' '
+            operator: splitAndTrim
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 7a22b79a-9e21-446d-8a88-edf661f8c76e
+      iscommand: true
+      name: Set Investigator Role In Context
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 7a22b79a-9e21-446d-8a88-edf661f8c76e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": 4410
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "145_128_#default#": 0.33,
+      "155_136_#default#": 0.45
+    },
+    "paper": {
+      "dimensions": {
+        "height": 6345,
+        "width": 3060,
+        "x": -900,
+        "y": -940
+      }
+    }
+  }
