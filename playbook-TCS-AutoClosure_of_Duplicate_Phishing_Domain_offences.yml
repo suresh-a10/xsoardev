@@ -1,0 +1,741 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 2a5ea94d-1ff6-47c3-814e-68cfff2fa956
+inputs: []
+name: TCS-AutoClosure of Duplicate Phishing Domain offences
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 422008e6-417a-4a54-821c-c8252deebe2e
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 422008e6-417a-4a54-821c-c8252deebe2e
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 50
+        }
+      }
+  "2":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      field:
+        simple: domain
+      query:
+        simple: ${incident.labels.offense_source}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Gets WHOIS information records based on field matching queries.
+      id: 6a638c8d-4c0e-46b7-8f6b-8e89092db00c
+      iscommand: true
+      name: Check who is info on passive total
+      script: '|||pt-whois-search'
+      type: regular
+      version: -1
+    taskid: 6a638c8d-4c0e-46b7-8f6b-8e89092db00c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 195
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "27"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 410ad8b3-909c-46ac-81f6-9c17b0faf289
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 410ad8b3-909c-46ac-81f6-9c17b0faf289
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 250,
+          "y": 1790
+        }
+      }
+  "4":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Domain.Organization
+          operator: containsGeneral
+          right:
+            value:
+              simple: TCS Limited
+        - left:
+            iscontext: true
+            value:
+              simple: Domain.Organization
+          operator: containsGeneral
+          right:
+            value:
+              simple: TATA
+        - left:
+            iscontext: true
+            value:
+              simple: Domain.Organization
+          operator: containsGeneral
+          right:
+            value:
+              simple: tcs Limited
+        - left:
+            iscontext: true
+            value:
+              simple: Domain.Organization
+          operator: containsGeneral
+          right:
+            value:
+              simple: tata
+      label: "yes"
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "24"
+      "yes":
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1f900d1b-61b3-48c1-8b2c-87f4dc62294c
+      iscommand: false
+      name: Check if Organisation is TCS
+      type: condition
+      version: -1
+    taskid: 1f900d1b-61b3-48c1-8b2c-87f4dc62294c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": 530
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: "Hi Team ,\n\nDemisto Incident ID : ${incident.investigationId}\n\n${incident.labels.offense_source}
+          \ - This domain is a new domain for us and need to investigate it.\nRegistered
+          Organization name : ${PassiveTotal.WHOIS.registrantOrganization}.\n\nPlease
+          find the below WHOIS detail from Passive Total for further verification
+          :\n\n${PassiveTotal}\n\n\nPlease check messaging logs for further analysis.\n\nThanks
+          \nCSOC CyberAutoBot\n"
+      subject:
+        simple: New domain triggered in Possible Phishing Domain usecase
+      to:
+        simple: sonam.bhandari@tcs.com , internalis.cybersecurityops@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: 24cde953-af1d-4311-8517-ef513d69582b
+      iscommand: true
+      name: Notify Analyst about Newly triggered Domain
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: 24cde953-af1d-4311-8517-ef513d69582b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 10,
+          "y": 930
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closing_reason_id:
+        simple: "1"
+      offense_id:
+        simple: ${incident.labels.id}
+      status:
+        simple: CLOSED
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar_v2_copy
+      description: Update an offense.
+      id: c7cd202d-32a3-46c3-8e5a-860aaa0a179f
+      iscommand: true
+      name: AutoCloseOffense
+      script: QRadar_v2_copy|||qradar-update-offense
+      type: regular
+      version: -1
+    taskid: c7cd202d-32a3-46c3-8e5a-860aaa0a179f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": 1080
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: TCS_Ironport_Phishing
+      value:
+        simple: ${incident.labels.offense_source}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar_v2_copy
+      description: Add or update a value in a reference set.
+      id: 774096f7-8514-4eee-83b6-0730184a1e20
+      iscommand: true
+      name: Add Domain to reference set
+      script: QRadar_v2_copy|||qradar-create-reference-set-value
+      type: regular
+      version: -1
+    taskid: 774096f7-8514-4eee-83b6-0730184a1e20
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 900,
+          "y": 850
+        }
+      }
+  "15":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closing_reason_id:
+        simple: "1"
+      offense_id:
+        simple: ${incident.labels.id}
+      status:
+        simple: CLOSED
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar_v2_copy
+      description: Update an offense.
+      id: 8f099b70-f971-45dd-8ef4-aca98fd05011
+      iscommand: true
+      name: AutoCloseOffense
+      script: QRadar_v2_copy|||qradar-update-offense
+      type: regular
+      version: -1
+    taskid: 8f099b70-f971-45dd-8ef4-aca98fd05011
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 920
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: "Hi Team ,\n\nDemisto Incident ID : ${incident.investigationId}\n\n${incident.labels.offense_source}
+          seems to be a registered Domain with Organization name : ${PassiveTotal.WHOIS.registrantOrganization}.
+          \n\nThe Domain has been whitelisted and the Offence Is Auto Closed.\n\nPlease
+          find the below WHOIS detail from Passive Total for further verification
+          :\n${PassiveTotal}\n\nThanks \nCSOC CyberAutoBot"
+      subject:
+        simple: A new trusted Domain has been whitelisted from the Possible Phishing
+          Ironport Usecase
+      to:
+        simple: sonam.bhandari@tcs.com , internalis.cybersecurityops@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: 362b222a-1d19-4834-8112-20c197d6f65c
+      iscommand: true
+      name: 'Notify Analyst '
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: 362b222a-1d19-4834-8112-20c197d6f65c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": 1350
+        }
+      }
+  "20":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${Domain.Organization}
+          operator: isNotEqualString
+          right:
+            value:
+              simple: N/A
+      label: "yes"
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "24"
+      "yes":
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 396445cd-6ccc-4601-8d37-5a4fa9d9954b
+      iscommand: false
+      name: Check if organization info is available
+      type: condition
+      version: -1
+    taskid: 396445cd-6ccc-4601-8d37-5a4fa9d9954b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 710,
+          "y": 350
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 52c88aad-e905-4517-862f-cb6b64f90139
+      iscommand: false
+      name: Get error message
+      script: dfaf73eb-0458-4817-86b5-7588ccf04c64
+      type: regular
+      version: -1
+    taskid: 52c88aad-e905-4517-862f-cb6b64f90139
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1100
+        }
+      }
+  "22":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${error}
+          operator: containsGeneral
+          right:
+            value:
+              simple: Cannot change status of an offense that is already closed..
+        - left:
+            iscontext: true
+            value:
+              simple: ${error}
+          operator: isNotExists
+        - left:
+            iscontext: true
+            value:
+              simple: ${error}
+          operator: containsGeneral
+          right:
+            value:
+              simple: 'Error from PassiveTotal v2 '
+      label: "yes"
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "23"
+      "yes":
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4b05810b-7ef0-4b43-82d9-b8a149c0f0be
+      iscommand: false
+      name: If error is offence already closed
+      type: condition
+      version: -1
+    taskid: 4b05810b-7ef0-4b43-82d9-b8a149c0f0be
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1300
+        }
+      }
+  "23":
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: 'Please check  incident : ${incident.id} , that has ended up in error  :
+          ${error}'
+      subject:
+        simple: ' ${incident.id} ended up in error '
+      to:
+        simple: sonam.bhandari@tcs.com , v.ghule@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: e20d4a94-448e-49d8-8739-b4582043e7f2
+      iscommand: true
+      name: Inform Admin about error
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: e20d4a94-448e-49d8-8739-b4582043e7f2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 230,
+          "y": 1510
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "25"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      left:
+        simple: ${incident.labels.offense_source}
+      right:
+        simple: ${lists.Offence Source for Phishing Domain Usecase}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Compare  two lists and put the differences in context.
+      id: a9c104aa-1276-4097-8f5a-5f04ea64bc33
+      iscommand: false
+      name: Check the Presence in Demisto list
+      script: CompareLists
+      type: regular
+      version: -1
+    taskid: a9c104aa-1276-4097-8f5a-5f04ea64bc33
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 250,
+          "y": 530
+        }
+      }
+  "25":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ListCompare.Both
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "10"
+      "yes":
+      - "15"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 73f6abb4-0de8-4db5-8347-e1348758ed20
+      iscommand: false
+      name: Is Domain present in List
+      type: condition
+      version: -1
+    taskid: 73f6abb4-0de8-4db5-8347-e1348758ed20
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 250,
+          "y": 740
+        }
+      }
+  "26":
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      listData:
+        simple: ${incident.labels.offense_source}
+      listName:
+        simple: Offence Source for Phishing Domain Usecase
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.add
+      id: 05493599-1319-4274-8bde-abc7d6ddcbf9
+      iscommand: true
+      name: Add new domain in Demisto List
+      script: Builtin|||addToList
+      type: regular
+      version: -1
+    taskid: 05493599-1319-4274-8bde-abc7d6ddcbf9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 10,
+          "y": 1120
+        }
+      }
+  "27":
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "28"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 474b06dc-46f6-40bc-8a2c-46bd97e4b37d
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 474b06dc-46f6-40bc-8a2c-46bd97e4b37d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 280,
+          "y": 1920
+        }
+      }
+  "28":
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f9b2e5fb-a2a2-43e4-8e63-b062c7cfc4e1
+      iscommand: false
+      name: End
+      type: title
+      version: -1
+    taskid: f9b2e5fb-a2a2-43e4-8e63-b062c7cfc4e1
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 270,
+          "y": 2110
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 2125,
+        "width": 1290,
+        "x": 10,
+        "y": 50
+      }
+    }
+  }
