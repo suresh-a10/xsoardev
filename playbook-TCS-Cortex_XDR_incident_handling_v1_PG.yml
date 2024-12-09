@@ -1,0 +1,4938 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.5.0
+    itemVersion: 4.11.4
+    packID: ""
+    packName: Cortex XDR by Palo Alto Networks
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: |-
+  This playbook is triggered by fetching a Palo Alto Networks Cortex XDR incident.
+  The playbook syncs and updates new XDR alerts that construct the incident and triggers a sub-playbook to handle each alert by type.
+  Then, the playbook performs enrichment on the incident’s indicators and hunts for related IOCs.
+  Based on the severity, it lets the analyst decide whether to continue to the remediation stage or close the investigation as a false positive.
+  After the remediation, if there are no new alerts, the playbook stops the alert sync and closes the XDR incident and investigation. For performing the bidirectional sync, the playbook uses the incoming and outgoing mirroring feature added in XSOAR version 6.0.0. After the Calculate Severity - Generic v2 sub-playbook’s run, Cortex XSOAR will be treated as the single source of truth for the severity field, and it will sync only from Cortex XSOAR to XDR, so manual changes for the severity field in XDR will not update in the XSOAR incident.
+id: 515f2439-bb22-4288-8e41-9547509938db
+inputs:
+- description: Incident ID.
+  key: incident_id
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: xdrincidentid
+      root: incident
+- description: This input indicates whether the playbook will link similar incidents.
+    To link similar incidents, specify Yes/No.
+  key: LinkSimilarIncidents
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "Yes"
+- description: This input indicates whether the playbook will hunt for related IOCs.
+    Specify Yes/No.
+  key: Hunting
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "Yes"
+- description: "A comma-separated list of internal IP ranges to check IP addresses
+    against. The list should be provided in CIDR notation. An example of a list \n\"172.16.0.0/12,10.0.0.0/8,192.168.0.0/16\"
+    (without quotes). \nIf a list is not provided, will use the default list provided
+    in the IsIPInRanges."
+  key: InternalRange
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: |-
+    A comma-separated list of names of critical users in the organization.
+    This will affect the calculated severity of the incident.
+  key: CriticalUsernames
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: admin,administrator
+- description: A comma-separated list of names of critical endpoints in the organization.
+    This will affect the calculated severity of the incident.
+  key: CriticalHostnames
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: A comma-separated list of DN names of critical Active Directory groups.
+    This will affect the severity calculated for this incident.
+  key: CriticalADGroups
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: This is provided for the IsInternalHostName script that checks if the
+    detected host names are internal or external if the hosts match the organization's
+    naming convention. For example, the host testpc1 will have the following regex
+    \w{6}\d{1}.
+  key: InternalHostRegex
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The organizations internal domain name. This is provided for the IsInternalHostName
+    script that checks if the detected host names are internal or external if the
+    hosts contain the internal domains suffix. For example, paloaltonetworks.com.
+    If there is more than one domain, use the | character to separate values such
+    as (paloaltonetworks.com|test.com).
+  key: InternalDomainName
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Timestamp in relative date format for query device control events from
+    Cortex XDR.
+  key: TimeStamp
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: 10 days
+- description: Whether remediation will be run automatically or manually. If set to
+    "True" - remediation will be automatic.
+  key: AutoRemediation
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "False"
+- description: XDR instance domain
+  key: XDRDomain
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: xdrurl
+      root: incident
+      transformers:
+      - args:
+          delimiter:
+            value:
+              simple: /
+          fields:
+            value:
+              simple: "3"
+        operator: Cut
+- description: |-
+    Possible values: True/False.  Default: True.
+    Should the given indicators be automatically blocked, or should the user be given the option to choose?
+
+    If set to False - no prompt will appear, and all provided indicators will be blocked automatically.
+    If set to True - the user will be prompted to select which indicators to block.
+  key: AutoBlockIndicators
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "True"
+- description: "Possible values: True/False.\nWhether to provide user verification
+    for blocking IPs. \n\nFalse - No prompt will be displayed to the user.\nTrue -
+    The server will ask the user for blocking verification and will display the blocking
+    list."
+  key: UserVerification
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "False"
+name: TCS-Cortex XDR incident handling v1_PG
+outputs: []
+sourceplaybookid: Cortex XDR incident handling v3
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "185"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d6ce630d-4da0-429a-88e0-23cbe0442b8b
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: d6ce630d-4da0-429a-88e0-23cbe0442b8b
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": -715
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "205"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: fda3498c-9b6b-4b89-8176-890426158a7c
+      iscommand: false
+      name: Start Detection SLA & Closure SLA
+      type: title
+      version: -1
+    taskid: fda3498c-9b6b-4b89-8176-890426158a7c
+    timertriggers:
+    - action: start
+      fieldname: detectionsla
+    - action: start
+      fieldname: closuresla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 190
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 58fcadf1-744a-42bf-8be6-bee22ef1eb06
+      iscommand: false
+      name: Investigation
+      type: title
+      version: -1
+    taskid: 58fcadf1-744a-42bf-8be6-bee22ef1eb06
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 575
+        }
+      }
+  "35":
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    note: false
+    quietmode: 0
+    scriptarguments:
+      CVE:
+        complex:
+          accessor: ID
+          root: CVE
+      Domain:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: Domain.Name
+              operator: isNotEqualString
+              right:
+                iscontext: true
+                value:
+                  simple: inputs.XDRDomain
+          root: Domain.Name
+          transformers:
+          - operator: uniq
+      Email:
+        complex:
+          accessor: Email.Address
+          root: Account
+          transformers:
+          - operator: uniq
+      Hostname:
+        complex:
+          accessor: Hostname
+          root: Endpoint
+          transformers:
+          - operator: uniq
+      IP:
+        complex:
+          accessor: Address
+          root: IP
+          transformers:
+          - operator: uniq
+      MD5:
+        complex:
+          accessor: MD5
+          root: File
+          transformers:
+          - operator: uniq
+      ResolveIP:
+        simple: "False"
+      SHA1:
+        complex:
+          accessor: SHA1
+          root: File
+          transformers:
+          - operator: uniq
+      SHA256:
+        complex:
+          accessor: SHA256
+          root: File
+          transformers:
+          - operator: uniq
+      URL:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: URL.Data
+              operator: isNotEqualString
+              right:
+                iscontext: true
+                value:
+                  simple: incident.xdrurl
+          root: URL.Data
+          transformers:
+          - operator: uniq
+      Username:
+        complex:
+          accessor: Username
+          root: Account
+          transformers:
+          - operator: uniq
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Enrich entities using one or more integrations.
+      id: cba7fcb1-9f76-4da9-803d-9c2317260829
+      iscommand: false
+      name: Entity Enrichment - Generic v3
+      playbookId: Entity Enrichment - Generic v3
+      type: playbook
+      version: -1
+    taskid: cba7fcb1-9f76-4da9-803d-9c2317260829
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 830,
+          "y": 270
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "83"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: XDR.HandledAlerts
+      value:
+        complex:
+          accessor: xdralertcount
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value in context with the given context key.
+      id: c1a3ad02-cdf2-4d1a-8563-88b0e0b773d6
+      iscommand: false
+      name: Count XDR alerts
+      script: Set
+      type: regular
+      version: -1
+    taskid: c1a3ad02-cdf2-4d1a-8563-88b0e0b773d6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 710
+        }
+      }
+  "45":
+    continueonerrortype: ""
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "190"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      incident_id:
+        complex:
+          accessor: incident_id
+          root: PaloAltoNetworksXDR.Incident
+      status:
+        simple: RESOLVED_DUPLICATE
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Updates one or more fields of a specified incident. Missing fields
+        will be ignored. To remove the assignment for an incident, pass a null value
+        in the assignee email argument.
+      id: be85dd69-6ae0-4694-848a-665e05a8b2a2
+      iscommand: true
+      name: Resolve XDR incident as duplicate
+      script: '|||xdr-update-incident'
+      type: regular
+      version: -1
+    taskid: be85dd69-6ae0-4694-848a-665e05a8b2a2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2050,
+          "y": 40
+        }
+      }
+  "54":
+    continueonerrortype: ""
+    id: "54"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "158"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      incident_id:
+        complex:
+          root: inputs.incident_id
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cortex XDR - IR
+      description: Returns additional data for the specified incident, for example,
+        related alerts, file artifacts, network artifacts, and so on.
+      id: 8a4cfbfd-9520-4969-847e-bd1652f62844
+      iscommand: true
+      name: Cortex XDR - get incident extra data
+      script: Cortex XDR - IR|||xdr-get-incident-extra-data
+      type: regular
+      version: -1
+    taskid: 8a4cfbfd-9520-4969-847e-bd1652f62844
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": -375
+        }
+      }
+  "82":
+    continueonerrortype: ""
+    id: "82"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "45"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6bb6a087-3302-4941-8a95-9e8e4ba54984
+      iscommand: false
+      name: False Positive (Stop Detection SLA)
+      type: title
+      version: -1
+    taskid: 6bb6a087-3302-4941-8a95-9e8e4ba54984
+    timertriggers:
+    - action: stop
+      fieldname: detectionsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 2050,
+          "y": -220
+        }
+      }
+  "83":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: owner
+                root: incident
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "83"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "84"
+      "yes":
+      - "92"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b0bb235a-830b-49a5-8189-12c42eba9bee
+      iscommand: false
+      name: Has Owner Been Assigned
+      type: condition
+      version: -1
+    taskid: b0bb235a-830b-49a5-8189-12c42eba9bee
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 870
+        }
+      }
+  "84":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: assigned_user_mail
+                root: incident.labels
+          operator: isNotEqualString
+          right:
+            value:
+              simple: "null"
+      label: "yes"
+    continueonerrortype: ""
+    id: "84"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "86"
+      '#none#':
+      - "85"
+      "yes":
+      - "85"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5fbb7ff8-a121-46d0-8b72-a112e65cdd5b
+      iscommand: false
+      name: Has Investigator Been Assigned in XDR?
+      type: condition
+      version: -1
+    taskid: 5fbb7ff8-a121-46d0-8b72-a112e65cdd5b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1050
+        }
+      }
+  "85":
+    continueonerrortype: ""
+    id: "85"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "89"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      email:
+        complex:
+          accessor: assigned_user_mail
+          root: incident.labels
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Assign analyst to incident.
+        By default,  the analyst is picked randomly from the available users, according to the provided roles (if no roles provided, will fetch all users).
+        Otherwise, the analyst will be picked according to the 'assignBy' arguments.
+        machine-learning: DBot will calculated and decide who is the best analyst for the job.
+        top-user: The user that is most commonly owns this type of incident
+        less-busy-user: The less busy analyst will be picked to be the incident owner.
+        online: The analyst is picked randomly from all online analysts, according to the provided roles (if no roles provided, will fetch all users).
+        current: The user that executed the command
+      id: 9076efca-9625-4d74-8898-aa368e80fb23
+      iscommand: false
+      name: Assign Incident in XSOAR
+      script: AssignAnalystToIncident
+      type: regular
+      version: -1
+    taskid: 9076efca-9625-4d74-8898-aa368e80fb23
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 250,
+          "y": 1240
+        }
+      }
+  "86":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "86"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "87"
+      - "87"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      name:
+        simple: AutoAssignment_Lock
+      timeout:
+        simple: "600"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Demisto Lock
+      description: Gets a specific lock. If the lock doesn't exist, it creates one.
+        If the lock is already in use, the command waits until the lock is released
+        or until timeout is reached. If timeout is reached and the lock hasn't been
+        released, the command fails to get the lock.
+      id: 8aaedfee-782c-4fc1-8378-5fec1e60115f
+      iscommand: true
+      name: Locking the Assignment Task
+      script: Demisto Lock|||demisto-lock-get
+      type: regular
+      version: -1
+    taskid: 8aaedfee-782c-4fc1-8378-5fec1e60115f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 250,
+          "y": 1430
+        }
+      }
+  "87":
+    continueonerrortype: ""
+    id: "87"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "88"
+      "yes":
+      - "88"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      desc:
+        complex:
+          accessor: description
+          root: incident.labels
+      incidentid:
+        complex:
+          accessor: incident_id
+          root: incident.labels
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1857146a-7f47-4f42-8e69-e42bd543ec0c
+      iscommand: false
+      name: AutoAssign Analyst To Incident
+      script: 0021cb92-321d-4754-81a1-66fc6a41635d
+      type: regular
+      version: -1
+    taskid: 1857146a-7f47-4f42-8e69-e42bd543ec0c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 250,
+          "y": 1610
+        }
+      }
+  "88":
+    continueonerrortype: ""
+    id: "88"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "89"
+      - "89"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      name:
+        simple: AutoAssignment_Lock
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Demisto Lock
+      description: Release a lock
+      id: 5588f0de-4acb-424c-8d76-4f3ab67ec3eb
+      iscommand: true
+      name: Release the Assignment Task
+      script: Demisto Lock|||demisto-lock-release
+      type: regular
+      version: -1
+    taskid: 5588f0de-4acb-424c-8d76-4f3ab67ec3eb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 250,
+          "y": 1800
+        }
+      }
+  "89":
+    continueonerrortype: ""
+    id: "89"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "90"
+      - "90"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      username:
+        complex:
+          accessor: owner
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.get.user.by.username
+      id: c7dd125b-bc50-4b2c-8243-7dd9d3782df7
+      iscommand: true
+      name: Get Incident Owner Details
+      script: Builtin|||getUserByUsername
+      type: regular
+      version: -1
+    taskid: c7dd125b-bc50-4b2c-8243-7dd9d3782df7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 250,
+          "y": 1980
+        }
+      }
+  "90":
+    continueonerrortype: ""
+    id: "90"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "94"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 084bd8bf-f045-44f7-8306-0516fbe0b1d9
+      iscommand: false
+      name: Start Acknowledgement SLA
+      type: title
+      version: -1
+    taskid: 084bd8bf-f045-44f7-8306-0516fbe0b1d9
+    timertriggers:
+    - action: start
+      fieldname: responsesla
+    - action: start
+      fieldname: acknowledgementsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 250,
+          "y": 2170
+        }
+      }
+  "91":
+    continueonerrortype: ""
+    id: "91"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: OrignalSeverity
+      value:
+        simple: ${incident.severity}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 02a2b62d-db6d-4486-85c2-afad4caee874
+      iscommand: false
+      name: Set Orignal Severity to Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 02a2b62d-db6d-4486-85c2-afad4caee874
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1250,
+          "y": 2670
+        }
+      }
+  "92":
+    continueonerrortype: ""
+    id: "92"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "99"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      severity:
+        complex:
+          accessor: severity}
+          root: ${PaloAltoNetworksXDR.Incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 25c070a0-c02d-43db-8332-11d03ada4c93
+      iscommand: true
+      name: 'Set Severity to  Incident '
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 25c070a0-c02d-43db-8332-11d03ada4c93
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 230,
+          "y": 2640
+        }
+      }
+  "93":
+    continueonerrortype: ""
+    id: "93"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      severity:
+        simple: ${OrignalSeverity}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 4f087294-799b-40bc-86db-a5925e4922e1
+      iscommand: true
+      name: 'Set Original Severity to Incident '
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 4f087294-799b-40bc-86db-a5925e4922e1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1250,
+          "y": 2840
+        }
+      }
+  "94":
+    continueonerrortype: ""
+    id: "94"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "95"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      selectshift:
+        complex:
+          accessor: roles
+          root: UserByUsername
+          transformers:
+          - args:
+              from:
+                value:
+                  simple: '['
+            operator: substringFrom
+          - args:
+              to:
+                value:
+                  simple: ']'
+            operator: substringTo
+          - args:
+              delimiter:
+                value:
+                  simple: ' '
+            operator: splitAndTrim
+          - args:
+              separator:
+                value:
+                  simple: ' '
+            operator: join
+          - args:
+              regex:
+                value:
+                  simple: ' CSOC-XSOAR-Admin'
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              regex:
+                value:
+                  simple: ' Read-Only'
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              regex:
+                value:
+                  simple: ' Operator'
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              delimiter: {}
+            operator: splitAndTrim
+      shift:
+        complex:
+          accessor: roles
+          root: UserByUsername
+          transformers:
+          - args:
+              from:
+                value:
+                  simple: '['
+            operator: substringFrom
+          - args:
+              to:
+                value:
+                  simple: ']'
+            operator: substringTo
+          - args:
+              delimiter: {}
+            operator: splitAndTrim
+          - args:
+              separator:
+                value:
+                  simple: ' '
+            operator: join
+          - args:
+              regex:
+                value:
+                  simple: ' CSOC-XSOAR-Admin'
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              regex:
+                value:
+                  simple: ' Read-Only'
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              regex:
+                value:
+                  simple: ' Operator'
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              delimiter: {}
+            operator: splitAndTrim
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: a52b9c32-f8b2-481f-8afc-c50bcc5a16e9
+      iscommand: true
+      name: Set Investigator Role In Context
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: a52b9c32-f8b2-481f-8afc-c50bcc5a16e9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 250,
+          "y": 2310
+        }
+      }
+  "95":
+    continueonerrortype: ""
+    id: "95"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "92"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: cbc62786-841b-4c20-8ad9-8191c39f4493
+      iscommand: false
+      name: 'Set Severity '
+      type: title
+      version: -1
+    taskid: cbc62786-841b-4c20-8ad9-8191c39f4493
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 250,
+          "y": 2490
+        }
+      }
+  "96":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: runStatus
+                root: incident.responsesla
+          operator: isEqualString
+          right:
+            value:
+              simple: running
+      label: "yes"
+    continueonerrortype: ""
+    id: "96"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "98"
+      "yes":
+      - "97"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5178d219-78e6-4ed6-8efd-d31326f05a28
+      iscommand: false
+      name: Is Response SLA Still Running ?
+      type: condition
+      version: -1
+    taskid: 5178d219-78e6-4ed6-8efd-d31326f05a28
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 230,
+          "y": 2985
+        }
+      }
+  "97":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Have You Completed This Task
+        options: []
+        optionsarg:
+        - simple: Yes - I've completed this task move to next stage
+        placeholder: ""
+        readonly: false
+        required: true
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Please Click The 'Lets Get Started!' Button To Stop The Response SLA
+        Timer
+      totalanswers: 0
+    id: "97"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: null
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "98"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3554dea8-b6cb-4e91-8a21-3f329afe35df
+      iscommand: false
+      name: Please Click The 'Lets Get Started!' Button To Stop The Response SLA Timer
+      type: collection
+      version: -1
+    taskid: 3554dea8-b6cb-4e91-8a21-3f329afe35df
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": 3170
+        }
+      }
+  "98":
+    continueonerrortype: ""
+    id: "98"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "199"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 19920b5d-ad4f-4363-82e0-f4b622f210a8
+      iscommand: false
+      name: Stop Acknowledgement SLA
+      type: title
+      version: -1
+    taskid: 19920b5d-ad4f-4363-82e0-f4b622f210a8
+    timertriggers:
+    - action: stop
+      fieldname: responsesla
+    - action: stop
+      fieldname: acknowledgementsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": 3335
+        }
+      }
+  "99":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "99"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "96"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      assigned_user_mail:
+        complex:
+          accessor: email
+          root: UserByUsername
+          transformers:
+          - operator: toLowerCase
+      incident_id:
+        complex:
+          accessor: incident_id
+          root: PaloAltoNetworksXDR.Incident
+      status:
+        simple: UNDER_INVESTIGATION
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Updates one or more fields of a specified incident. Missing fields
+        will be ignored. To remove the assignment for an incident, pass a null value
+        in the assignee email argument.
+      id: d77a94f9-1bb9-4b6e-864b-64646e4a9c8a
+      iscommand: true
+      name: Update Incident Owner & Status In XDR
+      script: '|||xdr-update-incident'
+      type: regular
+      version: -1
+    taskid: d77a94f9-1bb9-4b6e-864b-64646e4a9c8a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 230,
+          "y": 2810
+        }
+      }
+  "100":
+    continueonerrortype: ""
+    id: "100"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: "Is This a True Positive Alert ?\n(Study The IoC Threat Intelligence
+          Report. Are IoCs Part of The XSOAR Block List ? Check if the indicators
+          have block tags and the expiration status. Also check for 'Related Incidents') "
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - 'No, It is False Positive '
+      - No, its a Benign-True Positive
+      - Yes, it is True Positive
+      - Not sure - To Be Determined
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: {}
+    nexttasks:
+      'No, It is False Positive ':
+      - "101"
+      No, its a Benign-True Positive:
+      - "102"
+      Not sure - To Be Determined:
+      - "159"
+      Yes, it is True Positive:
+      - "109"
+    note: true
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e0497d88-1988-467b-8e5d-925d3fc3548f
+      iscommand: false
+      name: "Is This a True Positive Alert ? \n(Study The IoC Threat Intelligence
+        Report. Are IoCs Part of The XSOAR Block List ? Check if the indicators have
+        block tags and the expiration status. Also check for 'Related Incidents') "
+      tags:
+      - Note
+      type: condition
+      version: -1
+    taskid: e0497d88-1988-467b-8e5d-925d3fc3548f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": 3815
+        }
+      }
+  "101":
+    continueonerrortype: ""
+    id: "101"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "105"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 770e523c-b8e4-4dc0-8012-9c5d07354cc7
+      iscommand: false
+      name: False Positive (Stop Detection SLA)
+      type: title
+      version: -1
+    taskid: 770e523c-b8e4-4dc0-8012-9c5d07354cc7
+    timertriggers:
+    - action: stop
+      fieldname: detectionsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -390,
+          "y": 8490
+        }
+      }
+  "102":
+    continueonerrortype: ""
+    id: "102"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "106"
+    note: true
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: fbe551bb-6161-4247-8c61-83c49363658f
+      iscommand: false
+      name: Benign True Positive (Stop Detection SLA)
+      type: title
+      version: -1
+    taskid: fbe551bb-6161-4247-8c61-83c49363658f
+    timertriggers:
+    - action: stop
+      fieldname: detectionsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 100,
+          "y": 8490
+        }
+      }
+  "103":
+    continueonerrortype: ""
+    id: "103"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: 'If You''ve Concluded The Investigation Head Over To The ''Report
+          Summary'' Tab And Write Your Report  '
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - Yes, I've finished Writing My Report
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      Yes, I've finished Writing My Report:
+      - "104"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check whether the values provided in arguments are equal. If either
+        of the arguments are missing, no is returned.
+      id: 856eec02-f9e9-47eb-88a6-8bfd18ab6e01
+      iscommand: false
+      name: 'If You''ve Concluded The Investigation Head Over To The ''Report Summary''
+        Tab And Write Your Report  '
+      type: condition
+      version: -1
+    taskid: 856eec02-f9e9-47eb-88a6-8bfd18ab6e01
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -200,
+          "y": 12090
+        }
+      }
+  "104":
+    continueonerrortype: ""
+    id: "104"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Are You Ready To Close The Investigation ?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - Yes (make sure all mandatory fields are populated else the investigation will
+        not close)
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      Yes (make sure all mandatory fields are populated else the investigation will not close):
+      - "206"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 80a74c4a-cb73-44f6-8a57-cd8ef6440d8c
+      iscommand: false
+      name: Are You Ready To Close The Investigation ?
+      type: condition
+      version: -1
+    taskid: 80a74c4a-cb73-44f6-8a57-cd8ef6440d8c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -190,
+          "y": 12300
+        }
+      }
+  "105":
+    continueonerrortype: ""
+    id: "105"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "107"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      investigationconclusion:
+        simple: False Positive
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 6495ec1d-da52-4e6f-87ad-a451fbf76846
+      iscommand: true
+      name: Set Investigation Conclusion False Positive
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 6495ec1d-da52-4e6f-87ad-a451fbf76846
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -390,
+          "y": 8735
+        }
+      }
+  "106":
+    continueonerrortype: ""
+    id: "106"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "133"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      investigationconclusion:
+        simple: Benign-True Positive
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 7f244186-00f7-4cf3-89e5-17a671607ce1
+      iscommand: true
+      name: Set Investigation Conclusion Benign-True Positive
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 7f244186-00f7-4cf3-89e5-17a671607ce1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 100,
+          "y": 8710
+        }
+      }
+  "107":
+    continueonerrortype: ""
+    id: "107"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "103"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      incident_id:
+        complex:
+          accessor: incident_id
+          root: PaloAltoNetworksXDR.Incident
+      status:
+        simple: RESOLVED_FALSE_POSITIVE
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Updates one or more fields of a specified incident. Missing fields
+        will be ignored. To remove the assignment for an incident, pass a null value
+        in the assignee email argument.
+      id: f6ec74e4-5e97-4942-8dae-c2df2e0b3608
+      iscommand: true
+      name: Close XDR incident as false positive
+      script: '|||xdr-update-incident'
+      type: regular
+      version: -1
+    taskid: f6ec74e4-5e97-4942-8dae-c2df2e0b3608
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -380,
+          "y": 9020
+        }
+      }
+  "108":
+    continueonerrortype: ""
+    id: "108"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "139"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      investigationconclusion:
+        simple: True Positive
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 1de8b346-a781-4849-8d4f-8bc33f1e7c34
+      iscommand: true
+      name: Set 'Investigation Conclusion' To True Positive
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 1de8b346-a781-4849-8d4f-8bc33f1e7c34
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 8620
+        }
+      }
+  "109":
+    continueonerrortype: ""
+    id: "109"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "108"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c15a3462-b6dd-49d8-81fb-a82fddde3c11
+      iscommand: false
+      name: True Positive (Stop Detection SLA & Start Threat Response SLA)
+      type: title
+      version: -1
+    taskid: c15a3462-b6dd-49d8-81fb-a82fddde3c11
+    timertriggers:
+    - action: stop
+      fieldname: detectionsla
+    - action: start
+      fieldname: threatresponsesla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 8490
+        }
+      }
+  "128":
+    continueonerrortype: ""
+    id: "128"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Do you want to block malicious file hash?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - Yes - I Want To Contain Host
+      - Yes - I Want To Block IOC
+      - No - They Are Already Blocked / Contained
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      No - They Are Already Blocked / Contained:
+      - "151"
+      Yes - I Want To Block IOC:
+      - "144"
+      Yes - I Want To Contain Host:
+      - "156"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2ce7d3f1-0968-4e9c-87cd-776ca64ba371
+      iscommand: false
+      name: Do you want to block malicious file hash?
+      type: condition
+      version: -1
+    taskid: 2ce7d3f1-0968-4e9c-87cd-776ca64ba371
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 9635
+        }
+      }
+  "133":
+    continueonerrortype: ""
+    id: "133"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "103"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      incident_id:
+        complex:
+          accessor: incident_id
+          root: PaloAltoNetworksXDR.Incident
+      status:
+        simple: RESOLVED_KNOWN_ISSUE
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Updates one or more fields of a specified incident. Missing fields
+        will be ignored. To remove the assignment for an incident, pass a null value
+        in the assignee email argument.
+      id: e992fdf6-ed42-4038-829c-893fbf531ca9
+      iscommand: true
+      name: Close XDR incident as Benign-True Positive
+      script: '|||xdr-update-incident'
+      type: regular
+      version: -1
+    taskid: e992fdf6-ed42-4038-829c-893fbf531ca9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 100,
+          "y": 9030
+        }
+      }
+  "134":
+    continueonerrortype: ""
+    id: "134"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6f209578-af43-4e10-85d8-2c98f0796232
+      iscommand: false
+      name: End
+      type: title
+      version: -1
+    taskid: 6f209578-af43-4e10-85d8-2c98f0796232
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 160,
+          "y": 12770
+        }
+      }
+  "135":
+    continueonerrortype: ""
+    id: "135"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "136"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      iocblockrequest:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: e86b8a91-b209-4c9d-834c-df9b974157c6
+      iscommand: true
+      name: Set Context IOC Block Request To - Yes
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: e86b8a91-b209-4c9d-834c-df9b974157c6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 640,
+          "y": 9990
+        }
+      }
+  "136":
+    continueonerrortype: ""
+    id: "136"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "207"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a4c0e7aa-a427-489e-8598-dd9d693abefe
+      iscommand: false
+      name: TCS-Select IOC To Block_CM Playbook v1_KK
+      playbookId: 9dacaaf8-64e7-4758-822e-694b991ee19c
+      type: playbook
+      version: -1
+    taskid: a4c0e7aa-a427-489e-8598-dd9d693abefe
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 640,
+          "y": 10160
+        }
+      }
+  "139":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: anyimpact
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: 'Was there any Impact ? (service disruption, malware installed,
+            successful C&C communication..etc) '
+        options: []
+        optionsarg:
+        - {}
+        - simple: "No"
+        - simple: "Yes"
+        placeholder: ""
+        readonly: false
+        required: true
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Was there any Impact ? (service disruption, malware installed, successful
+        C&C communication..etc)
+      totalanswers: 0
+    id: "139"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: null
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "140"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 620327c5-fc08-44d6-8b3e-08989fe35de0
+      iscommand: false
+      name: 'Was there any Impact ? (service disruption, malware installed, successful
+        C&C communication..etc) '
+      type: collection
+      version: -1
+    taskid: 620327c5-fc08-44d6-8b3e-08989fe35de0
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 8790
+        }
+      }
+  "140":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: "0"
+                root: Was there any Impact ? .Answers
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: "yes"
+      label: "yes"
+    continueonerrortype: ""
+    id: "140"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "128"
+      "yes":
+      - "141"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c4edc295-fc38-400b-846a-b0c39e424abc
+      iscommand: false
+      name: Does The CSOC Manager Need To Be Notified ? (auto select if impact is
+        'Yes')
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: c4edc295-fc38-400b-846a-b0c39e424abc
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 8960
+        }
+      }
+  "141":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: emailbody
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Enter Notification Message To CSOC Manager (give a brief about the
+            true positive alert and the impact)
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: true
+        tooltip: ""
+        type: longText
+      sender: ""
+      title: Enter Notification Message To CSOC Manager
+      totalanswers: 0
+    id: "141"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: null
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "142"
+    note: true
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 22c43b72-34e7-40d2-884e-b6639ec58c81
+      iscommand: false
+      name: Enter Notification Message To CSOC Manager (give a brief about the true
+        positive alert and the impact)
+      type: collection
+      version: -1
+    taskid: 22c43b72-34e7-40d2-884e-b6639ec58c81
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 9135
+        }
+      }
+  "142":
+    continueonerrortype: ""
+    id: "142"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "143"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Get the Server URL.
+      id: 6adb89b8-20bc-4b4c-8c08-024c3a7be6f7
+      iscommand: false
+      name: Get server url
+      script: GetServerURL
+      type: regular
+      version: -1
+    taskid: 6adb89b8-20bc-4b4c-8c08-024c3a7be6f7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 9300
+        }
+      }
+  "143":
+    continueonerrortype: ""
+    id: "143"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "128"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      bcc:
+        simple: kunal.krushev@tcs.com
+      body:
+        simple: "${incident.emailbody}\n\nInvestigation Link --> \nhttps://${ServerURL.Host}/#/Custom/caseinfoid/${incident.id}"
+      cc:
+        simple: ${UserByUsername.email}
+      subject:
+        simple: '*True Positive Notification* EDR Investigation - Severity - ${incident.mailerseverity}'
+      to:
+        simple: nimisha.prajapati@tcs.com,yogesh.gholap@tcs.com,
+      using:
+        simple: Mail Sender_instance_CSOC_Mail
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 37583be8-98ff-49e6-89f3-40b318722699
+      iscommand: true
+      name: Notify CSOC Manager & Necessary Stakeholders
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 37583be8-98ff-49e6-89f3-40b318722699
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 9460
+        }
+      }
+  "144":
+    continueonerrortype: ""
+    id: "144"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "135"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 13b10990-1f25-407c-887d-8a2ac258f761
+      iscommand: false
+      name: Start Block IOC\Mitigation SLA Timer (Inside Sub Playbook)
+      type: title
+      version: -1
+    taskid: 13b10990-1f25-407c-887d-8a2ac258f761
+    timertriggers:
+    - action: start
+      fieldname: mitigationsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 640,
+          "y": 9860
+        }
+      }
+  "145":
+    continueonerrortype: ""
+    id: "145"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bc051315-0031-46e0-8b31-f9de6acf25ea
+      iscommand: false
+      name: 'Sub Playbook: CSOC Submitted IOC Block Process'
+      playbookId: f3a2d756-c0d5-4b32-83a4-0de75ea3765a
+      type: playbook
+      version: -1
+    taskid: bc051315-0031-46e0-8b31-f9de6acf25ea
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1890,
+          "y": 10550
+        }
+      }
+  "146":
+    continueonerrortype: ""
+    id: "146"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "201"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      imtraised:
+        simple: "no"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: dd9d4b03-8376-4930-8b65-060bbc97720b
+      iscommand: true
+      name: Update IMT Context To - No
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: dd9d4b03-8376-4930-8b65-060bbc97720b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 240,
+          "y": 11800
+        }
+      }
+  "147":
+    continueonerrortype: ""
+    id: "147"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "148"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      imtraised:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: b2c4782e-5aa8-4846-8d79-f0248b5dccb0
+      iscommand: true
+      name: Update IMT Context To - Yes
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: b2c4782e-5aa8-4846-8d79-f0248b5dccb0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 750,
+          "y": 11800
+        }
+      }
+  "148":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: imtnumber
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Enter The IMT Number
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: true
+        tooltip: ""
+        type: shortText
+      sender: ""
+      title: Enter The IMT Number
+      totalanswers: 0
+    id: "148"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: null
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "202"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a6443a6e-a80a-4548-891c-19dd19f6a95c
+      iscommand: false
+      name: Enter The IMT Number
+      type: collection
+      version: -1
+    taskid: a6443a6e-a80a-4548-891c-19dd19f6a95c
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 750,
+          "y": 11960
+        }
+      }
+  "149":
+    continueonerrortype: ""
+    id: "149"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "150"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ec1a55aa-5ab7-47e6-81d9-5139766d9548
+      iscommand: false
+      name: Stop Threat Response SLA
+      type: title
+      version: -1
+    taskid: ec1a55aa-5ab7-47e6-81d9-5139766d9548
+    timertriggers:
+    - action: stop
+      fieldname: threatresponsesla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 330,
+          "y": 11420
+        }
+      }
+  "150":
+    continueonerrortype: ""
+    id: "150"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Review The Alert - Check If You Need To Raise an IMT ?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - No -  IMT Not Required
+      - Yes - I Have Raised an IMT
+      - I'm Not Sure - Will Do It later
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      I'm Not Sure - Will Do It later:
+      - "103"
+      No -  IMT Not Required:
+      - "146"
+      Yes - I Have Raised an IMT:
+      - "147"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7d12fd7e-5049-4403-8c3a-2f5ec2d792b6
+      iscommand: false
+      name: Review The Alert - Check If You Need To Raise an IMT ?
+      type: condition
+      version: -1
+    taskid: 7d12fd7e-5049-4403-8c3a-2f5ec2d792b6
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 330,
+          "y": 11550
+        }
+      }
+  "151":
+    continueonerrortype: ""
+    id: "151"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "149"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      iocblockrequest:
+        simple: "no"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: ac010eb1-decc-4ed2-8fac-3b312316edab
+      iscommand: true
+      name: Set Context Block IOC To  - No
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: ac010eb1-decc-4ed2-8fac-3b312316edab
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 330,
+          "y": 11225
+        }
+      }
+  "152":
+    continueonerrortype: ""
+    id: "152"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "149"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: da80428d-992c-4c16-8dbf-68b96de31520
+      iscommand: false
+      name: Stop Mitigation SLA (Inside Sub Playbook)
+      type: title
+      version: -1
+    taskid: da80428d-992c-4c16-8dbf-68b96de31520
+    timertriggers:
+    - action: stop
+      fieldname: mitigationsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 740,
+          "y": 11255
+        }
+      }
+  "154":
+    continueonerrortype: ""
+    id: "154"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      text:
+        complex:
+          accessor: xdrfilesha256
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 29429bf0-abe4-4e62-846a-78a83e97980c
+      iscommand: true
+      name: Extract The hash value
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 29429bf0-abe4-4e62-846a-78a83e97980c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 10
+        }
+      }
+  "155":
+    continueonerrortype: ""
+    id: "155"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "157"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      containmachine:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: f6149378-2f63-46ba-8057-1e73b61352aa
+      iscommand: true
+      name: Set Contain Machine Context To - YES
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: f6149378-2f63-46ba-8057-1e73b61352aa
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 40,
+          "y": 10010
+        }
+      }
+  "156":
+    continueonerrortype: ""
+    id: "156"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "155"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 14c99c9d-631c-49b7-87b2-a235614e8074
+      iscommand: false
+      name: Start Contain Host SLA\Timer (Inside Sub Playbook)
+      type: title
+      version: -1
+    taskid: 14c99c9d-631c-49b7-87b2-a235614e8074
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 40,
+          "y": 9870
+        }
+      }
+  "157":
+    continueonerrortype: ""
+    id: "157"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "152"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This playbook accepts an XDR endpoint ID and isolates it using
+        the 'Palo Alto Networks Cortex XDR - Investigation and Response' integration.
+      id: 1daa94c5-733b-463e-8d8f-7c001176083f
+      iscommand: false
+      name: TCS-Cortex XDR - Isolate Endpoint
+      playbookId: e9b1859d-ac63-4dd5-833b-fde4a411aef1
+      type: playbook
+      version: -1
+    taskid: 1daa94c5-733b-463e-8d8f-7c001176083f
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 40,
+          "y": 10170
+        }
+      }
+  "158":
+    continueonerrortype: ""
+    id: "158"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "154"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      deviceid:
+        complex:
+          accessor: ID
+          root: Endpoint
+      l:
+        simple: '<p style="text-align: center;"><img style="float: left;" src="data:image/gif;base64,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"
+          alt="" width="93" height="75" /></p>'
+      xdralerts:
+        simple: ${PaloAltoNetworksXDR.Incident.alerts.[0]}
+      xdrfilename:
+        complex:
+          accessor: Name
+          root: Process
+      xdrfilesha256:
+        complex:
+          accessor: SHA256
+          root: Process
+      xdrhostnames:
+        complex:
+          accessor: Hostname
+          root: Process
+      xdrsimilarincidents:
+        simple: ${PaloAltoNetworksXDR.Incident.alerts}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 7b5742c6-bdac-4e8a-8103-29f60d4215ac
+      iscommand: true
+      name: 'Set incident '
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 7b5742c6-bdac-4e8a-8103-29f60d4215ac
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": -180
+        }
+      }
+  "159":
+    continueonerrortype: ""
+    id: "159"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "160"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 33142f99-cc98-4de4-8254-98ec4d0bf10b
+      iscommand: false
+      name: Not Sure - To Be Determined
+      type: title
+      version: -1
+    taskid: 33142f99-cc98-4de4-8254-98ec4d0bf10b
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 3990
+        }
+      }
+  "160":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.tenant
+          operator: isEqualString
+          right:
+            value:
+              simple: Project
+        - left:
+            iscontext: true
+            value:
+              simple: incident.tenant
+          operator: isEqualString
+          right:
+            value:
+              simple: TCS-FS IT
+        - left:
+            iscontext: true
+            value:
+              simple: incident.tenant
+          operator: isEqualString
+          right:
+            value:
+              simple: TCS-ION Project
+        - left:
+            iscontext: true
+            value:
+              simple: incident.tenant
+          operator: isEqualString
+          right:
+            value:
+              simple: TCS-SAP EGG
+        - left:
+            iscontext: true
+            value:
+              simple: incident.tenant
+          operator: isEqualString
+          right:
+            value:
+              simple: Test
+      label: "yes"
+    continueonerrortype: ""
+    id: "160"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "161"
+      "yes":
+      - "167"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e6ae618f-42e3-435f-88fb-dabd9f2a2eac
+      iscommand: false
+      name: 'Check the tenant '
+      type: condition
+      version: -1
+    taskid: e6ae618f-42e3-435f-88fb-dabd9f2a2eac
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 4170
+        }
+      }
+  "161":
+    continueonerrortype: ""
+    id: "161"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: "Would You Like To Contain The Host While You Investigate ? \n(NOTE:
+          if the alert looks suspicious its recommended to contain the machine) "
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "166"
+      "Yes":
+      - "162"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8beab27c-ddac-4779-81eb-91b37c31d539
+      iscommand: false
+      name: "Would You Like To Contain The Host While You Investigate ? \n(NOTE: if
+        the alert looks suspicious its recommended to contain the machine) "
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: 8beab27c-ddac-4779-81eb-91b37c31d539
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 4330
+        }
+      }
+  "162":
+    continueonerrortype: ""
+    id: "162"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "163"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      containmachine:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 875a5970-3881-4574-8425-1385cb13e9c9
+      iscommand: true
+      name: Set Contain Machine Context To - YES
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 875a5970-3881-4574-8425-1385cb13e9c9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 4480
+        }
+      }
+  "163":
+    continueonerrortype: ""
+    id: "163"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "203"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 17cf5542-b2b0-48b8-8397-8962be934330
+      iscommand: false
+      name: Mitigation\Host Contain SLA Start (Inside Sub Playbook)
+      type: title
+      version: -1
+    taskid: 17cf5542-b2b0-48b8-8397-8962be934330
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 4635
+        }
+      }
+  "165":
+    continueonerrortype: ""
+    id: "165"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "166"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a9aa146e-e830-461b-8d08-e43ccfa71433
+      iscommand: false
+      name: Mitigation\Host Contain SLA Stop (Inside Sub Playbook)
+      type: title
+      version: -1
+    taskid: a9aa146e-e830-461b-8d08-e43ccfa71433
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 4910
+        }
+      }
+  "166":
+    continueonerrortype: ""
+    id: "166"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "167"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      containmachine:
+        simple: "no"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: b83480d1-f97a-43a6-8c5b-aa358c59ab71
+      iscommand: true
+      name: Set Contain Machine Context To - No
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: b83480d1-f97a-43a6-8c5b-aa358c59ab71
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 5060
+        }
+      }
+  "167":
+    continueonerrortype: ""
+    formDisplay:
+      bodybackgroundcolor: ""
+      bodyfontcolor: ""
+      headerbackgroundcolor: ""
+      headerfontcolor: ""
+      isexternalrtl: false
+      sender: ""
+      submitbuttonbackgroundcolor: ""
+      submitbuttonfontcolor: ""
+      submittext: ""
+    id: "167"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: 'Study The IoC Threat Intelligence Report. Are IoCs Part of The XSOAR
+          Block List ? (check if the indicators have block tags and the expiration
+          status. Also check for ''Related Incidents'') '
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - Yes - SOME IoCs Are Part of The Block List
+      - Yes - ALL IoCs Are Part of The Block List
+      - No - NONE of The IoCs are Part of The Block List
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      No - NONE of The IoCs are Part of The Block List:
+      - "169"
+      Yes - ALL IoCs Are Part of The Block List:
+      - "170"
+      Yes - SOME IoCs Are Part of The Block List:
+      - "168"
+    note: true
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4a875acd-20c5-4da2-80f1-47f28364e0fb
+      iscommand: false
+      name: 'Study The IoC Threat Intelligence Report. Are IoCs Part of The XSOAR
+        Block List ? (check if the indicators have block tags and the expiration status.
+        Also check for ''Related Incidents'') '
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: 4a875acd-20c5-4da2-80f1-47f28364e0fb
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 5240
+        }
+      }
+  "168":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Review The IoC Intel To Assess The Threat Severity of The IoCs That
+            Are Not Blocked. Once Your Ready - Move To The Next Task
+        options: []
+        optionsarg:
+        - {}
+        - simple: I'm Ready - Move To The Next Task
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Investigation Guide
+      totalanswers: 0
+    id: "168"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Investigation Guide
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - I'm Ready - Procced To Next Task
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "170"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8b055891-9186-4778-8a09-b510cafe680e
+      iscommand: false
+      name: Review The IoC Intel To Assess The Threat Severity of The IoCs That Are
+        Not Blocked. Once Your Ready - Move To The Next Task
+      tags:
+      - report
+      type: collection
+      version: -1
+    taskid: 8b055891-9186-4778-8a09-b510cafe680e
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 5405
+        }
+      }
+  "169":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Review The IoC Intel To Assess The Threat. Once Your Ready - Move
+            To The Next Task
+        options: []
+        optionsarg:
+        - {}
+        - simple: I'm Ready - Procced To Next Task
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Investigation Guide
+      totalanswers: 0
+    id: "169"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Investigation Guide
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - I'm Ready - Procced To Next Task
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "170"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bdbe218b-7500-49ba-8ced-b171a326fcf0
+      iscommand: false
+      name: Review The IoC Intel To Assess The Threat. Once Your Ready - Move To The
+        Next Task
+      tags:
+      - report
+      type: collection
+      version: -1
+    taskid: bdbe218b-7500-49ba-8ced-b171a326fcf0
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1510,
+          "y": 5525
+        }
+      }
+  "170":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Status
+                root: WildFire.Report
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: success
+      label: "yes"
+    continueonerrortype: ""
+    formDisplay:
+      bodybackgroundcolor: ""
+      bodyfontcolor: ""
+      headerbackgroundcolor: ""
+      headerfontcolor: ""
+      isexternalrtl: false
+      sender: ""
+      submitbuttonbackgroundcolor: ""
+      submitbuttonfontcolor: ""
+      submittext: ""
+    id: "170"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "175"
+      "yes":
+      - "171"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 78447aff-df32-4425-8f0d-66a6ed34e9bd
+      iscommand: false
+      name: Is There A Sandbox Report For Review ?
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: 78447aff-df32-4425-8f0d-66a6ed34e9bd
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 5640
+        }
+      }
+  "171":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: 'Review The Sandbox Report. Once your ready move to the next task
+            (refer report in the ''Evidence Board'' tab) '
+        options: []
+        optionsarg:
+        - {}
+        - simple: Report Reviewed - Move To Next Task
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Investigation Guide
+      totalanswers: 0
+    id: "171"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Investigation Guide
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - I'm Ready - Procced To Next Task
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "172"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: eb061047-127e-4465-8bad-0fb596873f0f
+      iscommand: false
+      name: 'Review The Sandbox Report. Once your ready move to the next task (refer
+        report in the ''Evidence Board'' tab) '
+      type: collection
+      version: -1
+    taskid: eb061047-127e-4465-8bad-0fb596873f0f
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 5820
+        }
+      }
+  "172":
+    continueonerrortype: ""
+    id: "172"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Was The File Found "Malicious' In The Sandbox Report ?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "175"
+      "Yes":
+      - "173"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: fadfd6cb-06ef-442e-84e1-be549c6aaeef
+      iscommand: false
+      name: Was The File Found "Malicious' In The Sandbox Report ?
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: fadfd6cb-06ef-442e-84e1-be549c6aaeef
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 5990
+        }
+      }
+  "173":
+    continueonerrortype: ""
+    id: "173"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Does The File Have 'Encryption' Capabilities ? Could It Be a Ransomware
+          ?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "175"
+      "Yes":
+      - "174"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7cf97651-5630-4097-89d8-c3f20f65fa65
+      iscommand: false
+      name: Does The File Have 'Encryption' Capabilities ? Could It Be a Ransomware
+        ?
+      type: condition
+      version: -1
+    taskid: 7cf97651-5630-4097-89d8-c3f20f65fa65
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 6180
+        }
+      }
+  "174":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Collaborate With Senior L1/L2 To Run The Ransomware Playbook
+        options: []
+        optionsarg:
+        - {}
+        - simple: Yes - Action Taken As Per Ransomware Playbook - Move To Next Task
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Investigation Questionnaire
+      totalanswers: 0
+    id: "174"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Investigation Questionnaire
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - Yes - Action Taken As Per Ransomware Playbook- Move To Next Task
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "175"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e8c48c49-0e63-4139-8554-6dda02312d2c
+      iscommand: false
+      name: Collaborate With Senior L1/L2 To Run The Ransomware Playbook
+      tags:
+      - report
+      type: collection
+      version: -1
+    taskid: e8c48c49-0e63-4139-8554-6dda02312d2c
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1440,
+          "y": 6360
+        }
+      }
+  "175":
+    continueonerrortype: ""
+    id: "175"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Have You Identified Root Cause For This Alert ? (identify the source
+          application\script\document...etc)
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "176"
+      "Yes":
+      - "177"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 80d16e9b-9e17-48c7-81f5-a0a5a4affd67
+      iscommand: false
+      name: Have You Identified Root Cause For This Alert ? (identify the source application\script\document...etc)
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: 80d16e9b-9e17-48c7-81f5-a0a5a4affd67
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 6540
+        }
+      }
+  "176":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: 'Collaborate With Senior L1/L2 To Identify The Source '
+        options: []
+        optionsarg:
+        - {}
+        - simple: Yes - Source Identified - Move To Next Step
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Investigation Questionnaire
+      totalanswers: 0
+    id: "176"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Investigation Questionnaire
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - Source Identified - Move To Next Step
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "177"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8a66c272-1f98-4407-82fa-2a0a868f58f4
+      iscommand: false
+      name: 'Collaborate With Senior L1/L2/CSOC Manager To Identify The Source '
+      tags:
+      - report
+      type: collection
+      version: -1
+    taskid: 8a66c272-1f98-4407-82fa-2a0a868f58f4
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1460,
+          "y": 6650
+        }
+      }
+  "177":
+    continueonerrortype: ""
+    id: "177"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Did The Alert Source Originate From A Suspicious Email ? (analyze
+          host timeline logs to answer this question)
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "179"
+      "Yes":
+      - "178"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8a0ad94d-6a87-4281-87cf-8e6c102351b3
+      iscommand: false
+      name: Did The Alert Source Originate From A Suspicious Email ? (analyze host
+        timeline logs to answer this question)
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: 8a0ad94d-6a87-4281-87cf-8e6c102351b3
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 6920
+        }
+      }
+  "178":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Collaborate With Senior L1/L2 To Run The Phishing Playbook
+        options: []
+        optionsarg:
+        - {}
+        - simple: Yes - Action Taken As Per Phishing Playbook - Move To Next Task
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Investigation Questionnaire
+      totalanswers: 0
+    id: "178"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: 'Investigation Questionnaire '
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - Yes - Action Taken As Per Phishing Playbook- Move To Next Task
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "179"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 719df63a-6a40-48ad-8e36-f75bbd0b0e75
+      iscommand: false
+      name: Collaborate With Senior L1/L2 To Run The Phishing Playbook
+      tags:
+      - report
+      type: collection
+      version: -1
+    taskid: 719df63a-6a40-48ad-8e36-f75bbd0b0e75
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1470,
+          "y": 7110
+        }
+      }
+  "179":
+    continueonerrortype: ""
+    id: "179"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Is There Any File You'd Like To Sandbox ? (make sure the .zip file
+          is protected with password 'infected')
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "182"
+      "Yes":
+      - "180"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e37131b0-2640-4d73-8ee8-3dac4507020c
+      iscommand: false
+      name: Is There Any File You'd Like To Sandbox ? (make sure the .zip file is
+        protected with password 'infected')
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: e37131b0-2640-4d73-8ee8-3dac4507020c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 7295
+        }
+      }
+  "180":
+    continueonerrortype: ""
+    id: "180"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "181"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      File:
+        complex:
+          root: File
+      Interval:
+        simple: "1"
+      Timeout:
+        simple: "15"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Detonate one or more files using the Wildfire integration. This playbook
+        returns relevant reports to the War Room and file reputations to the context data.
+        The detonation supports the following file types -
+        APK, JAR, DOC, DOCX, RTF, XLS, XLSX, PPT, PPTX, OOXML, PE32, PDF, DMG, PKG, RAR, 7Z
+      id: cab7eb01-31a3-4c1e-85b2-fd168c751270
+      iscommand: false
+      name: 'Sub Playbook: Sandboxing Sub Playbook '
+      playbookId: f6c63e73-b7a8-4dec-813b-cca83d83f590
+      type: playbook
+      version: -1
+    taskid: cab7eb01-31a3-4c1e-85b2-fd168c751270
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 7520
+        }
+      }
+  "181":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Go To The 'Evidence Dashboard' And Review The Sandbox Report
+        options: []
+        optionsarg:
+        - {}
+        - simple: Report Reviewed - Move To Next Step
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Investigation Questionnaire
+      totalanswers: 0
+    id: "181"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: 'Investigation Questionnaire '
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - Report Reviewed - Move To Next Step
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "182"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 52bd928d-defb-4797-84a4-6225071cb93c
+      iscommand: false
+      name: Go To The 'Evidence Dashboard' And Review The Sandbox Report
+      tags:
+      - report
+      type: collection
+      version: -1
+    taskid: 52bd928d-defb-4797-84a4-6225071cb93c
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 7720
+        }
+      }
+  "182":
+    continueonerrortype: ""
+    id: "182"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Based on The IoC Intel, Do You Need To Change The Alert Severity ?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "184"
+      "Yes":
+      - "183"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 369a7afc-f1a2-454e-84f6-0271203596d8
+      iscommand: false
+      name: Based on The IoC Intel, Do You Need To Change The Alert Severity ?
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: 369a7afc-f1a2-454e-84f6-0271203596d8
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 7950
+        }
+      }
+  "183":
+    continueonerrortype: ""
+    id: "183"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "184"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a465e77d-a494-4eeb-8127-e6da518f5745
+      iscommand: false
+      name: 'Sub Playbook: Re-Assess - Triage The Alert Severity'
+      playbookId: b82a6df1-9a17-4fae-889e-c6f7bde37df1
+      type: playbook
+      version: -1
+    taskid: a465e77d-a494-4eeb-8127-e6da518f5745
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1360,
+          "y": 8110
+        }
+      }
+  "184":
+    continueonerrortype: ""
+    id: "184"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Based on Your Investigation So Far - Is This a True Positive Alert
+          ?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - No, Its a Confirmed - False Positive
+      - No, Its a Benign-True Positive
+      - Yes, it is True Positive
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to:
+        simple: Analyst
+    nexttasks:
+      No, Its a Benign-True Positive:
+      - "102"
+      No, Its a Confirmed - False Positive:
+      - "101"
+      Yes, it is True Positive:
+      - "109"
+    note: true
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c78d40c9-ab2b-49b3-820d-9c9a4ad29e03
+      iscommand: false
+      name: Based on Your Investigation So Far - Is This a True Positive Alert ?
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: c78d40c9-ab2b-49b3-820d-9c9a4ad29e03
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": 8280
+        }
+      }
+  "185":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: rawCloseReason
+                root: incident
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: duplicate
+      label: "yes"
+    continueonerrortype: ""
+    id: "185"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "54"
+      "yes":
+      - "82"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f2d0ee3e-7ec6-4c61-83e9-7d8852a462d5
+      iscommand: false
+      name: |
+        Is This a Re-Opened Duplicate Alert
+      type: condition
+      version: -1
+    taskid: f2d0ee3e-7ec6-4c61-83e9-7d8852a462d5
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": -570
+        }
+      }
+  "186":
+    continueonerrortype: ""
+    id: "186"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 1
+    scriptarguments:
+      closeNotes:
+        simple: Duplicate - Auto Close
+      closingnote:
+        simple: Duplicate - Auto Close
+      duplicateticketnumber:
+        simple: NA. This is Duplicate - Auto Close incident.
+      forensicsdone:
+        simple: Not Applicable
+      incidentclosingreason:
+        simple: Duplicate
+      investigationanalysis:
+        simple: Not Applicable
+      investigationconclusion:
+        simple: Duplicate
+      remediationrequired:
+        simple: Not Applicable
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 34562bf0-466a-4048-82fa-a827bee35696
+      iscommand: true
+      name: Set Incident Closing Reason Context - Duplicate
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 34562bf0-466a-4048-82fa-a827bee35696
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -530,
+          "y": -13900
+        }
+      }
+  "187":
+    continueonerrortype: ""
+    id: "187"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 1
+    scriptarguments:
+      closeNotes:
+        simple: Duplicate - Auto Close
+      closingnote:
+        simple: Duplicate - Auto Close
+      duplicateticketnumber:
+        simple: NA. This is Duplicate - Auto Close incident.
+      forensicsdone:
+        simple: Not Applicable
+      incidentclosingreason:
+        simple: Duplicate
+      investigationanalysis:
+        simple: Not Applicable
+      investigationconclusion:
+        simple: Duplicate
+      remediationrequired:
+        simple: Not Applicable
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: ecf94677-3037-4c09-8daf-aa8cfacbcc3b
+      iscommand: true
+      name: Set Incident Closing Reason Context - Duplicate
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: ecf94677-3037-4c09-8daf-aa8cfacbcc3b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -530,
+          "y": -13900
+        }
+      }
+  "188":
+    continueonerrortype: ""
+    id: "188"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 1
+    scriptarguments:
+      closeNotes:
+        simple: Duplicate - Auto Close
+      closingnote:
+        simple: Duplicate - Auto Close
+      duplicateticketnumber:
+        simple: NA. This is Duplicate - Auto Close incident.
+      forensicsdone:
+        simple: Not Applicable
+      incidentclosingreason:
+        simple: Duplicate
+      investigationanalysis:
+        simple: Not Applicable
+      investigationconclusion:
+        simple: Duplicate
+      remediationrequired:
+        simple: Not Applicable
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: be4972ba-63ac-48ad-811a-3d35373cbc7d
+      iscommand: true
+      name: Set Incident Closing Reason Context - Duplicate
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: be4972ba-63ac-48ad-811a-3d35373cbc7d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -530,
+          "y": -13900
+        }
+      }
+  "189":
+    continueonerrortype: ""
+    id: "189"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 1
+    scriptarguments:
+      closeNotes:
+        simple: Duplicate - Auto Close
+      closingnote:
+        simple: Duplicate - Auto Close
+      duplicateticketnumber:
+        simple: NA. This is Duplicate - Auto Close incident.
+      forensicsdone:
+        simple: Not Applicable
+      incidentclosingreason:
+        simple: Duplicate
+      investigationanalysis:
+        simple: Not Applicable
+      investigationconclusion:
+        simple: Duplicate
+      remediationrequired:
+        simple: Not Applicable
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 648aa5f3-de67-4677-81a4-50bd9f7d2bbd
+      iscommand: true
+      name: Set Incident Closing Reason Context - Duplicate
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 648aa5f3-de67-4677-81a4-50bd9f7d2bbd
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -530,
+          "y": -13900
+        }
+      }
+  "190":
+    continueonerrortype: ""
+    id: "190"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "206"
+    note: false
+    quietmode: 1
+    scriptarguments:
+      closeNotes:
+        simple: Duplicate - Auto Close
+      closingnote:
+        simple: Duplicate - Auto Close
+      duplicateticketnumber:
+        simple: NA. This is Duplicate - Auto Close incident.
+      forensicsdone:
+        simple: Not Applicable
+      incidentclosingreason:
+        simple: Duplicate
+      investigationanalysis:
+        simple: Not Applicable
+      investigationconclusion:
+        simple: Duplicate
+      remediationrequired:
+        simple: Not Applicable
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 1574424f-9f00-4739-8bdf-cbac095f13b5
+      iscommand: true
+      name: Set Incident Closing Reason Context - Duplicate
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 1574424f-9f00-4739-8bdf-cbac095f13b5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1930,
+          "y": 11170
+        }
+      }
+  "199":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: whichslabreached
+                root: incident
+          operator: isEqualString
+          right:
+            value:
+              simple: acknowledgementsla
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: whichslabreached
+                root: incident
+          operator: containsGeneral
+          right:
+            value:
+              simple: acknowledgementsla
+      label: "yes"
+    continueonerrortype: ""
+    id: "199"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "100"
+      "yes":
+      - "200"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3a96108c-acfe-445b-8a7c-5d47ff469083
+      iscommand: false
+      name: Is response sla breached?
+      type: condition
+      version: -1
+    taskid: 3a96108c-acfe-445b-8a7c-5d47ff469083
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": 3475
+        }
+      }
+  "200":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: justificationforacknowledgementslabreached
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Provide justification for response sla violated
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: true
+        tooltip: ""
+        type: longText
+      sender: Your SOC team
+      title: Provide justification for response sla violated
+      totalanswers: 0
+    id: "200"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Provide justification for response sla violated
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "100"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 58262313-7a6a-4bde-84d6-920b84926229
+      iscommand: false
+      name: Provide justification for response sla violated
+      type: collection
+      version: -1
+    taskid: 58262313-7a6a-4bde-84d6-920b84926229
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": 3650
+        }
+      }
+  "201":
+    continueonerrortype: ""
+    id: "201"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 0
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "204"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This playbook unisolates endpoints according to the endpoint ID
+        that is provided in the playbook input.
+      id: 9564969e-c10c-4336-894e-20be6dc18849
+      iscommand: false
+      name: 'TCS-Cortex XDR - Unisolate Endpoint '
+      playbookId: 7bee3d42-1aa7-4797-806a-918bc217f47b
+      type: playbook
+      version: -1
+    taskid: 9564969e-c10c-4336-894e-20be6dc18849
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 240,
+          "y": 11980
+        }
+      }
+  "202":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Enter The IMT Location
+        options: []
+        optionsarg: []
+        placeholder: 'Enter Branch and Location.  Eg: TCS-Mumbai-Olympus'
+        readonly: false
+        required: false
+        tooltip: ""
+        type: shortText
+      sender: ""
+      title: Enter The IMT Location
+      totalanswers: 0
+    id: "202"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: null
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "201"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6a1fe322-1029-42a8-8494-d46f57268614
+      iscommand: false
+      name: Enter The IMT Location
+      type: collection
+      version: -1
+    taskid: 6a1fe322-1029-42a8-8494-d46f57268614
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 750,
+          "y": 12130
+        }
+      }
+  "203":
+    continueonerrortype: ""
+    id: "203"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "165"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This playbook accepts an XDR endpoint ID and isolates it using
+        the 'Palo Alto Networks Cortex XDR - Investigation and Response' integration.
+      id: cd53aa82-eacc-4146-85e5-cffce7767f39
+      iscommand: false
+      name: TCS-Cortex XDR - Isolate Endpoint
+      playbookId: e9b1859d-ac63-4dd5-833b-fde4a411aef1
+      type: playbook
+      version: -1
+    taskid: cd53aa82-eacc-4146-85e5-cffce7767f39
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 4750
+        }
+      }
+  "204":
+    continueonerrortype: ""
+    id: "204"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "103"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      incident_id:
+        complex:
+          accessor: incident_id
+          root: PaloAltoNetworksXDR.Incident
+      status:
+        simple: RESOLVED_TRUE_POSITIVE
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cortex XDR - IR
+      description: Updates one or more fields of a specified incident. Missing fields
+        will be ignored. To remove the assignment for an incident, pass a null value
+        in the assignee email argument.
+      id: 81c629f6-7740-44ba-84de-5be144a061da
+      iscommand: true
+      name: Close XDR incident as True positive
+      script: Cortex XDR - IR|||xdr-update-incident
+      type: regular
+      version: -1
+    taskid: 81c629f6-7740-44ba-84de-5be144a061da
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 240,
+          "y": 12160
+        }
+      }
+  "205":
+    continueonerrortype: ""
+    id: "205"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ba05fb21-ce29-45b8-8853-dd6be6bf29b5
+      iscommand: false
+      name: TCS-XDR Detection Info Context _WIP
+      playbookId: b442d97c-fbf4-4727-8f8c-2bf025eb0f88
+      type: playbook
+      version: -1
+    taskid: ba05fb21-ce29-45b8-8853-dd6be6bf29b5
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 395
+        }
+      }
+  "206":
+    continueonerrortype: ""
+    id: "206"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "134"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 18e4895d-c485-44e6-804f-fd39cb6d0864
+      iscommand: true
+      name: 'CloseInvestigation '
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 18e4895d-c485-44e6-804f-fd39cb6d0864
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 160,
+          "y": 12590
+        }
+      }
+  "207":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: "1"
+                root: Which IOC.Answers
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "207"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "209"
+      "yes":
+      - "208"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9d9e9ce7-782c-41e4-8acb-e12a2b3a60ab
+      iscommand: false
+      name: Check condition if extra IOC are selected
+      type: condition
+      version: -1
+    taskid: 9d9e9ce7-782c-41e4-8acb-e12a2b3a60ab
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 640,
+          "y": 10325
+        }
+      }
+  "208":
+    continueonerrortype: ""
+    id: "208"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "210"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      arrayData:
+        simple: ${Which IOC.Answers.1},${Which IOC.Answers.0}
+      contextKey:
+        simple: SelectedIOCAnswer
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: 'Will create an array object in context from given string input '
+      id: 69b71e59-9251-4701-81fc-c0ffdb1c33a2
+      iscommand: false
+      name: Set in array for context value
+      script: CreateArray
+      type: regular
+      version: -1
+    taskid: 69b71e59-9251-4701-81fc-c0ffdb1c33a2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 640,
+          "y": 10520
+        }
+      }
+  "209":
+    continueonerrortype: ""
+    id: "209"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "211"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: FinalselectedIOC
+      value:
+        complex:
+          accessor: "0"
+          root: Which IOC.Answers
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 5d56d71b-2f40-4a94-8d63-73334319b9bd
+      iscommand: false
+      name: Set Context Value
+      script: Set
+      type: regular
+      version: -1
+    taskid: 5d56d71b-2f40-4a94-8d63-73334319b9bd
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 660,
+          "y": 10830
+        }
+      }
+  "210":
+    continueonerrortype: ""
+    id: "210"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "211"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: FinalselectedIOC
+      value:
+        complex:
+          root: SelectedIOCAnswer
+          transformers:
+          - args:
+              chars:
+                value:
+                  simple: '[]'
+            operator: StripChars
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 36cd2e5b-2092-48e4-8d57-b973b354338b
+      iscommand: false
+      name: Set Final Selected IOC in context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 36cd2e5b-2092-48e4-8d57-b973b354338b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 640,
+          "y": 10660
+        }
+      }
+  "211":
+    continueonerrortype: ""
+    id: "211"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "152"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: faad92e5-3455-4df0-88d6-27a66a4fc370
+      iscommand: false
+      name: TCS-Blacklist IOC v3.0_PG
+      playbookId: 72dda1e2-ca72-42c4-8232-4592b180eb04
+      type: playbook
+      version: -1
+    taskid: faad92e5-3455-4df0-88d6-27a66a4fc370
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 645,
+          "y": 10975
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "150_147_Yes - I Have Raised an IMT": 0.37
+    },
+    "paper": {
+      "dimensions": {
+        "height": 26735,
+        "width": 2960,
+        "x": -530,
+        "y": -13900
+      }
+    }
+  }
