@@ -1,0 +1,265 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: cf768605-d7ff-43ce-8653-70f11c1ffdf1
+inputs:
+- description: ""
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: IP CIDR Check
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e1de1491-8283-44dc-8e46-f67187ea7ac2
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: e1de1491-8283-44dc-8e46-f67187ea7ac2
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "1":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.IP
+          operator: inList
+          right:
+            iscontext: true
+            value:
+              complex:
+                root: ExtractedIndicators
+                transformers:
+                - args:
+                    field:
+                      value:
+                        simple: CIDR
+                  operator: getField
+                - args:
+                    to:
+                      value:
+                        simple: /
+                  operator: substringTo
+      label: "yes"
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 889e1fee-d638-4c42-80c1-5165c40716a3
+      iscommand: false
+      name: Check if IP is CIDR
+      type: condition
+      version: -1
+    taskid: 889e1fee-d638-4c42-80c1-5165c40716a3
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 195
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f0478609-8306-4bb0-8a9e-f8b1edb5806f
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: f0478609-8306-4bb0-8a9e-f8b1edb5806f
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 895
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      left:
+        simple: ${ExtractedIndicators.IP}
+      right:
+        simple: ${lists.TCS Public IP Addresses}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Compare  two lists and put the differences in context.
+      id: 31703292-41b0-4992-8054-a444f247d5a3
+      iscommand: false
+      name: Check the presence of IP in TCS Public IP Addresses List
+      script: CompareLists
+      type: regular
+      version: -1
+    taskid: 31703292-41b0-4992-8054-a444f247d5a3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 520,
+          "y": 380
+        }
+      }
+  "4":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ListCompare.Both
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "2"
+      "yes":
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1e1f5b03-b4c2-44cb-8ae3-7d35a20d4440
+      iscommand: false
+      name: If Present
+      type: condition
+      version: -1
+    taskid: 1e1f5b03-b4c2-44cb-8ae3-7d35a20d4440
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 520,
+          "y": 545
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: Recorded Future Alert for TCS IP published on Published on Public
+          Forums
+      value:
+        simple: ${ExtractedIndicators.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar
+      description: Add or update a value in a reference set.
+      id: 800854bc-1b95-49d5-8e1b-7d77552d3232
+      iscommand: true
+      name: Add IP to Reference set
+      script: QRadar|||qradar-create-reference-set-value
+      type: regular
+      version: -1
+    taskid: 800854bc-1b95-49d5-8e1b-7d77552d3232
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 520,
+          "y": 720
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "1_2_yes": 0.31
+    },
+    "paper": {
+      "dimensions": {
+        "height": 910,
+        "width": 850,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
