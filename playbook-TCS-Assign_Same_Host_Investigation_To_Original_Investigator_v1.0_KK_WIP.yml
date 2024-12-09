@@ -1,0 +1,307 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 3e14abd8-b3ba-41f4-85dc-d6b9a945645d
+inputs:
+- description: ""
+  key: Type
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: Malware Investigation
+- description: ""
+  key: incident_id
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: incident.id
+name: TCS-Assign Same Host Investigation To Original Investigator v1.0_KK_WIP
+outputs: []
+sourceplaybookid: 4f7b7240-a055-4a8d-83e1-886761d968eb
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c5d15d13-1dbc-4d63-8810-053870c131eb
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: c5d15d13-1dbc-4d63-8810-053870c131eb
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: CrowdstrikeID
+      value:
+        complex:
+          root: FileData
+          transformers:
+          - operator: ParseJSON
+          - args:
+              field:
+                value:
+                  simple: crowdstrikedetectionid
+            operator: getField
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Set a value in context under the key you entered.
+      id: 73041ae3-bd77-4a78-8fcf-ae44dcc12819
+      iscommand: false
+      name: 'Get Crowdstrike Detection id '
+      script: Set
+      type: regular
+      version: -1
+    taskid: 73041ae3-bd77-4a78-8fcf-ae44dcc12819
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 545
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      fromDate:
+        simple: 8 hours ago
+      incidentTypes:
+        simple: '"Malware Investigation"'
+      outputFormat:
+        simple: json
+      populateFields:
+        simple: closeReason, crowdstrikedetectionid, owner, status
+      query:
+        simple: 'type:"Malware Investigation" and closeReason:Duplicate  and owner:""  closingUser:"DBot"
+          and closeNotes:"Closed by #Link Duplicate CrowdStrike Incidents" and status:Closed'
+      toDate:
+        simple: Now
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Gets a list of incident objects and the associated incident outputs that
+        match the specified query and filters. The results are returned in a structured data file.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-5/cortex-xsoar-admin/playbooks/automations.html
+      id: 4780f08f-0e15-45f6-8aae-33712cded169
+      iscommand: false
+      name: Get duplicate incident from Demisto
+      script: GetIncidentsByQuery
+      type: regular
+      version: -1
+    taskid: 4780f08f-0e15-45f6-8aae-33712cded169
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 195
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      entryID:
+        simple: ${File.EntryID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: 3c6999f7-6ec3-4e70-835e-dab9a925beeb
+      iscommand: false
+      name: Read Duplicate incident data from file
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: 3c6999f7-6ec3-4e70-835e-dab9a925beeb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 370
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      comment:
+        simple: The incident is closed as a duplicate one and closed by Autobot
+      ids:
+        complex:
+          root: CrowdstrikeID
+      status:
+        simple: closed
+      using:
+        simple: CrowdstrikeFalcon_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Resolves and updates a detection using the provided arguments.
+        At least one optional argument must be passed, otherwise no change will take
+        place.
+      id: 234995ef-253f-4c41-82f3-990cda7931b9
+      iscommand: true
+      name: Update incident details on CS
+      script: CrowdstrikeFalcon|||cs-falcon-resolve-detection
+      type: regular
+      version: -1
+    taskid: 234995ef-253f-4c41-82f3-990cda7931b9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 720
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 07f341c6-e500-4a7b-8c2f-d6073c89d720
+      iscommand: false
+      name: Close
+      type: title
+      version: -1
+    taskid: 07f341c6-e500-4a7b-8c2f-d6073c89d720
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1070
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 94dd3ebc-b812-42d3-8b44-14ca144dc9ba
+      iscommand: true
+      name: Close investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 94dd3ebc-b812-42d3-8b44-14ca144dc9ba
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 895
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1085,
+        "width": 380,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
