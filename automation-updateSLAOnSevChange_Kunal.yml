@@ -1,0 +1,102 @@
+args:
+- auto: PREDEFINED
+  description: The new value of the field that was changed.
+  name: new
+  predefined:
+  - Low
+  - Medium
+  - High
+  - Critical
+comment: |-
+  Changes the remediation SLA once a change in incident severity occurs.
+  This is done automatically and the changes can be configured to your needs.
+commonfields:
+  id: 91cf9014-ff4a-40b9-8a38-7e1afdad7ab5
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: updateSLAOnSevChange_Kunal
+pswd: ""
+runas: DBotRole
+runonce: false
+script: |+
+  import datetime
+
+  # ##### Acknowledgement SLA Configuration #####
+  CRITICAL_SLA = 120  # In minutes
+  High_SLA = 240 # In minutes
+  Medium_SLA = 360 # In minutes
+  Low_SLA = 720 # In minutes
+  Informational_SLA = 1 # In days
+
+  # ##### Threat Response SLA Configuration #####
+  TR_CRITICAL_SLA = 720  # In minutes
+  TR_High_SLA = 1440 # In minutes
+  TR_Medium_SLA = 2160 # In minutes
+  TR_Low_SLA = 2880 # In minutes
+  TR_Informational_SLA = 2 # In days
+
+  # ##### Remediation Configuration #####
+  #CRITICAL_RSLA = 15  # In minutes
+  #High_RSLA = 30 # In minutes
+  #Medium_RSLA = 60 # In minutes
+  #Low_RSLA = 120 # In minutes
+  #Informational_RSLA = 2 # In days
+
+
+  # ##### Logic #####
+  args_sev =  demisto.args().get('new')
+  now = datetime.datetime.utcnow()
+
+
+  if args_sev == 'Critical' :
+      demisto.log('Severity changed to Critical')
+      demisto.executeCommand("setIncident",{'sla': CRITICAL_SLA, "slaField":"acknowledgementsla"})
+      demisto.executeCommand("setIncident",{'sla': CRITICAL_SLA, "slaField":"responsesla"})
+      demisto.executeCommand("setIncident",{'sla': TR_CRITICAL_SLA, "slaField":"threatresponsesla"})
+
+
+  if args_sev == 'High' :
+      demisto.log('Severity changed to High')
+      demisto.executeCommand("setIncident",{'sla': High_SLA, "slaField":"acknowledgementsla"})
+      demisto.executeCommand("setIncident",{'sla': High_SLA, "slaField":"responsesla"})
+      demisto.executeCommand("setIncident",{'sla': TR_High_SLA, "slaField":"threatresponsesla"})
+      ## demisto.executeCommand("setIncident",{'sla': CRITICAL_RSLA, "slaField":"remediationsla"}) ##
+
+
+  if args_sev == 'Medium' :
+      demisto.log('Severity changed to Medium')
+      demisto.executeCommand("setIncident",{'sla': Medium_SLA, "slaField":"acknowledgementsla"})
+      demisto.executeCommand("setIncident",{'sla': Medium_SLA, "slaField":"responsesla"})
+      demisto.executeCommand("setIncident",{'sla': TR_Medium_SLA, "slaField":"threatresponsesla"})
+      ##demisto.executeCommand("setIncident",{'sla': High_RSLA, "slaField":"remediationsla"})##
+
+  if args_sev == 'Low' :
+      demisto.log('Severity changed to Low')
+      demisto.executeCommand("setIncident",{'sla':Low_SLA, "slaField":"acknowledgementsla"})
+      demisto.executeCommand("setIncident",{'sla':Low_SLA, "slaField":"responsesla"})
+      demisto.executeCommand("setIncident",{'sla': TR_Low_SLA, "slaField":"threatresponsesla"})
+      ### demisto.executeCommand("setIncident",{'sla': Medium_RSLA, "slaField":"remediationsla"}) ###
+
+
+
+
+
+
+scripttarget: 0
+subtype: python2
+tags:
+- field-change-triggered
+type: python
