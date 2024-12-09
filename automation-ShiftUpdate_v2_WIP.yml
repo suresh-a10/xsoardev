@@ -1,0 +1,382 @@
+args:
+- auto: PREDEFINED
+  description: 'Which shift emp joined i.e '
+  name: CurrentShift
+  predefined:
+  - First-Shift
+  - Second-Shift
+  - Third-Shift
+- description: Employee who will work as Scan team member for the current shift. Multiple
+    emp id can be added  by comma separated
+  name: ScanTeam
+- name: MailOp
+- name: OPLead
+- auto: PREDEFINED
+  defaultValue: "Yes"
+  description: Select 'Yes' if this automation is being run in an incident. Default
+    is 'No'.
+  name: RanInIncident
+  predefined:
+  - "Yes"
+  - "No"
+- auto: PREDEFINED
+  name: AddOrRemove
+  predefined:
+  - Add to Shift
+  - On Leave/Not in Shift
+- name: EmpID
+- name: ManageShiftLeaves
+commonfields:
+  id: 5b2017f1-955f-4720-83f7-17f2078d410c
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ShiftUpdate_v2_WIP
+pswd: ""
+runas: DBotRole
+runonce: false
+script: |-
+  from datetime import datetime, time
+  import pytz
+
+
+
+
+  def fetchUserName(empid):
+      # print(empid)
+      for i in empid:
+          username=userlist.get(i.strip())
+          print(username)
+          empid = list(map(lambda x: x.replace(i, username), empid))
+      return empid
+
+  def fetchIndex(username,profiles):
+      value="No user found"
+      # print(profiles)
+      for e in profiles:
+          #print(username)
+          if e.get('name')==username:
+              value=profiles.index(e)
+              # print(profiles.index(e))
+          else:
+              pass
+
+      return value
+  def dict_func(name, role, assigned, condition):
+          temp={}
+          temp["name"] = name
+          temp["role"] = role
+          temp["assigned"] = assigned
+          temp["condition"] = condition
+          return temp
+
+
+  def updateLeaves(left_shift_name,profiles,isBreak,left_shift_empid):
+      if type(isBreak)==list:
+          isList=True
+      else:
+          isList=False
+
+      for i in range(len(left_shift_name)):
+          username=left_shift_name[i]
+          empid=left_shift_empid[i]
+          if isList:
+              varBreak=isBreak[i]
+          else:
+              varBreak=isBreak
+          profileIndex=fetchIndex(username,profiles)
+          # print(profileIndex)
+          if(profileIndex=="No user found"):
+              print(username+" No found in profile list")
+          else:
+              if varBreak:
+                  time=datetime.now(pytz.timezone('Asia/Kolkata')).time().strftime("%H:%M:%S")
+                  profiles[int(profileIndex)]['condition']="Break"
+                  current_break_list=json.loads(demisto.executeCommand('getList', {'listName':'On Break'})[0]['Contents'])
+                  break_details_list=json.loads(demisto.executeCommand('getList', {'listName':'Break Details'})[0]['Contents'])
+                  # for i in range(len(current_break_list)):
+                  if empid not in current_break_list:
+                      current_break_list[empid]=username
+                  if empid not in break_details_list:
+                      break_details_list[empid]={"Name":username,"Start Time":[time],"End Time":[]}
+                  else:
+                      if len(break_details_list[empid]["Start Time"])==len(break_details_list[empid]["End Time"]):
+                          break_details_list[empid]["Start Time"].append(time)
+                      else:
+                          print(username+ "is already on break")
+
+                  res = demisto.executeCommand('setList', {'listName':'On Break', 'listData':current_break_list})
+                  res = demisto.executeCommand('setList', {'listName':'Break Details', 'listData':break_details_list})
+              else:
+                  profiles[int(profileIndex)]['condition']="Leave"
+                  prsent_list=json.loads(demisto.executeCommand('getList', {'listName':'PresentInCurrentShift'})[0]['Contents'])
+                  absent_list=json.loads(demisto.executeCommand('getList', {'listName':'AbsentInCurrentShift'})[0]['Contents'])
+                  if empid in prsent_list:
+                      del prsent_list[empid]
+                  if empid not in absent_list:
+                      absent_list[empid]=username
+                      # prsent_list[empid]={"Name":username,"Time":time}
+                  res = demisto.executeCommand('setList', {'listName':'PresentInCurrentShift', 'listData':prsent_list})
+                  res = demisto.executeCommand('setList', {'listName':'AbsentInCurrentShift', 'listData':absent_list})
+
+
+      return profiles
+
+  def adduserprofile(joined_shift_name,profiles,joined_shift_empid):
+      time=datetime.now(pytz.timezone('Asia/Kolkata')).time().strftime("%H:%M:%S")
+      for i in range(len(joined_shift_name)):
+          username=joined_shift_name[i]
+          empid=joined_shift_empid[i]
+
+      # for username in joined_shift_name:
+          profileIndex=fetchIndex(username,profiles)
+          if(profileIndex=="No user found"):
+              if username in seniorL1:
+                  profiles.append(dict_func(username,"Senior",[],"Perfect"))
+              else:
+                  profiles.append(dict_func(username,"L1",[],"Perfect"))
+
+          else:
+              print(username+" Already present in profile list")
+
+              if profiles[profileIndex].get('condition')=="Break":
+                  current_break_list=json.loads(demisto.executeCommand('getList', {'listName':'On Break'})[0]['Contents'])
+                  break_details_list=json.loads(demisto.executeCommand('getList', {'listName':'Break Details'})[0]['Contents'])
+
+                  if empid in current_break_list:
+                      del current_break_list[empid]
+
+                  if empid in break_details_list and len(break_details_list[empid]["Start Time"])!=len(break_details_list[empid]["End Time"]):
+                      break_details_list[empid]["End Time"].append(time)
+                  res = demisto.executeCommand('setList', {'listName':'On Break', 'listData':current_break_list})
+                  res = demisto.executeCommand('setList', {'listName':'Break Details', 'listData':break_details_list})
+
+              if profiles[profileIndex].get('condition')=="Leave" or profiles[profileIndex].get('condition')=="Break":
+                  profiles[profileIndex]['condition']="Perfect"
+
+              else:
+                  print(username+" Already present in profile list is currently being assigned tickets")
+          prsent_list=json.loads(demisto.executeCommand('getList', {'listName':'PresentInCurrentShift'})[0]['Contents'])
+          absent_list=json.loads(demisto.executeCommand('getList', {'listName':'AbsentInCurrentShift'})[0]['Contents'])
+          if empid not in prsent_list:
+              prsent_list[empid]={"Name":username,"Time":time}
+          if empid in absent_list:
+              del absent_list[empid]
+          res = demisto.executeCommand('setList', {'listName':'PresentInCurrentShift', 'listData':prsent_list})
+          res = demisto.executeCommand('setList', {'listName':'AbsentInCurrentShift', 'listData':absent_list})
+
+      return profiles
+
+  def maproles(shiftrole,shiftlist):
+      if shiftrole=='WeekOff':
+          roles=["Operator"]
+      else:
+          roles=[shiftrole,"Operator"]
+      for i in shiftlist:
+          body={
+              'id':i,
+              'roles':{
+                  'roles':roles
+              },
+              'defaultAdmin':"False"
+          }
+          # print(body)
+          demisto.executeCommand('demisto-api-post', {'body':body,'uri':"/users/update"})
+
+
+  def removeuser(left_shift_empid,profiles,isBreak):
+      left_shift_name=fetchUserName(left_shift_empid)
+
+      #maproles("WeekOff",left_shift)
+      profiles=updateLeaves(left_shift_name,profiles,isBreak,left_shift_empid)
+      print("have removed users from shift",left_shift_name)
+      return profiles
+
+  def adduser(joined_shift_empid,profiles,seniorL1,CurrentShift):
+      joined_shift_name=fetchUserName(joined_shift_empid)
+      # if CurrentShift:
+      #     maproles(CurrentShift,joined_shift)
+      profiles=adduserprofile(joined_shift_name,profiles,joined_shift_empid)
+      print("have added users from shift",joined_shift, " To ",CurrentShift)
+      return profiles
+
+
+  def checkUpdate(left_shift,joined_shift,profiles,isBreak,seniorL1,scanteammember,MailOperator,OPLead,CurrentShift):
+      if left_shift:
+          profiles=removeuser(left_shift,profiles,isBreak)
+          # print(left_shift)
+
+      if joined_shift:
+          profiles=adduser(joined_shift,profiles,seniorL1,CurrentShift)
+          # print(joined_shift)
+
+
+      if scanteammember:
+          if scanteammember.strip().upper()!="NA":
+              scanteammember=scanteammember.split(",")
+              empid=fetchUserName(scanteammember)
+              for i in empid:
+                  profileIndex=int(fetchIndex(i,profiles))
+                  # print(type(profileIndex))
+                  # print(profileIndex)
+                  profiles[profileIndex]['role']="Scan"
+                  print("Scan operator for today is ",empid)
+
+      if MailOperator:
+          if MailOperator.strip().upper()!="NA":
+              MailOperator=MailOperator.split(",")
+              empid=fetchUserName(MailOperator)
+              profileIndex=(fetchIndex(empid[0],profiles))
+              #print(type(profileIndex))
+              profiles[profileIndex]['role']="Mail"
+              print("Mail operator for today is ",empid)
+
+
+      if OPLead:
+          if OPLead.strip().upper()!="NA":
+              OPLead=OPLead.split(",")
+              empid=fetchUserName(OPLead)
+              profileIndex=fetchIndex(empid[0],profiles)
+              #print(type(profileIndex))
+              #print(profileIndex)
+              profiles[profileIndex]['role']="OPLead"
+              print("Operator Lead for today is ",empid)
+
+
+
+  userlist=json.loads(demisto.executeCommand('getList', {'listName':"CSOC Team"})[0]['Contents'])
+  profiles=json.loads(demisto.executeCommand('getList', {'listName':"Test Profile"})[0]['Contents'])
+  # profiles=json.loads(demisto.executeCommand('getList', {'listName':"Operators Profile"})[0]['Contents'])
+  left_shift=[]
+  joined_shift=[]
+  seniorL1=json.loads(demisto.executeCommand('getList', {'listName':"SeniorL1"})[0]['Contents'])
+
+  scanteammember,MailOperator,shiftleaves,OPLead=None,None,None,None
+
+  RanInIncident=demisto.args().get('RanInIncident','Yes')
+  isBreak=False
+  # userlist=json.loads(demisto.executeCommand('getList', {'listName':"CSOC Team"})[0]['Contents'])
+  # profiles=json.loads(demisto.executeCommand('getList', {'listName':"Test Profile"})[0]['Contents'])
+  # # profiles=json.loads(demisto.executeCommand('getList', {'listName':"Operators Profile"})[0]['Contents'])
+  # left_shift=[]
+  # joined_shift=[]
+  # seniorL1=json.loads(demisto.executeCommand('getList', {'listName':"SeniorL1"})[0]['Contents'])
+
+  # scanteammember,MailOperator,shiftleaves,OPLead=None,None,None,None
+
+  # RanInIncident=demisto.args().get('RanInIncident','Yes')
+  # isBreak=False
+
+  if RanInIncident=='Yes':
+      context=demisto.incident()
+      scanteammember=context.get('CustomFields').get('scanteammemberinshift')
+      MailOperator=context.get('CustomFields').get('mailboxmonitor')
+      shiftleaves=context.get('CustomFields').get('manageshiftleavesandbreaks')
+      OPLead=context.get('CustomFields').get('operatorlead')
+      EmpID=demisto.args().get('EmpID')
+      AddOrRemove=demisto.args().get('AddOrRemove')
+      CurrentShift=context.get('CustomFields').get('selectshift')
+
+
+      if AddOrRemove=='Stop Break Time' or AddOrRemove=='Start Break Time':
+          isBreak=True
+
+      if EmpID:
+          # isBreak=[]
+          EmpID=EmpID.split(',')
+          print(type(EmpID))
+          print(EmpID)
+          if AddOrRemove=='Add to Shift' or AddOrRemove=='Stop Break Time':
+              joined_shift.extend(EmpID)
+          elif AddOrRemove=='On Leave/Not in Shift' or AddOrRemove=='Start Break Time':
+              left_shift.extend(EmpID)
+              print(left_shift)
+              # isBreak.append(True) if option=="Start Break Time" else isBreak.append(False)
+
+
+
+      if shiftleaves:
+          isBreak=[]
+          for e in shiftleaves:
+              # expr1 if condition1 else expr2 if condition2 else expr
+              option=e.get("setleavesandbreaks")
+              if option=="Add to Shift" or option=="Stop Break Time":
+                  joined_shift.append(e.get("employeeid"))
+              if option=="On Leave/Not in Shift" or option=="Start Break Time":
+                  left_shift.append(e.get("employeeid"))
+                  # isBreak.append(True) #if option=="Stop Break Time" or option=="Start Break Time" else isBreak.append(False)
+                  isBreak.append(True) if option=="Start Break Time" else isBreak.append(False)
+
+
+      # if EmpID or shiftleaves:
+      #     checkUpdate(left_shift,joined_shift,profiles,isBreak,seniorL1,scanteammember,MailOperator,OPLead,CurrentShift)
+      checkUpdate(left_shift,joined_shift,profiles,isBreak,seniorL1,scanteammember,MailOperator,OPLead,CurrentShift)
+
+
+  elif RanInIncident=='No':
+      AddOrRemove=demisto.args().get('AddOrRemove')
+      # EmpID=argToList(demisto.args().get('EmpID'))
+      EmpID=demisto.args().get('EmpID')
+      scanteammember=demisto.args().get('ScanTeam')
+      MailOperator=demisto.args().get('MailOp')
+      OPLead=demisto.args().get('OPLead')
+      CurrentShift=None
+
+      if EmpID:
+          # isBreak=[]
+          EmpID=EmpID.split(',')
+          print(type(EmpID))
+          print(EmpID)
+          if AddOrRemove=='Add to Shift' or AddOrRemove=='Stop Break Time':
+              joined_shift.extend(EmpID)
+          elif AddOrRemove=='On Leave/Not in Shift' or AddOrRemove=='Start Break Time':
+              left_shift.extend(EmpID)
+              print(left_shift)
+              # isBreak.append(True) if option=="Start Break Time" else isBreak.append(False)
+
+
+      # for i in EmpID:
+      #     if AddOrRemove=='Add to Shift':
+      #         joined_shift.append(EmpID)
+      #     elif AddOrRemove=='On Leave/Not in Shift':
+      #         left_shift.append(EmpID)
+
+      if AddOrRemove=='Stop Break Time' or AddOrRemove=='Start Break Time':
+          isBreak=True
+
+      # if AddOrRemove=='Add to Shift' or AddOrRemove=='Stop Break Time':
+      #     joined_shift.append(EmpID)
+      # elif AddOrRemove=='On Leave/Not in Shift' or AddOrRemove=='Start Break Time':
+      #     left_shift.append(EmpID)
+
+      checkUpdate(left_shift,joined_shift,profiles,isBreak,seniorL1,scanteammember,MailOperator,OPLead,CurrentShift)
+
+
+
+  demisto.results('Done')
+
+  res=demisto.executeCommand('setList', {'listName':"Test Profile",'listData':profiles})
+  # res=demisto.executeCommand('setList', {'listName':"Operators Profile",'listData':profiles})
+  if isError(res):
+      return_error(f'Failed to set list {str(get_error(res))}')
+  print(profiles)
+
+  ###Add logic to remove users from present list and add them to absent list once selected as not in shift
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
