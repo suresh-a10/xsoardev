@@ -1,0 +1,392 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+hidden: true
+id: 92b55857-603e-48a5-8f08-95bba2b3c4af
+inputs: []
+name: TCS - Recorded Future Fetch Hash
+outputs: []
+sourceplaybookid: d4738b78-87dc-40b8-8b6a-3649fac3f288
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b77e1b70-51f3-419a-87af-0fa2f59f8582
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: b77e1b70-51f3-419a-87af-0fa2f59f8582
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      limit:
+        simple: "5"
+      risk_lower:
+        simple: "80"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future
+      description: Returns hash threats from Recorded Future
+      id: dc95f4bc-7138-4a3e-87c7-e380beb9a124
+      iscommand: true
+      name: RC Indicators Fetched
+      script: Recorded Future|||recorded-future-get-threats-hash
+      type: regular
+      version: -1
+    taskid: dc95f4bc-7138-4a3e-87c7-e380beb9a124
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 195
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      resource:
+        simple: ${File.SHA256}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: VirusTotal - Private API
+      description: Retrieves a concluded file scan report for a given file.
+      id: ca8aaf2b-6b63-4f08-8a69-c5ed26978395
+      iscommand: true
+      name: Get Reports from Virus Total
+      script: VirusTotal - Private API|||vt-private-get-file-report
+      type: regular
+      version: -1
+    taskid: ca8aaf2b-6b63-4f08-8a69-c5ed26978395
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 370
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: File.VirusTotal.Scans.Source
+          operator: isEqualString
+          right:
+            value:
+              simple: Symantec
+      label: If Source Symantec?
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      If Source Symantec?:
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 084e3194-3c15-47e7-8c11-412a924a0e35
+      iscommand: false
+      name: Source Symantec??
+      type: condition
+      version: -1
+    taskid: 084e3194-3c15-47e7-8c11-412a924a0e35
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 545
+        }
+      }
+  "4":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: File.VirusTotal.Scans.Detected
+          operator: isEqualString
+          right:
+            value:
+              simple: "false"
+      label: "False"
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "9"
+      "False":
+      - "10"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 672ed0bc-09e8-4d85-83ab-677c3bd3f108
+      iscommand: false
+      name: Detected?
+      type: condition
+      version: -1
+    taskid: 672ed0bc-09e8-4d85-83ab-677c3bd3f108
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 720
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: SendHash
+      value:
+        simple: ${File.MD5}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 405d7317-ac0a-4ed7-8b63-e094580da125
+      iscommand: false
+      name: Set Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 405d7317-ac0a-4ed7-8b63-e094580da125
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 720
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: 'Hashes need to be blocked : ${SendHash}'
+      subject:
+        simple: HashTest
+      to:
+        simple: priyadarshani.kate@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Send an email
+      id: 6030dc6a-aa81-4e53-8579-9e11ee1d076f
+      iscommand: true
+      name: Send mail
+      script: '|||send-mail'
+      type: regular
+      version: -1
+    taskid: 6030dc6a-aa81-4e53-8579-9e11ee1d076f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 895
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: 'These are the hashes : ${BlockedHash}'
+      subject:
+        simple: HashTest
+      to:
+        simple: priyadarshani.kate@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Send an email
+      id: 9e9a085d-79f7-450d-8c59-e6b3708886c9
+      iscommand: true
+      name: Send mail
+      script: '|||send-mail'
+      type: regular
+      version: -1
+    taskid: 9e9a085d-79f7-450d-8c59-e6b3708886c9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 1070
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b6837880-f11a-4dbe-8d7b-9f02c7a19211
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: b6837880-f11a-4dbe-8d7b-9f02c7a19211
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 910
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: BlockedHash
+      value:
+        simple: ${File.MD5}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: c2797b87-bffc-412e-8fd5-a06d202a8a02
+      iscommand: false
+      name: Set Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: c2797b87-bffc-412e-8fd5-a06d202a8a02
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 895
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1115,
+        "width": 1240,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
