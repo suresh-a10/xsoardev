@@ -1,0 +1,55 @@
+args:
+- description: Extract from specified entry
+  name: entryID
+- description: Transient file to extract indicators from
+  name: filePath
+- description: Investigation to apply to
+  name: investigationID
+- description: Transient text to extract indicators from
+  name: text
+commonfields:
+  id: c8cb8b7b-81b1-47cf-86a9-d04649d85c19
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ExtractAndEnrichIndicators
+pswd: ""
+runas: DBotRole
+runonce: false
+script: |
+  import io
+
+  def main():
+      args=demisto.args()
+      res=demisto.executeCommand('extractIndicators', args)
+      demisto.results(res)
+
+      extractedIOC=[]
+      result=json.loads(res[0]['Contents'])
+
+      for k,v in result.items():
+          for i in v:
+              extractedIOC.append(i)
+
+      demisto.results(demisto.executeCommand('enrichIndicators',{'indicatorsValues':extractedIOC}))
+
+  if __name__ in ('__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
