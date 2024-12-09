@@ -7,6 +7,7 @@ configuration:
   display: Fetch indicators
   name: feed
   required: false
+  section: Collect
   type: 8
 - additionalinfo: Indicators from this integration instance will be marked with this
     reputation
@@ -18,7 +19,21 @@ configuration:
   - Suspicious
   - Bad
   required: false
+  section: Collect
   type: 18
+- additionalinfo: Incremental feeds pull only new or modified indicators that have
+    been sent from the integration. The determination if the indicator is new or modified
+    happens on the 3rd-party vendor's side, so only indicators that are new or modified
+    are sent to Cortex XSOAR. Therefore, all indicators coming from these feeds are
+    labeled new or modified.
+  advanced: true
+  defaultvalue: "true"
+  display: Incremental feed
+  hidden: true
+  name: feedIncremental
+  required: false
+  section: Collect
+  type: 8
 - additionalinfo: Reliability of the source providing the intelligence data
   display: Source Reliability
   name: feedReliability
@@ -30,6 +45,7 @@ configuration:
   - E - Unreliable
   - F - Reliability cannot be judged
   required: true
+  section: Collect
   type: 15
 - additionalinfo: The Traffic Light Protocol (TLP) designation to apply to indicators
     fetched from the feed
@@ -41,78 +57,98 @@ configuration:
   - GREEN
   - WHITE
   required: false
+  section: Collect
   type: 15
-- display: ""
+- advanced: true
+  display: ""
   name: feedExpirationPolicy
   options:
   - never
   - interval
   - indicatorType
-  - suddenDeath
   required: false
+  section: Collect
   type: 17
-- display: ""
+- advanced: true
+  display: ""
   name: feedExpirationInterval
   required: false
+  section: Collect
   type: 1
-- defaultvalue: "240"
+- advanced: true
+  defaultvalue: "240"
   display: Feed Fetch Interval
   name: feedFetchInterval
   required: false
+  section: Collect
   type: 19
 - additionalinfo: When selected, the exclusion list is ignored for indicators from
     this feed. This means that if an indicator from this feed is on the exclusion
     list, the indicator might still be added to the system.
+  advanced: true
   display: Bypass exclusion list
   name: feedBypassExclusionList
   required: false
+  section: Collect
   type: 8
-- additionalinfo: TAXII discovery service endpoint. For example, http://hailataxii.com/taxii-discovery-service
+- additionalinfo: TAXII discovery service endpoint. For example, http://example.com/taxii-discovery-service
   display: Discovery Service
   name: discovery_service
   required: true
+  section: Connect
   type: 0
 - additionalinfo: Collection name to fetch indicators from.
   display: Collection
   name: collection
   required: false
+  section: Connect
   type: 0
 - additionalinfo: Subscription ID for the TAXII consumer.
+  advanced: true
   display: Subscription ID
   name: subscription_id
   required: false
+  section: Connect
   type: 0
 - display: Name (To use the API key click the "?" icon)
   name: credentials
   required: false
+  section: Connect
   type: 9
 - display: Certificate File as Text
   displaypassword: Key File as Text
   name: creds_certificate
   required: false
+  section: Connect
   type: 9
 - additionalinfo: Add a certificate file as text to connect to the TAXII server
   display: Certificate File as Text
   hidden: true
   name: cert_text
   required: false
+  section: Connect
   type: 12
 - additionalinfo: Add a key file as text to connect to the TAXII server
   display: Key File as Text
   hidden: true
   name: key_text
   required: false
+  section: Connect
   type: 4
 - additionalinfo: Time (in seconds) before HTTP requests timeout.
+  advanced: true
   defaultvalue: "20"
   display: Request Timeout
   name: polling_timeout
   required: false
+  section: Collect
   type: 0
 - additionalinfo: Used by a TAXII Client to request information from a TAXII Server.
+  advanced: true
   display: Poll Service
   name: poll_service
   required: false
+  section: Connect
   type: 0
 - additionalinfo: The time interval for the first fetch (retroactive). <number> <time
     unit> of type minute/hour/day. For example, 1 minute, 12 hours, 7 days.
@@ -120,25 +156,41 @@ configuration:
   display: First Fetch Time
   name: initial_interval
   required: false
+  section: Collect
   type: 0
 - additionalinfo: Supports CSV values.
+  advanced: true
   display: Tags
   name: feedTags
   required: false
+  section: Collect
   type: 0
-- display: Trust any certificate (not secure)
+- advanced: true
+  display: Trust any certificate (not secure)
   name: insecure
   required: false
+  section: Connect
   type: 8
-- display: Use system proxy settings
+- advanced: true
+  display: Use system proxy settings
   name: proxy
   required: false
+  section: Connect
+  type: 8
+- additionalinfo: Select this option to exclude the fetched indicators from the enrichment
+    process.
+  defaultvalue: "false"
+  display: Enrichment Excluded
+  hidden: true
+  name: enrichmentExcluded
+  required: false
+  section: Collect
   type: 8
 contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.5.0
-    itemVersion: 1.2.14
+    itemVersion: 1.2.24
     packID: FeedTAXII
     packName: TAXII Feed
     packPropagationLabels:
@@ -187,7 +239,7 @@ detaileddescription: "TAXII Feed integration is a TAXII client that ingests indi
   disappear from feed` so that you don't continue to mark a given URL with a `Good`
   reputation after it is no longer being used by your Cloud Services provider.\n\n**Feed
   Fetch Interval** - For this example, we can leave the default value here.\n\n**Discovery
-  Service** - Enter `http://hailataxii.com/taxii-discovery-service`.\n\n**Collection**
+  Service** - Enter `http://example.com/taxii-discovery-service`.\n\n**Collection**
   - Enter `guest.Abuse_ch`.\n\n**Subscription ID** - No need to enter a value here
   for this example since the TAXII server we are addressing does not require it so
   we'll leave it blank.\n\n**Username** - Enter `guest`.\n\n**Password** - Enter `guest`.\n\n**Request
@@ -262,12 +314,12 @@ script:
     - contextPath: TAXII.Indicator.Rawjson
       description: The indicator rawJSON value.
       type: Unknown
-  dockerimage: demisto/taxii:1.0.0.80809
+  dockerimage: demisto/taxii:1.0.0.116749
   feed: true
   runonce: false
   script: |
     register_module_line('TAXIIFeed', 'start', __line__())
-    ### pack version: 1.2.14
+    demisto.debug('pack name = TAXII Feed, pack version = 1.2.24')
 
 
     import tempfile
@@ -756,7 +808,8 @@ script:
                 'X-TAXII-Content-Type': content_type,
                 'X-TAXII-Accept': accept,
                 'X-TAXII-Services': services,
-                'X-TAXII-Protocol': protocol
+                'X-TAXII-Protocol': protocol,
+                'Accept': 'application/xml'
             }
 
         @staticmethod
@@ -777,7 +830,7 @@ script:
         def __init__(self, insecure: bool = True, polling_timeout: int = 20, initial_interval: str = '1 day',
                      discovery_service: str = '', poll_service: str = None, collection: str = None,
                      credentials: dict = None, creds_certificate: dict = {}, cert_text: str = None, key_text: str = None,
-                     feedTags: str = None, tlp_color: str | None = None, **kwargs):
+                     feedTags: str = None, tlp_color: str | None = None, enrichmentExcluded: bool = False, **kwargs):
             """
             TAXII Client
             :param insecure: Set to true to ignore https certificate
@@ -821,6 +874,8 @@ script:
             self.tags = argToList(feedTags)
             self.tlp_color = tlp_color
             self.ttps: dict[str, dict] = {}
+            self.enrichment_excluded = enrichmentExcluded
+
             # authentication
             if credentials:
                 if '_header:' in credentials.get('identifier', None):
@@ -1456,6 +1511,9 @@ script:
 
                 if client.tlp_color:
                     indicator_obj['fields']['trafficlightprotocol'] = client.tlp_color
+
+                if client.enrichment_excluded:
+                    indicator_obj['enrichmentExcluded'] = client.enrichment_excluded
 
                 indicator_obj['rawJSON'] = item
 
