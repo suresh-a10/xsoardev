@@ -1,0 +1,99 @@
+args:
+- default: true
+  description: The hostname to resolve
+  name: host
+  required: true
+- auto: PREDEFINED
+  defaultValue: "false"
+  description: Returns all matching IP's in an array
+  name: multi
+  predefined:
+  - "false"
+  - "true"
+comment: |-
+  Resolves a domain name to an IP address.  Similar to 'nslookup'.  If muti=True, then it will return an array of all IP's the domain resolves to.
+
+  NOTE: This relies on the DNS settings of the host OS or on the Docker service/container, and on the configuration of the upstream DNS servers which are being queried.  If multi=true does not produce expected results (i.e. only one IP address returned when more than one IP is known to exist for the given host), the DNS servers' own configuration may be the cause (i.e. different DNS servers may return different results for the same host).  Changing the host OS DNS settings may require a restart of the Docker service or a reboot of the server in order to fully take effect.  A good method of troubleshooting is with 'dig @<someDNSserver> <hostname>'.
+commonfields:
+  id: HostToIP
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: HostToIP
+outputs:
+- contextPath: Endpoint.IP
+  description: The endpoint IP or an array of IP's.
+  type: unknown
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  import socket
+
+  HOST = demisto.args().get('host')
+  MULTI = True if demisto.args().get('multi').lower() == 'true' else False
+
+  ip_addr = None
+
+  try:
+      if MULTI:
+          ip_addr = socket.gethostbyname_ex(HOST)
+
+      else:
+          ip_addr = socket.gethostbyname(HOST)
+
+  except Exception as e:
+      demisto.results({
+          "Type" : entryTypes["error"],
+          "ContentsFormat" : formats["text"],
+          "Contents" : "Couln't resolve the host info. Error information: \"{0}\"".format(str(e))
+      })
+      sys.exit(0)
+
+  if not ip_addr:
+      demisto.results({
+          "Type" : entryTypes["error"],
+          "ContentsFormat" : formats["text"],
+          "Contents" : "Received an error while trying to lookup the IP information"
+      })
+      sys.exit(0)
+
+
+  output = {
+      "Hostname" : HOST,
+  }
+
+  if MULTI:
+      output['IP'] = ip_addr[2]
+  else:
+      output['IP'] = ip_addr
+
+  context = {}
+  context["Endpoint(val.Hostname && val.Hostname === obj.Hostname)"] = output
+
+  md = tableToMarkdown("Host to IP", [output])
+
+  demisto.results({
+      'Type' : entryTypes['note'],
+      'Contents': context,
+      'ContentsFormat' : formats['json'],
+      'HumanReadable': md,
+      'ReadableContentsFormat' : formats['markdown'],
+      'EntryContext' : context
+  })
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
