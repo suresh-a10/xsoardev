@@ -1,0 +1,85 @@
+args:
+- description: Subnet to use
+  name: subnet
+  required: true
+comment: An Automation Script to return subnet network ID
+commonfields:
+  id: IPCalcReturnSubnetNetwork
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 1.3.6
+    packID: CommunityCommonScripts
+    packName: Community Common Scripts
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.14.100715
+engineinfo: {}
+mainengineinfo: {}
+name: IPCalcReturnSubnetNetwork
+outputs:
+- contextPath: IPCalc.IP.Network
+  description: Subnet network
+  type: String
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('IPCalcReturnSubnetNetwork', 'start', __line__())
+  demisto.debug('pack name = Community Common Scripts, pack version = 1.3.6')
+
+
+
+
+
+  import ipaddress
+  import traceback
+
+
+  ''' COMMAND FUNCTION '''
+
+
+  def return_subnet_network_command(args: Dict[str, Any]) -> CommandResults:
+
+      subnet = args.get('subnet', None)
+
+      network = format(ipaddress.IPv4Network(subnet, strict=False).network_address)
+
+      readable_output = tableToMarkdown(headers='Network:', t=network, name='Subnet Network')
+
+      return CommandResults(
+          outputs_prefix='IPCalc.IP.Network',
+          outputs_key_field='',
+          readable_output=readable_output,
+          outputs=network,
+      )
+
+
+  ''' MAIN FUNCTION '''
+
+
+  def main():
+      try:
+          return_results(return_subnet_network_command(demisto.args()))
+      except Exception as ex:
+          demisto.error(traceback.format_exc())
+          return_error(f'Failed to execute IPCalcReturnSubnetNetwork. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+  register_module_line('IPCalcReturnSubnetNetwork', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags: []
+type: python
