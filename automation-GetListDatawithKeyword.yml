@@ -1,0 +1,106 @@
+args:
+- description: Provide a key word to search the data.
+  name: Keyword
+  required: true
+- description: The value is an array of elements.
+  isArray: true
+  name: value
+  required: true
+comment: |-
+  This transformer will get list of array elements by providing keyword. List data format
+  [
+      {
+      "folder": "abc",
+      "username": "test"
+      },
+      {
+      "folder": "def",
+      "username": "test123"
+      },
+      {
+      "folder": "ghi",
+      "username": "admin"
+      }
+  ]
+commonfields:
+  id: GetListDatawithKeyword
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.8.0
+    itemVersion: 1.3.6
+    packID: CommunityCommonScripts
+    packName: Community Common Scripts
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.11.10.115186
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetListDatawithKeyword
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('GetListDatawithKeyword', 'start', __line__())
+  demisto.debug('pack name = Community Common Scripts, pack version = 1.3.6')
+
+
+
+
+  import traceback
+
+  result_data = []
+
+
+  def get_data(key_word, json_data):
+      for i in range(len(json_data)):
+          for _key, value in json_data[i].items():
+              if key_word in value:
+                  result_data.append(json_data[i])
+                  break
+
+      return result_data
+
+
+  ''' MAIN FUNCTION '''
+
+
+  def main():
+      try:
+          key_word = demisto.args()['Keyword']
+          json_data = argToList(demisto.args()['value'])
+          res = get_data(key_word, json_data)
+
+          md = tableToMarkdown("List Data", res)
+          demisto.results({
+              'Type': entryTypes['note'],
+              'Contents': res,
+              'ContentsFormat': formats['json'],
+              'HumanReadable': md,
+              'ReadableContentsFormat': formats['markdown'],
+              'EntryContext': {'ListData': res}
+          })
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+  register_module_line('GetListDatawithKeyword', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- general
+- transformer
+type: python
