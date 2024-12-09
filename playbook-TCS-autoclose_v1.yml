@@ -1,0 +1,580 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 5aa5dc26-edd7-492c-8658-abac136156c8
+inputs: []
+name: TCS-autoclose v1
+outputs: []
+quiet: true
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d59725bf-7c66-498b-8e42-9fcb5b700e89
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: d59725bf-7c66-498b-8e42-9fcb5b700e89
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ids:
+        simple: ${incident.crowdstrikedetectionid}
+      using:
+        simple: CrowdstrikeFalcon_Detections
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Search for details of specific detections, either using a filter
+        query, or by providing the IDs of the detections.
+      id: 2e0422d2-81f4-4dac-8a93-6e643f0044f7
+      iscommand: true
+      name: Fetch the alert details from CS
+      script: CrowdstrikeFalcon|||cs-falcon-search-detection
+      type: regular
+      version: -1
+    taskid: 2e0422d2-81f4-4dac-8a93-6e643f0044f7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 210
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      createddate:
+        simple: ${CrowdStrike.Detection.FirstBehavior}
+      crowdstrikecmdline:
+        simple: ${CrowdStrike.Detection.Behavior.[0].CommandLine}
+      crowdstrikedeviceid:
+        simple: ${CrowdStrike.Detection.Behavior.[0].SensorID}
+      crowdstrikefilehash:
+        simple: ${CrowdStrike.Detection.Behavior.[0].SHA256}
+      crowdstrikefilename:
+        simple: ${CrowdStrike.Detection.Behavior.[0].FileName}
+      crowdstrikefilepath:
+        simple: ${CrowdStrike.Detection.Behavior.[0].Filepath}
+      crowdstrikehostname:
+        simple: ${CrowdStrike.Detection.System}
+      crowdstriketactic:
+        simple: ${CrowdStrike.Detection.Behavior.[0].Tactic}
+      crowdstriketechnique:
+        simple: ${CrowdStrike.Detection.Behavior.[0].Technique}
+      csiocvalue:
+        simple: ${CrowdStrike.Detection.Behavior.[0].SHA256}
+      csparentcmdline:
+        simple: ${CrowdStrike.Detection.Behavior.[0].CommandLine}
+      csscenario:
+        simple: ${CrowdStrike.Detection.Behavior.[0].Scenario}
+      description:
+        simple: ${CrowdStrike.Detection.Behavior.[0].Description}
+      occurred:
+        simple: ${CrowdStrike.Detection.FirstBehavior}
+      tenant:
+        simple: CORP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 8b293312-82df-44dc-854c-8899964a5261
+      iscommand: true
+      name: 'Set Incident '
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 8b293312-82df-44dc-854c-8899964a5261
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 395
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 716e938b-fc5a-47cb-85ff-77b563465a9a
+      iscommand: false
+      name: END
+      type: title
+      version: -1
+    taskid: 716e938b-fc5a-47cb-85ff-77b563465a9a
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 965
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ids:
+        simple: ${incident.crowdstrikedetectionid}
+      status:
+        simple: in_progress
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Resolves and updates a detection using the provided arguments.
+        At least one optional argument must be passed, otherwise no change will take
+        place. Note that IDP detections are not supported.
+      id: 8e3a291f-6341-4dc3-8b7d-b4fbf3bb698e
+      iscommand: true
+      name: Update the status as Inprogress in cs
+      script: CrowdstrikeFalcon|||cs-falcon-resolve-detection
+      type: regular
+      version: -1
+    taskid: 8e3a291f-6341-4dc3-8b7d-b4fbf3bb698e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 790
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: ebfdb4aa-fa11-44e3-8dd9-ffdde2afb58f
+      iscommand: true
+      name: Closed the incident
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: ebfdb4aa-fa11-44e3-8dd9-ffdde2afb58f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1000,
+          "y": 1050
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: closetime
+      value:
+        complex:
+          accessor: occurred
+          root: incident
+          transformers:
+          - args:
+              variation:
+                value:
+                  simple: in 7 hour
+            operator: ModifyDateTime
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: f253deb3-c479-443f-873b-64296ff20d6a
+      iscommand: false
+      name: Set context data
+      script: Set
+      type: regular
+      version: -1
+    taskid: f253deb3-c479-443f-873b-64296ff20d6a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1220,
+          "y": 360
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeddate:
+        simple: ${closetime}
+      severity:
+        simple: "2"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: d9abc824-7e1e-4575-8422-f0c8d5b72fa4
+      iscommand: true
+      name: Set Incident Severity
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: d9abc824-7e1e-4575-8422-f0c8d5b72fa4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 585
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ids:
+        simple: ${incident.crowdstrikedetectionid}
+      status:
+        simple: closed
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Resolves and updates a detection using the provided arguments.
+        At least one optional argument must be passed, otherwise no change will take
+        place. Note that IDP detections are not supported.
+      id: 8ccb376f-1355-4c3e-8a14-802e3546194b
+      iscommand: true
+      name: Update the status as Closed in cs
+      script: CrowdstrikeFalcon|||cs-falcon-resolve-detection
+      type: regular
+      version: -1
+    taskid: 8ccb376f-1355-4c3e-8a14-802e3546194b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1180,
+          "y": 975
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeddate:
+        simple: ${closetime}
+      closingnote:
+        simple: False Positive - Auto Close
+      investigationanalysis:
+        simple: Not Applicable
+      investigationconclusion:
+        simple: False Positive
+      severity:
+        simple: "4"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: c0d58a5a-9412-4dcb-8ee4-a347588b1ceb
+      iscommand: true
+      name: Set Incident Closing Reason Context - Duplicate
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: c0d58a5a-9412-4dcb-8ee4-a347588b1ceb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1520,
+          "y": 660
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ids:
+        simple: ${incident.crowdstrikedetectionid}
+      using:
+        simple: CrowdstrikeFalcon_Detections
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Search for details of specific detections, either using a filter
+        query, or by providing the IDs of the detections.
+      id: 785cf107-3edc-497e-8a30-6bba02a717b6
+      iscommand: true
+      name: Fetch the alert details from CS
+      script: CrowdstrikeFalcon|||cs-falcon-search-detection
+      type: regular
+      version: -1
+    taskid: 785cf107-3edc-497e-8a30-6bba02a717b6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": 150
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeddate:
+        simple: ${closetime}
+      closetime:
+        simple: ${closetime}
+      closingnote:
+        simple: False Positive - Auto Close
+      investigationanalysis:
+        simple: Not Applicable
+      investigationconclusion:
+        simple: False Positive
+      severity:
+        simple: "4"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 56234712-110d-4def-8780-e1f2a9a20034
+      iscommand: true
+      name: Set Incident Closing Reason Context - Duplicate
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 56234712-110d-4def-8780-e1f2a9a20034
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1230,
+          "y": 710
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: closetime
+      value:
+        complex:
+          accessor: occurred
+          root: incident
+          transformers:
+          - args:
+              variation:
+                value:
+                  simple: in 2 minute
+            operator: ModifyDateTime
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 479e3b03-2178-4404-8aa2-300dd5ee07e1
+      iscommand: false
+      name: Set context data
+      script: Set
+      type: regular
+      version: -1
+    taskid: 479e3b03-2178-4404-8aa2-300dd5ee07e1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1190,
+          "y": 490
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeddate:
+        simple: ${closetime}
+      closetime:
+        simple: ${closetime}
+      closingnote:
+        simple: Duplicate - Auto Close
+      duplicateticket:
+        simple: NA. This is Duplicate - Auto Close incident.
+      duplicateticketnumber:
+        simple: NA. This is Duplicate - Auto Close incident.
+      forensicsdone:
+        simple: Not Applicable
+      investigationanalysis:
+        simple: Not Applicable
+      investigationconclusion:
+        simple: Duplicate
+      remediationrequired:
+        simple: Not Applicable
+      severity:
+        simple: "1"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 69f34bf5-fc65-4d0b-8504-05c58273f04c
+      iscommand: true
+      name: Set Incident Closing Reason Context - Duplicate
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 69f34bf5-fc65-4d0b-8504-05c58273f04c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 970,
+          "y": 520
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1095,
+        "width": 1450,
+        "x": 450,
+        "y": 50
+      }
+    }
+  }
