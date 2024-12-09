@@ -1,0 +1,117 @@
+args:
+- description: Duplicate incident id
+  name: duplicateId
+  required: true
+- description: Investigation summary
+  name: closeNotes
+  required: true
+- auto: PREDEFINED
+  description: Incident Closing Reason
+  name: incidentclosingreason
+  predefined:
+  - False Positive
+  - True Positive
+  required: true
+comment: Close the current investigation as duplicate to other investigation.
+commonfields:
+  id: 42a5a343-a1c4-47d8-893f-7bb4d38e2869
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python:2.7.18.24398
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CloseInvestigationAsDuplicate_V2
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  current_incident_id = demisto.incidents()[0]['id']
+  duplicate_id = demisto.args()['duplicateId'].strip('#')
+  # res = demisto.executeCommand("linkIncidents", {"incidentId":duplicate_id, "linkedIncidentIDs": current_incident_id})
+  # demisto.results(res)
+
+  closenotes = demisto.args()['closeNotes']
+  closeReason = demisto.args()['incidentclosingreason']
+  # res = demisto.executeCommand("setIncident",{"incidentId":current_incident_id,"closingnote":"This is Duplicate incident","investigationanalysis":closenotes,"investigationconclusion":closeReason,"forensicsdone":"No","remediationrequired":"No"})
+  # demisto.results(res)
+
+  # closenotes = demisto.args()['closenotes']
+  # closeReason = demisto.args()['incidentclosingreason']
+  # res = demisto.executeCommand("setIncident", {"incidentId":current_incident_id, "closenotes": closeNotes, "incidentclosingreason":closeReason,"forensicsdone":"No","remediationrequired":"No"})
+  # #res = demisto.executeCommand("setIncident", {"incidentId":current_incident_id, "closeNotes": closeNotes, "closeReason":closeReason})
+  # demisto.results(res)
+
+  #true_positive false_positive
+  if closeReason=="False Positive":
+      closeReason="false_positive"
+  elif closeReason=="True Positive":
+      closeReason="true_positive"
+
+  # instance=demisto.executeCommand("GetByIncidentId", {"incident_id":current_incident_id, "get_key": "incident.sourceInstance"})
+  instance=demisto.incidents()[0].get('sourceInstance').lower()
+  print(instance)
+
+  if "crowdstrike" in instance:
+      # csid=demisto.executeCommand("GetByIncidentId", {"incident_id":current_incident_id, "get_key": "crowdstrikedetectionid"})
+      csid=demisto.incidents()[0]['CustomFields']
+      csid=csid.get('crowdstrikedetectionid')
+      print(csid)
+      csres=demisto.executeCommand("cs-falcon-resolve-detection",{"ids":csid,"status":closeReason,"using":"CrowdstrikeFalcon_instance_1"})
+      if isError(csres):
+          # print(f'Could not update value in CS {str(csres)}')
+          print('Could not update value in CS')
+      else:
+          # demisto.results(res)
+          print("Updated in cs")
+
+
+  elif "qradar" in instance:
+      # qrid=demisto.executeCommand("GetByIncidentId", {"incident_id":current_incident_id, "get_key": "idoffense"})
+      #qrid=demisto.incidents()[0].get('idoffense')
+      qrid=demisto.incidents()[0].get('dbotMirrorId')
+
+      #labels.id
+      print(qrid)
+      qres=demisto.executeCommand("qradar-offense-update",{"offense_id":qrid,"closing_reason_id":"104","closing_reason_name":"Duplicate","status":"CLOSED","using":"QRadar v3_Typosquat Offences"})
+      if isError(qres):
+          # print(f"Could not update value in Qradar {str(qres)}")
+          print("Could not update value in Qradar")
+      else:
+          # demisto.results(res)
+          print("Updated in Qradar")
+
+
+  closenotes = demisto.args()['closeNotes']
+  closeReason = demisto.args()['incidentclosingreason']
+
+  linkres = json.loads(demisto.executeCommand("GetIncidentsByQuery", { "query":"id:{}".format(duplicate_id)})[0]['Contents'])
+  if linkres:
+      res = demisto.executeCommand("linkIncidents", {"incidentId":duplicate_id, "linkedIncidentIDs": current_incident_id})
+      if isError(res):
+          print("Could not link the incident {str(res)}")
+      else:
+          # demisto.results(res)
+          print("linked the incident")
+      res = demisto.executeCommand("setIncident",{"incidentId":current_incident_id,"closingnote":closenotes,"closeNotes":"This incident is closed as Duplicate incident","investigationanalysis":closenotes,"investigationconclusion":"Duplicate","forensicsdone":"Not Applicable","remediationrequired":"Not Applicable"})
+      demisto.results(res)
+      res = demisto.executeCommand("closeInvestigation",{})
+      demisto.results(res)
+  else:
+      print("Kindly Enter proper incident id number for duplicate. ie:#xxxxx ")
+
+scripttarget: 0
+subtype: python2
+tags:
+- dedup
+type: python
