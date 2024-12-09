@@ -3,8 +3,26 @@ commonfields:
   id: Microsoft Graph User
   version: -1
 configuration:
-- defaultvalue: https://graph.microsoft.com
-  display: Host URL (e.g., https://graph.microsoft.com)
+- additionalinfo: When selecting the Custom option, the Server URL parameter must
+    be filled. More information about National clouds can be found here - https://xsoar.pan.dev/docs/reference/articles/microsoft-integrations---authentication#using-national-cloud
+  advanced: true
+  defaultvalue: Worldwide
+  display: Azure Cloud
+  name: azure_cloud
+  options:
+  - Worldwide
+  - US GCC
+  - US GCC-High
+  - DoD
+  - Germany
+  - China
+  required: false
+  section: Connect
+  type: 15
+- additionalinfo: Use this option when required to customize the URL to the Microsoft
+    Graph User endpoint. More information can be found here - https://xsoar.pan.dev/docs/reference/articles/microsoft-integrations---authentication#using-national-cloud
+  defaultvalue: https://graph.microsoft.com
+  display: Server URL (e.g., https://graph.microsoft.com)
   name: host
   required: true
   section: Connect
@@ -139,7 +157,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 1.5.38
+    itemVersion: 1.5.41
     packID: MicrosoftGraphUser
     packName: Microsoft Graph User
     packPropagationLabels:
@@ -689,11 +707,11 @@ script:
     description: Run this command if for some reason you need to rerun the authentication
       process.
     name: msgraph-user-auth-reset
-  dockerimage: demisto/crypto:1.0.0.100307
+  dockerimage: demisto/crypto:1.0.0.114611
   runonce: false
   script: |
     register_module_line('Microsoft Graph User', 'start', __line__())
-    ### pack version: 1.5.38
+    demisto.debug('pack name = Microsoft Graph User, pack version = 1.5.41')
 
 
 
@@ -795,7 +813,7 @@ script:
         "geo-eu": "https://api-eu.securitycenter.microsoft.com",
         "geo-uk": "https://api-uk.securitycenter.microsoft.com",
         "gcc": "https://api-gcc.securitycenter.microsoft.us",
-        "gcc-high": "https://api-gcc.securitycenter.microsoft.us",
+        "gcc-high": "https://api-gov.securitycenter.microsoft.us",
         "dod": "https://api-gov.securitycenter.microsoft.us",
     }
 
@@ -1330,10 +1348,11 @@ script:
                                                      'active_directory': params.get('azure_ad_endpoint')
                                                      or 'https://login.microsoftonline.com'
                                                  })
-            # in multiple Graph integrations, the url is called 'url' instead of 'server_url' and the default url is different.
-            if 'url' in params:
+            # in multiple Graph integrations, the url is called 'url' or 'host' instead of 'server_url' and the default url is
+            # different.
+            if 'url' in params or 'host' in params:
                 return create_custom_azure_cloud(integration_name, defaults=AZURE_WORLDWIDE_CLOUD,
-                                                 endpoints={'microsoft_graph_resource_id': params.get('url')
+                                                 endpoints={'microsoft_graph_resource_id': params.get('url') or params.get('host')
                                                             or 'https://graph.microsoft.com'})
 
         # There is no need for backward compatibility support, as the integration didn't support it to begin with.
@@ -2285,6 +2304,7 @@ script:
     NO_OUTPUTS: dict = {}
     APP_NAME = 'ms-graph-user'
     INVALID_USER_CHARS_REGEX = re.compile(r'[%&*+/=?`{|}]')
+    API_VERSION: str = 'v1.0'
 
 
     def camel_case_to_readable(text):
@@ -2355,20 +2375,33 @@ script:
         """
 
         def __init__(self, tenant_id, auth_id, enc_key, app_name, base_url, verify, proxy, self_deployed,
-                     redirect_uri, auth_code, handle_error, certificate_thumbprint: Optional[str] = None,
+                     redirect_uri, auth_code, handle_error, azure_cloud: AzureCloud, certificate_thumbprint: Optional[str] = None,
                      private_key: Optional[str] = None,
-                     managed_identities_client_id: Optional[str] = None,
+                     managed_identities_client_id: Optional[str] = None
                      ):
             grant_type = AUTHORIZATION_CODE if auth_code and redirect_uri else CLIENT_CREDENTIALS
             resource = None if self_deployed else ''
-            self.ms_client = MicrosoftClient(tenant_id=tenant_id, auth_id=auth_id, enc_key=enc_key, app_name=app_name,
-                                             base_url=base_url, verify=verify, proxy=proxy, self_deployed=self_deployed,
-                                             redirect_uri=redirect_uri, auth_code=auth_code, grant_type=grant_type,
-                                             resource=resource, certificate_thumbprint=certificate_thumbprint,
-                                             private_key=private_key,
-                                             managed_identities_client_id=managed_identities_client_id,
-                                             managed_identities_resource_uri=Resources.graph,
-                                             command_prefix="msgraph-user")
+            client_args = {
+                'tenant_id': tenant_id,
+                'auth_id': auth_id,
+                'enc_key': enc_key,
+                'app_name': app_name,
+                'base_url': base_url,
+                'verify': verify,
+                'proxy': proxy,
+                'self_deployed': self_deployed,
+                'redirect_uri': redirect_uri,
+                'auth_code': auth_code,
+                'grant_type': grant_type,
+                'resource': resource,
+                'certificate_thumbprint': certificate_thumbprint,
+                'private_key': private_key,
+                'azure_cloud': azure_cloud,
+                'managed_identities_client_id': managed_identities_client_id,
+                'managed_identities_resource_uri': Resources.graph,
+                'command_prefix': "msgraph-user",
+            }
+            self.ms_client = MicrosoftClient(**client_args)
             self.handle_error = handle_error
 
         #  If successful, this method returns 204 No Content response code.
@@ -2744,7 +2777,8 @@ script:
 
     def main():
         params: dict = demisto.params()
-        url = params.get('host', '').rstrip('/') + '/v1.0/'
+        azure_cloud = get_azure_cloud(params, 'MicrosoftGraphUser')
+        url = urljoin(azure_cloud.endpoints.microsoft_graph_resource_id, f'/{API_VERSION}/')
         tenant = params.get('creds_tenant_id', {}).get('password', '') or params.get('tenant_id', '')
         auth_and_token_url = params.get('creds_auth_id', {}).get('password', '') or params.get('auth_id', '')
         enc_key = params.get('creds_enc_key', {}).get('password', '') or params.get('enc_key', '')
@@ -2796,7 +2830,7 @@ script:
                                                   self_deployed=self_deployed, redirect_uri=redirect_uri,
                                                   auth_code=auth_code, handle_error=handle_error,
                                                   certificate_thumbprint=certificate_thumbprint,
-                                                  private_key=private_key,
+                                                  private_key=private_key, azure_cloud=azure_cloud,
                                                   managed_identities_client_id=managed_identities_client_id)
             if command == 'msgraph-user-generate-login-url':
                 return_results(generate_login_url(client.ms_client))
