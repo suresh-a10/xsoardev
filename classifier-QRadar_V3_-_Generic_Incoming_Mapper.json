@@ -13,7 +13,7 @@
 	"itemVersion": "2.1.34",
 	"keyTypeMap": {},
 	"locked": false,
-	"logicalVersion": 25,
+	"logicalVersion": 30,
 	"mapping": {
 		"Access": {
 			"dontMapEventToLabels": false,
@@ -1699,12 +1699,8 @@
 				"Destination IP - Offense": {
 					"complex": {
 						"filters": [],
-						"root": "local_destination_address_ids",
-						"transformers": [
-							{
-								"operator": "uniq"
-							}
-						]
+						"root": "destinationips",
+						"transformers": []
 					}
 				},
 				"Destination IPV6": {
@@ -1900,6 +1896,31 @@
 						]
 					}
 				},
+				"Log Source": {
+					"complex": {
+						"filters": [
+							[
+								{
+									"left": {
+										"isContext": true,
+										"value": {
+											"simple": "events.logsourcename_logsourceid"
+										}
+									},
+									"operator": "notContainsGeneral",
+									"right": {
+										"isContext": false,
+										"value": {
+											"simple": "Custom Rule Engine"
+										}
+									}
+								}
+							]
+						],
+						"root": "events.logsourcename_logsourceid",
+						"transformers": []
+					}
+				},
 				"Log Source Name": {
 					"complex": {
 						"accessor": "logsourcename_logsourceid",
@@ -1950,6 +1971,12 @@
 							}
 						]
 					}
+				},
+				"MITRE ATT\u0026CK Matrix": {
+					"simple": "https://attack.mitre.org/"
+				},
+				"MITRE D3fend Matrix": {
+					"simple": "https://d3fend.mitre.org/"
 				},
 				"Magnitude - Offense": {
 					"simple": "magnitude"
@@ -2162,15 +2189,7 @@
 					}
 				},
 				"Source IP - Offense": {
-					"complex": {
-						"filters": [],
-						"root": "source_address_ids",
-						"transformers": [
-							{
-								"operator": "uniq"
-							}
-						]
-					}
+					"simple": "sourceips"
 				},
 				"Source IPV6": {
 					"complex": {
@@ -2328,16 +2347,43 @@
 						]
 					}
 				},
-				"details": {
-					"simple": "LinkToOffense"
-				},
 				"name": {
 					"complex": {
 						"filters": [],
-						"root": "description",
+						"root": "id",
 						"transformers": [
 							{
-								"operator": "toUpperCase"
+								"args": {
+									"item": {
+										"isContext": true,
+										"value": {
+											"simple": "description"
+										}
+									}
+								},
+								"operator": "append"
+							},
+							{
+								"args": {
+									"item": {
+										"isContext": false,
+										"value": {
+											"simple": "- CORP"
+										}
+									}
+								},
+								"operator": "append"
+							},
+							{
+								"args": {
+									"separator": {
+										"isContext": false,
+										"value": {
+											"simple": " "
+										}
+									}
+								},
+								"operator": "join"
 							}
 						]
 					}
