@@ -1,0 +1,263 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: bba1bf3c-2503-48c9-8d09-dc3d87fa7797
+inputs:
+- description: ""
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: IP
+      root: ExtractedIndicators
+      transformers:
+      - operator: uniq
+- description: ""
+  key: Domain
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: Domain
+      root: ExtractedIndicators
+name: TCS-Censys IOC Enrichment Playbook v 1.0
+outputs:
+- contextPath: ExtractedIndicators.IP
+  description: IP address
+- contextPath: DBotScore
+  description: DBot Score
+  type: unknown
+- contextPath: ExtractedIndicators.Domain
+  description: Domain
+sourceplaybookid: 08c3b260-77a7-4316-8c5d-802cc55f4e22
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7da0fdea-29ef-4942-8e8b-f4dc41dd22d3
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 7da0fdea-29ef-4942-8e8b-f4dc41dd22d3
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 600
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3ea58c1e-0156-4787-804a-ac0b032905ad
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 3ea58c1e-0156-4787-804a-ac0b032905ad
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1370
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.IP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.IP
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "17"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: 5b36bc4f-a658-4757-8bbe-a20cb6117c6b
+      iscommand: false
+      name: Are there any IP addresses ?
+      type: condition
+      version: -1
+    taskid: 5b36bc4f-a658-4757-8bbe-a20cb6117c6b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 960
+        }
+      }
+  "16":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: brand
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Censys
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if there is an active instance of the ThreatCrowd integration
+        enabled.
+      id: f9e1b0e2-a33c-4724-873b-54b5e76cffa4
+      iscommand: false
+      name: Is Censys enabled?
+      type: condition
+      version: -1
+    taskid: f9e1b0e2-a33c-4724-873b-54b5e76cffa4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 760
+        }
+      }
+  "17":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      index:
+        simple: ipv4
+      query:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Censys
+      description: Returns detailed information for an IP address within the specified
+        index.
+      id: 35f918ba-0dc8-4641-8e26-6f2a035ffff7
+      iscommand: true
+      name: Get IP Report From Censys
+      script: Censys|||cen-view
+      tags:
+      - toreport
+      type: regular
+      version: -1
+    taskid: 35f918ba-0dc8-4641-8e26-6f2a035ffff7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1150
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 835,
+        "width": 380,
+        "x": 50,
+        "y": 600
+      }
+    }
+  }
