@@ -1,0 +1,367 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: e26fcb57-212d-4573-8dad-19609df39222
+inputs:
+- description: ""
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: 52.172.35.239
+- description: ""
+  key: Domain
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: 'TCS-Who.is_IP_Domain_Verification v1.0_WIP_KK '
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+      - "3"
+      - "4"
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 17936cc5-b363-42cc-8b6f-358b3af9387f
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 17936cc5-b363-42cc-8b6f-358b3af9387f
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": -160,
+          "y": -70
+        }
+      }
+  "1":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query:
+        simple: ${inputs.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: PassiveTotal v2
+      description: Gets WHOIS information records based on queries.
+      id: f5deaf57-430d-4629-84a8-b1bbce730764
+      iscommand: true
+      name: Perform Whois Lookup - PassiveTotal
+      script: PassiveTotal v2|||pt-get-whois
+      type: regular
+      version: -1
+    taskid: f5deaf57-430d-4629-84a8-b1bbce730764
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 190
+        }
+      }
+  "2":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domain:
+        simple: ${inputs.IP}
+      using:
+        simple: Cisco Umbrella Investigate_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cisco Umbrella Investigate
+      description: This command will provide a standard WHOIS response record for
+        a single domain with all available WHOIS data returned.
+      id: 4246b4e1-879d-47c2-8a5d-5ea14faff8be
+      iscommand: true
+      name: 'Perform Whois Lookup - Cisco Umbrella '
+      script: Cisco Umbrella Investigate|||umbrella-get-whois-for-domain
+      type: regular
+      version: -1
+    taskid: 4246b4e1-879d-47c2-8a5d-5ea14faff8be
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 190
+        }
+      }
+  "3":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query:
+        simple: ${inputs.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: JsonWhoIs
+      description: Provides data enrichment for domains, URLs, and IP addresses.
+      id: 820e6ae0-a12d-49d6-8885-45e8fa0c28e9
+      iscommand: true
+      name: Perform Whois Lookup - JsonWhois
+      script: JsonWhoIs|||whois
+      type: regular
+      version: -1
+    taskid: 820e6ae0-a12d-49d6-8885-45e8fa0c28e9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -380,
+          "y": 190
+        }
+      }
+  "4":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        simple: ${inputs.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Whois
+      description: Provides data enrichment for ips.
+      id: 63d8dfab-1fe6-4675-8964-3166595b2d53
+      iscommand: true
+      name: Perform Whois Lookup - Whois
+      script: Whois|||ip
+      type: regular
+      version: -1
+    taskid: 63d8dfab-1fe6-4675-8964-3166595b2d53
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -820,
+          "y": 190
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Name
+                root: Domain.WHOIS.Registrant
+                transformers:
+                - operator: toLowerCase
+          operator: containsGeneral
+          right:
+            value:
+              simple: zscaler tata microsoft
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Name
+                root: Domain.Registrant
+                transformers:
+                - operator: toLowerCase
+          operator: containsGeneral
+          right:
+            value:
+              simple: zscaler tata microsoft
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: name
+                root: Whois.IP.network
+                transformers:
+                - operator: toLowerCase
+          operator: containsGeneral
+          right:
+            value:
+              simple: zscaler tata microsoft
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: name
+                root: PassiveTotal.WHOIS
+                transformers:
+                - operator: toLowerCase
+          operator: containsGeneral
+          right:
+            value:
+              simple: microsoft
+      label: "yes"
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "7"
+      "yes":
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3cfd10e4-49e6-4139-8bbf-1ac42261b878
+      iscommand: false
+      name: Is This a Trusted IP Address ?
+      type: condition
+      version: -1
+    taskid: 3cfd10e4-49e6-4139-8bbf-1ac42261b878
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -170,
+          "y": 400
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: "Yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: f8feef4d-8733-4ff5-8255-77e356a1dbc3
+      iscommand: false
+      name: Print Yes
+      script: Print
+      type: regular
+      version: -1
+    taskid: f8feef4d-8733-4ff5-8255-77e356a1dbc3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -170,
+          "y": 590
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: "No"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 4cdf3046-de40-429e-8406-e5102211a4ca
+      iscommand: false
+      name: Print No
+      script: Print
+      type: regular
+      version: -1
+    taskid: 4cdf3046-de40-429e-8406-e5102211a4ca
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 260,
+          "y": 590
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 755,
+        "width": 1680,
+        "x": -820,
+        "y": -70
+      }
+    }
+  }
