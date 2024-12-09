@@ -1,0 +1,2495 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: d92eb487-ad1d-4725-8d56-784ac1902eb4
+inputs: []
+name: TCS-Qradar RF Reference Set Population v1.0_KK
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e5031be6-228e-4544-8925-b4cb61a8a58d
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: e5031be6-228e-4544-8925-b4cb61a8a58d
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 40,
+          "y": 245
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      execution-timeout:
+        simple: "36000000"
+      list:
+        simple: recentLinkedToCyberAttack
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "20"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2.1
+      description: Gets the IP risk list as a CSV file from Recorded Future.
+      id: d4ccd01b-33dd-43cc-81a3-63d41c6dd02e
+      iscommand: true
+      name: Fetch recorded future IP risk list via Integration
+      script: Recorded Future v2.1|||recorded-future-get-ip-risklist
+      type: regular
+      version: -1
+    taskid: d4ccd01b-33dd-43cc-81a3-63d41c6dd02e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 40,
+          "y": 495
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entry_id:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: InfoFile.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: ip_risk_list.csv
+          root: InfoFile
+      ioc_type:
+        simple: ip
+      threshold:
+        simple: "0"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7b8d97c4-fbab-4a6c-8eb7-f7463e4c2872
+      iscommand: false
+      name: Retrieve IPs with reputation >=0 and add to a CSV file
+      script: 40fd8ee0-fb65-4904-8f41-b67431f89af9
+      type: regular
+      version: -1
+    taskid: 7b8d97c4-fbab-4a6c-8eb7-f7463e4c2872
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -720,
+          "y": 465
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        simple: ${InfoFile.EntryID}
+      execution-timeout:
+        simple: "21600"
+      ignore-outputs:
+        simple: "false"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This script will parse a CSV file and place the unique IPs, Domains
+        and Hashes into the context.
+      id: 1aeaa8e9-8b87-40b1-8ee8-f3e2e6043c2c
+      iscommand: false
+      name: Read extracted list into context key
+      script: ParseCSV
+      type: regular
+      version: -1
+    taskid: 1aeaa8e9-8b87-40b1-8ee8-f3e2e6043c2c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 40,
+          "y": 700
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      listData:
+        complex:
+          root: ${FileData}
+          transformers:
+          - operator: LastArrayElement
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+      listName:
+        simple: RecordedFutureIPRiskList
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.set
+      id: fadf5aa7-71ce-43d4-8a51-99deeb83b51d
+      iscommand: true
+      name: Overwrite Recorded Future IPRiskList List with new CSV
+      script: Builtin|||setList
+      type: regular
+      version: -1
+    taskid: fadf5aa7-71ce-43d4-8a51-99deeb83b51d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -720,
+          "y": 650
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: RFSCORE60
+      value:
+        simple: ${ParseCSV.ParsedCSV.Name}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: d0b948a9-58bd-4424-8afc-a429b3268d22
+      iscommand: false
+      name: Set Risk List Into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: d0b948a9-58bd-4424-8afc-a429b3268d22
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 895
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "32"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: RF - rf_ip_risklist - Recently Linked to Cyber Attack
+      value:
+        simple: ${RFSCORE60}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar_v2_copy
+      description: Add or update a value in a reference set.
+      id: 3ceb620a-56a7-42c9-809f-4d4758b65ca7
+      iscommand: true
+      name: Update Corresponding Qradar reference set
+      script: QRadar_v2_copy|||qradar-create-reference-set-value
+      type: regular
+      version: -1
+    taskid: 3ceb620a-56a7-42c9-809f-4d4758b65ca7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1245
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 2c2caad4-2aaa-4a0e-828d-b2102916626f
+      iscommand: true
+      name: Close
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 2c2caad4-2aaa-4a0e-828d-b2102916626f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3680,
+          "y": 1630
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c31d4210-6aed-48c2-8308-8bdfe68b0c0f
+      iscommand: false
+      name: End
+      type: title
+      version: -1
+    taskid: c31d4210-6aed-48c2-8308-8bdfe68b0c0f
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 3680,
+          "y": 1840
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      purge_only:
+        simple: "true"
+      ref_name:
+        simple: RF - rf_ip_risklist - Recently Linked to Cyber Attack
+      using:
+        simple: QRadar v3_Offence Fetch
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Removes a reference set or purges its contents.
+      id: 33221066-e558-4c68-8bd4-d4bdd4a118e1
+      iscommand: true
+      name: Purge content of existing reference set
+      script: QRadar v3|||qradar-reference-set-delete
+      type: regular
+      version: -1
+    taskid: 33221066-e558-4c68-8bd4-d4bdd4a118e1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1070
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "80"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      execution-timeout:
+        simple: "36000000"
+      list:
+        simple: tor
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "20"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2.1
+      description: Gets the IP risk list as a CSV file from Recorded Future.
+      id: ca38d16a-7734-4c3e-8376-2763a03b38bc
+      iscommand: true
+      name: Fetch recorded future tor IP risk list via Integration
+      script: Recorded Future v2.1|||recorded-future-get-ip-risklist
+      type: regular
+      version: -1
+    taskid: ca38d16a-7734-4c3e-8376-2763a03b38bc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 500,
+          "y": 535
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      purge_only:
+        simple: "true"
+      ref_name:
+        simple: RF - rf_ip_risklist - Tor Node
+      using:
+        simple: QRadar v3_Offence Fetch
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Removes a reference set or purges its contents.
+      id: 7fd84265-bf5e-4537-8f36-34d7c63cae7b
+      iscommand: true
+      name: Purge content of existing reference set
+      script: QRadar v3|||qradar-reference-set-delete
+      type: regular
+      version: -1
+    taskid: 7fd84265-bf5e-4537-8f36-34d7c63cae7b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 500,
+          "y": 1080
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: RF - rf_ip_risklist - Tor Node
+      value:
+        simple: ${RFSCORE60}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar_v2_copy
+      description: Add or update a value in a reference set.
+      id: 4ce05032-c9bc-4a5a-8f2e-900a4c3e7ebb
+      iscommand: true
+      name: Update Corresponding Qradar reference set
+      script: QRadar_v2_copy|||qradar-create-reference-set-value
+      type: regular
+      version: -1
+    taskid: 4ce05032-c9bc-4a5a-8f2e-900a4c3e7ebb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 500,
+          "y": 1245
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "82"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      execution-timeout:
+        simple: "36000000"
+      list:
+        simple: recentLinkedToCyberAttack
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "20"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2.1
+      description: Gets the domain risk list as a CSV file from Recorded Future.
+      id: 25391c36-10f3-4117-8171-878779fdaf80
+      iscommand: true
+      name: Fetch recorded future Domain risk list via Integration
+      script: Recorded Future v2.1|||recorded-future-get-domain-risklist
+      type: regular
+      version: -1
+    taskid: 25391c36-10f3-4117-8171-878779fdaf80
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 950,
+          "y": 525
+        }
+      }
+  "23":
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "24"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      purge_only:
+        simple: "true"
+      ref_name:
+        simple: RF - Domain - Recently Linked to Cyber Attack
+      using:
+        simple: QRadar v3_Offence Fetch
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Removes a reference set or purges its contents.
+      id: 7da8d309-1a6e-4d08-81a4-c40c85355ca1
+      iscommand: true
+      name: Purge content of existing reference set
+      script: QRadar v3|||qradar-reference-set-delete
+      type: regular
+      version: -1
+    taskid: 7da8d309-1a6e-4d08-81a4-c40c85355ca1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 950,
+          "y": 1070
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: RF - Domain - Recently Linked to Cyber Attack
+      value:
+        simple: ${RFSCORE60}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar_v2_copy
+      description: Add or update a value in a reference set.
+      id: 87780949-f42e-4f8e-854e-429a54cf7407
+      iscommand: true
+      name: Update Corresponding Qradar reference set
+      script: QRadar_v2_copy|||qradar-create-reference-set-value
+      type: regular
+      version: -1
+    taskid: 87780949-f42e-4f8e-854e-429a54cf7407
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 950,
+          "y": 1245
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "84"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      execution-timeout:
+        simple: "36000000"
+      list:
+        simple: recentLinkedToCyberAttack
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "20"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2.1
+      description: Gets the hash risk list from Recorded Future.
+      id: 1810872d-f8e0-4d3b-86e4-e4582572672b
+      iscommand: true
+      name: Fetch recorded future hash risk list via Integration
+      script: Recorded Future v2.1|||recorded-future-get-hash-risklist
+      type: regular
+      version: -1
+    taskid: 1810872d-f8e0-4d3b-86e4-e4582572672b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1410,
+          "y": 535
+        }
+      }
+  "30":
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "31"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      purge_only:
+        simple: "true"
+      ref_name:
+        simple: RF - rf_hash_risklist - Linked to Cyber Attack
+      using:
+        simple: QRadar v3_Offence Fetch
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Removes a reference set or purges its contents.
+      id: 18571771-2aef-42da-88fd-586c97fd691e
+      iscommand: true
+      name: Purge content of existing reference set
+      script: QRadar v3|||qradar-reference-set-delete
+      type: regular
+      version: -1
+    taskid: 18571771-2aef-42da-88fd-586c97fd691e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1420,
+          "y": 1080
+        }
+      }
+  "31":
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "35"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: RF - rf_hash_risklist - Linked to Cyber Attack
+      value:
+        simple: ${RFSCORE60}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar_v2_copy
+      description: Add or update a value in a reference set.
+      id: 17af1de1-f24b-44b7-89ff-fe023ff0550c
+      iscommand: true
+      name: Update Corresponding Qradar reference set
+      script: QRadar_v2_copy|||qradar-create-reference-set-value
+      type: regular
+      version: -1
+    taskid: 17af1de1-f24b-44b7-89ff-fe023ff0550c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1420,
+          "y": 1255
+        }
+      }
+  "32":
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-2/cortex-xsoar-admin/playbooks/automations.html
+      id: ec554bb9-1184-46d8-8ab0-be860f3ae102
+      iscommand: false
+      name: Delete Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: ec554bb9-1184-46d8-8ab0-be860f3ae102
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1410
+        }
+      }
+  "33":
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-2/cortex-xsoar-admin/playbooks/automations.html
+      id: daca08ae-5eb1-4103-8932-ca9046d4704e
+      iscommand: false
+      name: Delete Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: daca08ae-5eb1-4103-8932-ca9046d4704e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 500,
+          "y": 1430
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "25"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-2/cortex-xsoar-admin/playbooks/automations.html
+      id: 1e8712be-835d-436d-8707-b90c0de97976
+      iscommand: false
+      name: Delete Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 1e8712be-835d-436d-8707-b90c0de97976
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 960,
+          "y": 1430
+        }
+      }
+  "35":
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-2/cortex-xsoar-admin/playbooks/automations.html
+      id: f9255ec8-8bf5-4304-8146-26bdd01de509
+      iscommand: false
+      name: Delete Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: f9255ec8-8bf5-4304-8146-26bdd01de509
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1410,
+          "y": 1430
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "86"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      execution-timeout:
+        simple: "36000000"
+      list:
+        simple: recentMalwareSiteDetected
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "20"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2.1
+      description: Gets the domain risk list as a CSV file from Recorded Future.
+      id: d457967b-340e-4349-8032-e335f8780744
+      iscommand: true
+      name: Fetch recorded future recent malware detected risk list via Integration
+      script: Recorded Future v2.1|||recorded-future-get-domain-risklist
+      type: regular
+      version: -1
+    taskid: d457967b-340e-4349-8032-e335f8780744
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1970,
+          "y": 535
+        }
+      }
+  "41":
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      purge_only:
+        simple: "true"
+      ref_name:
+        simple: RF - rf_domain_risklist - Recently Detected Malware Operation
+      using:
+        simple: QRadar v3_Offence Fetch
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Removes a reference set or purges its contents.
+      id: c794a9be-743f-43bc-804b-04ed2e19e724
+      iscommand: true
+      name: Purge content of existing reference set
+      script: QRadar v3|||qradar-reference-set-delete
+      type: regular
+      version: -1
+    taskid: c794a9be-743f-43bc-804b-04ed2e19e724
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1980,
+          "y": 1090
+        }
+      }
+  "42":
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "43"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: RF - rf_domain_risklist - Recently Detected Malware Operation
+      value:
+        simple: ${RFSCORE60}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar_v2_copy
+      description: Add or update a value in a reference set.
+      id: 12eb95cc-6bbf-4e75-8fe5-a1ade95d461c
+      iscommand: true
+      name: Update Coreesponding Qradar reference set
+      script: QRadar_v2_copy|||qradar-create-reference-set-value
+      type: regular
+      version: -1
+    taskid: 12eb95cc-6bbf-4e75-8fe5-a1ade95d461c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1980,
+          "y": 1265
+        }
+      }
+  "43":
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "44"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-2/cortex-xsoar-admin/playbooks/automations.html
+      id: 8337d294-1cef-4f7f-8874-ee1ba759814e
+      iscommand: false
+      name: Delete Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 8337d294-1cef-4f7f-8874-ee1ba759814e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1970,
+          "y": 1440
+        }
+      }
+  "44":
+    continueonerrortype: ""
+    id: "44"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "45"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      execution-timeout:
+        simple: "36000000"
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "20"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2.1
+      description: Gets the domain risk list as a CSV file from Recorded Future.
+      id: f90f53fd-6c69-4a22-8310-5d848ee3dd4f
+      iscommand: true
+      name: Fetch recorded future Domain risk list via Integration
+      script: Recorded Future v2.1|||recorded-future-get-domain-risklist
+      type: regular
+      version: -1
+    taskid: f90f53fd-6c69-4a22-8310-5d848ee3dd4f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2620,
+          "y": 325
+        }
+      }
+  "45":
+    continueonerrortype: ""
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "46"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entry_id:
+        complex:
+          accessor: EntryID
+          root: InfoFile
+      ioc_type:
+        simple: domain
+      threshold:
+        simple: "60"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1c9aff73-f952-455c-8b70-b5c9318ed574
+      iscommand: false
+      name: Retrieve Domain with reputation >=60 and add to a CSV file
+      script: 40fd8ee0-fb65-4904-8f41-b67431f89af9
+      type: regular
+      version: -1
+    taskid: 1c9aff73-f952-455c-8b70-b5c9318ed574
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2570,
+          "y": 535
+        }
+      }
+  "46":
+    continueonerrortype: ""
+    id: "46"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "88"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          root: File
+      execution-timeout:
+        simple: "6400"
+      extend-context:
+        simple: extractedIPList=FileData
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: ac6e51f4-6604-4ff1-856a-8c5200e85576
+      iscommand: false
+      name: Read extracted list (only IP Column) into context key
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: ac6e51f4-6604-4ff1-856a-8c5200e85576
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2570,
+          "y": 720
+        }
+      }
+  "49":
+    continueonerrortype: ""
+    id: "49"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "50"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      purge_only:
+        simple: "true"
+      ref_name:
+        simple: RF - rf_domain_risklist - Score
+      using:
+        simple: QRadar v3_Offence Fetch
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Removes a reference set or purges its contents.
+      id: 9cb8b49c-b2c3-4feb-804e-beb179f69439
+      iscommand: true
+      name: Purge content of existing reference set
+      script: QRadar v3|||qradar-reference-set-delete
+      type: regular
+      version: -1
+    taskid: 9cb8b49c-b2c3-4feb-804e-beb179f69439
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2560,
+          "y": 1100
+        }
+      }
+  "50":
+    continueonerrortype: ""
+    id: "50"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "51"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: RF - rf_domain_risklist - Score
+      value:
+        simple: ${RFSCORE60}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar_v2_copy
+      description: Add or update a value in a reference set.
+      id: 32a4d855-9702-43f5-87a4-24402bb76499
+      iscommand: true
+      name: Update Corresponding Qradar reference set
+      script: QRadar_v2_copy|||qradar-create-reference-set-value
+      type: regular
+      version: -1
+    taskid: 32a4d855-9702-43f5-87a4-24402bb76499
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2560,
+          "y": 1275
+        }
+      }
+  "51":
+    continueonerrortype: ""
+    id: "51"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "52"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-2/cortex-xsoar-admin/playbooks/automations.html
+      id: 8f2a15cf-da57-40ae-8d1e-5d7a232a2c16
+      iscommand: false
+      name: Delete Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 8f2a15cf-da57-40ae-8d1e-5d7a232a2c16
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2550,
+          "y": 1450
+        }
+      }
+  "52":
+    continueonerrortype: ""
+    id: "52"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "53"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      execution-timeout:
+        simple: "36000000"
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "20"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2.1
+      description: Gets the hash risk list from Recorded Future.
+      id: 3b48c909-a17c-4021-8540-6ed260f05b75
+      iscommand: true
+      name: Fetch recorded future Hash risk list via Integration
+      script: Recorded Future v2.1|||recorded-future-get-hash-risklist
+      type: regular
+      version: -1
+    taskid: 3b48c909-a17c-4021-8540-6ed260f05b75
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3110,
+          "y": 310
+        }
+      }
+  "53":
+    continueonerrortype: ""
+    id: "53"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "89"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entry_id:
+        complex:
+          accessor: EntryID
+          root: InfoFile
+      ioc_type:
+        simple: hash
+      threshold:
+        simple: "60"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a4357c1d-350e-4110-8384-6bae94d195de
+      iscommand: false
+      name: Retrieve Hash with reputation >=60 and add to a CSV file
+      script: 40fd8ee0-fb65-4904-8f41-b67431f89af9
+      type: regular
+      version: -1
+    taskid: a4357c1d-350e-4110-8384-6bae94d195de
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3040,
+          "y": 535
+        }
+      }
+  "57":
+    continueonerrortype: ""
+    id: "57"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "58"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      purge_only:
+        simple: "true"
+      ref_name:
+        simple: RF - rf_hash_risklist - Score
+      using:
+        simple: QRadar v3_Offence Fetch
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Removes a reference set or purges its contents.
+      id: 70ea297e-30e6-46d7-8eee-26a4d100a376
+      iscommand: true
+      name: Purge content of existing reference set
+      script: QRadar v3|||qradar-reference-set-delete
+      type: regular
+      version: -1
+    taskid: 70ea297e-30e6-46d7-8eee-26a4d100a376
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3040,
+          "y": 1100
+        }
+      }
+  "58":
+    continueonerrortype: ""
+    id: "58"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "59"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: RF - rf_hash_risklist - Score
+      value:
+        simple: ${RFSCORE60}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar_v2_copy
+      description: Add or update a value in a reference set.
+      id: 9f425a1d-0c88-48ff-8753-a3204d6149e0
+      iscommand: true
+      name: Update Corresponding Qradar reference set
+      script: QRadar_v2_copy|||qradar-create-reference-set-value
+      type: regular
+      version: -1
+    taskid: 9f425a1d-0c88-48ff-8753-a3204d6149e0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3040,
+          "y": 1275
+        }
+      }
+  "59":
+    continueonerrortype: ""
+    id: "59"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "60"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-2/cortex-xsoar-admin/playbooks/automations.html
+      id: fa859821-fdbb-4a53-8eb7-fd52666c7ca0
+      iscommand: false
+      name: Delete Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: fa859821-fdbb-4a53-8eb7-fd52666c7ca0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3030,
+          "y": 1450
+        }
+      }
+  "60":
+    continueonerrortype: ""
+    id: "60"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "61"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      execution-timeout:
+        simple: "36000000"
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "20"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2.1
+      description: Gets the IP risk list as a CSV file from Recorded Future.
+      id: 2f02fc76-928e-4a4f-8041-45678fe63b27
+      iscommand: true
+      name: Fetch recorded future IP risk list via Integration
+      script: Recorded Future v2.1|||recorded-future-get-ip-risklist
+      type: regular
+      version: -1
+    taskid: 2f02fc76-928e-4a4f-8041-45678fe63b27
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3680,
+          "y": 265
+        }
+      }
+  "61":
+    continueonerrortype: ""
+    id: "61"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "91"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entry_id:
+        complex:
+          accessor: EntryID
+          root: InfoFile
+      ioc_type:
+        simple: ip
+      threshold:
+        simple: "60"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 19a43843-04e4-4420-8d7d-9d71c0b9849f
+      iscommand: false
+      name: Retrieve IPs with reputation >=0 and add to a CSV file
+      script: 40fd8ee0-fb65-4904-8f41-b67431f89af9
+      type: regular
+      version: -1
+    taskid: 19a43843-04e4-4420-8d7d-9d71c0b9849f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3690,
+          "y": 535
+        }
+      }
+  "65":
+    continueonerrortype: ""
+    id: "65"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "66"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      purge_only:
+        simple: "true"
+      ref_name:
+        simple: RF - rf_ip_risklist - Score
+      using:
+        simple: QRadar v3_Offence Fetch
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Removes a reference set or purges its contents.
+      id: c072b868-9790-4532-8225-94cc3047cb23
+      iscommand: true
+      name: Purge content of existing reference set
+      script: QRadar v3|||qradar-reference-set-delete
+      type: regular
+      version: -1
+    taskid: c072b868-9790-4532-8225-94cc3047cb23
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3690,
+          "y": 1100
+        }
+      }
+  "66":
+    continueonerrortype: ""
+    id: "66"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: RF - rf_ip_risklist - Score
+      using:
+        simple: QRadar v3_Offence Fetch
+      value:
+        simple: ${RFSCORE60}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Adds or updates an element in a reference set.
+      id: e64f38c7-35e3-4c24-8961-7d64a15f3017
+      iscommand: true
+      name: Update Corresponding Qradar reference set
+      script: QRadar v3|||qradar-reference-set-value-upsert
+      type: regular
+      version: -1
+    taskid: e64f38c7-35e3-4c24-8961-7d64a15f3017
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3690,
+          "y": 1275
+        }
+      }
+  "68":
+    continueonerrortype: ""
+    id: "68"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entry_id:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: InfoFile.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: ip_risk_list.csv
+          root: InfoFile
+      ioc_type:
+        simple: ip
+      threshold:
+        simple: "0"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 31d33353-8ff9-4c14-8539-46ee870e457f
+      iscommand: false
+      name: Retrieve IPs with reputation >=0 and add to a CSV file
+      script: 40fd8ee0-fb65-4904-8f41-b67431f89af9
+      type: regular
+      version: -1
+    taskid: 31d33353-8ff9-4c14-8539-46ee870e457f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -730,
+          "y": 850
+        }
+      }
+  "69":
+    continueonerrortype: ""
+    id: "69"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: reduced_csv_ip.csv
+          root: File
+      extend-context:
+        simple: extractedIPList=FileData
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: 0e58647f-5083-4509-82f0-b368172418ee
+      iscommand: false
+      name: Read extracted list (only IP Column) into context key
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: 0e58647f-5083-4509-82f0-b368172418ee
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -730,
+          "y": 1025
+        }
+      }
+  "70":
+    continueonerrortype: ""
+    id: "70"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      listData:
+        complex:
+          root: ${FileData}
+          transformers:
+          - operator: LastArrayElement
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+      listName:
+        simple: RecordedFutureIPRiskList
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.set
+      id: 436be3f4-20ff-477e-83fc-eeabea855e6a
+      iscommand: true
+      name: Overwrite Recorded Future IPRiskList List with new CSV
+      script: Builtin|||setList
+      type: regular
+      version: -1
+    taskid: 436be3f4-20ff-477e-83fc-eeabea855e6a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -740,
+          "y": 1220
+        }
+      }
+  "72":
+    continueonerrortype: ""
+    id: "72"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entry_id:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: InfoFile.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: ip_risk_list.csv
+          root: InfoFile
+      ioc_type:
+        simple: domain
+      threshold:
+        simple: "0"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8a02c72e-b00d-4885-8baa-e6e95e82986b
+      iscommand: false
+      name: Retrieve IPs with reputation >=0 and add to a CSV file
+      script: 40fd8ee0-fb65-4904-8f41-b67431f89af9
+      type: regular
+      version: -1
+    taskid: 8a02c72e-b00d-4885-8baa-e6e95e82986b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -490,
+          "y": 1410
+        }
+      }
+  "73":
+    continueonerrortype: ""
+    id: "73"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: reduced_csv_ip.csv
+          root: File
+      extend-context:
+        simple: extractedIPList=FileData
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: 48b9c817-4387-4a84-82c3-10c508e3062f
+      iscommand: false
+      name: Read extracted list (only IP Column) into context key
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: 48b9c817-4387-4a84-82c3-10c508e3062f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -470,
+          "y": 1480
+        }
+      }
+  "74":
+    continueonerrortype: ""
+    id: "74"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      listData:
+        complex:
+          root: ${FileData}
+          transformers:
+          - operator: LastArrayElement
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+      listName:
+        simple: RecordedFutureIPRiskList
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.set
+      id: 36831f81-e30a-47dc-88bc-92ecda47924b
+      iscommand: true
+      name: Overwrite Recorded Future IPRiskList List with new CSV
+      script: Builtin|||setList
+      type: regular
+      version: -1
+    taskid: 36831f81-e30a-47dc-88bc-92ecda47924b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -370,
+          "y": 1505
+        }
+      }
+  "80":
+    continueonerrortype: ""
+    id: "80"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "81"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        simple: ${InfoFile.EntryID}
+      execution-timeout:
+        simple: "3600"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This script will parse a CSV file and place the unique IPs, Domains
+        and Hashes into the context.
+      id: 44670eac-ad19-47ef-8dc3-3961fce00b07
+      iscommand: false
+      name: Read extracted list into context key
+      script: ParseCSV
+      type: regular
+      version: -1
+    taskid: 44670eac-ad19-47ef-8dc3-3961fce00b07
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 490,
+          "y": 710
+        }
+      }
+  "81":
+    continueonerrortype: ""
+    id: "81"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: RFSCORE60
+      value:
+        simple: ${ParseCSV.ParsedCSV.Name}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 57848afa-2685-4757-8b93-63b23e52dd17
+      iscommand: false
+      name: Set Risk List Into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 57848afa-2685-4757-8b93-63b23e52dd17
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 500,
+          "y": 885
+        }
+      }
+  "82":
+    continueonerrortype: ""
+    id: "82"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "83"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        simple: ${InfoFile.EntryID}
+      execution-timeout:
+        simple: "21600"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This script will parse a CSV file and place the unique IPs, Domains
+        and Hashes into the context.
+      id: 1116714b-81ec-4093-8cad-3c5e6bc095f8
+      iscommand: false
+      name: Read extracted list into context key
+      script: ParseCSV
+      type: regular
+      version: -1
+    taskid: 1116714b-81ec-4093-8cad-3c5e6bc095f8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 940,
+          "y": 710
+        }
+      }
+  "83":
+    continueonerrortype: ""
+    id: "83"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: RFSCORE60
+      value:
+        simple: ${ParseCSV.ParsedCSV.Name}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 709db9d1-89de-4bee-8530-e1fff990f41a
+      iscommand: false
+      name: Set Risk List Into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 709db9d1-89de-4bee-8530-e1fff990f41a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 970,
+          "y": 885
+        }
+      }
+  "84":
+    continueonerrortype: ""
+    id: "84"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "85"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        simple: ${InfoFile.EntryID}
+      execution-timeout:
+        simple: "21600"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This script will parse a CSV file and place the unique IPs, Domains
+        and Hashes into the context.
+      id: a90c1c63-f691-4e63-8184-39d09792c1e5
+      iscommand: false
+      name: Read extracted list into context key
+      script: ParseCSV
+      type: regular
+      version: -1
+    taskid: a90c1c63-f691-4e63-8184-39d09792c1e5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1430,
+          "y": 720
+        }
+      }
+  "85":
+    continueonerrortype: ""
+    id: "85"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: RFSCORE60
+      value:
+        simple: ${ParseCSV.ParsedCSV.Name}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 547d920c-0144-4549-8caf-03466295f622
+      iscommand: false
+      name: Set Risk List Into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 547d920c-0144-4549-8caf-03466295f622
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1430,
+          "y": 885
+        }
+      }
+  "86":
+    continueonerrortype: ""
+    id: "86"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "87"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        simple: ${InfoFile.EntryID}
+      execution-timeout:
+        simple: "21600"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This script will parse a CSV file and place the unique IPs, Domains
+        and Hashes into the context.
+      id: 4d5ddf7f-3383-473e-8e7e-49056949b95e
+      iscommand: false
+      name: Read extracted list into context key
+      script: ParseCSV
+      type: regular
+      version: -1
+    taskid: 4d5ddf7f-3383-473e-8e7e-49056949b95e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1980,
+          "y": 710
+        }
+      }
+  "87":
+    continueonerrortype: ""
+    id: "87"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "41"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: RFSCORE60
+      value:
+        simple: ${ParseCSV.ParsedCSV.Name}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 5903dd9b-6fe1-44d6-8b60-9fc87aa8043a
+      iscommand: false
+      name: Set Risk List Into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 5903dd9b-6fe1-44d6-8b60-9fc87aa8043a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1980,
+          "y": 885
+        }
+      }
+  "88":
+    continueonerrortype: ""
+    id: "88"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "49"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: RFSCORE60
+      value:
+        complex:
+          root: FileData
+          transformers:
+          - args:
+              limit: {}
+              replaceWith:
+                value:
+                  simple: ','
+              toReplace:
+                value:
+                  simple: |2+
+
+            operator: replace
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 08ecdf77-1e66-4d1c-85a0-52d6148ae869
+      iscommand: false
+      name: Set Risk List Into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 08ecdf77-1e66-4d1c-85a0-52d6148ae869
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2560,
+          "y": 905
+        }
+      }
+  "89":
+    continueonerrortype: ""
+    id: "89"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "93"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          root: File
+      execution-timeout:
+        simple: "21600"
+      extend-context:
+        simple: extractedIPList=FileData
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: 053e0866-6a61-4da7-8d82-814b4c369d38
+      iscommand: false
+      name: Read extracted list hash into context key
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: 053e0866-6a61-4da7-8d82-814b4c369d38
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3060,
+          "y": 730
+        }
+      }
+  "91":
+    continueonerrortype: ""
+    id: "91"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "94"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          root: File
+      execution-timeout:
+        simple: "6400"
+      extend-context:
+        simple: extractedIPList=FileData
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: 8d4e6f6f-6356-4a26-8b9b-e7e86108609e
+      iscommand: false
+      name: Read extracted list (only IP Column) into context key
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: 8d4e6f6f-6356-4a26-8b9b-e7e86108609e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3700,
+          "y": 730
+        }
+      }
+  "93":
+    continueonerrortype: ""
+    id: "93"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "57"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: RFSCORE60
+      value:
+        complex:
+          root: FileData
+          transformers:
+          - args:
+              limit: {}
+              replaceWith:
+                value:
+                  simple: ','
+              toReplace:
+                value:
+                  simple: |2+
+
+            operator: replace
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 04a420b9-76f0-487a-8b43-88aaf458ab5e
+      iscommand: false
+      name: Set Risk List Into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 04a420b9-76f0-487a-8b43-88aaf458ab5e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3060,
+          "y": 895
+        }
+      }
+  "94":
+    continueonerrortype: ""
+    id: "94"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "65"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: RFSCORE60
+      value:
+        complex:
+          root: FileData
+          transformers:
+          - args:
+              limit: {}
+              replaceWith:
+                value:
+                  simple: ','
+              toReplace:
+                value:
+                  simple: |2+
+
+            operator: replace
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: b9da6ba8-29df-4bbb-825e-b0ad19b45178
+      iscommand: false
+      name: Set Risk List Into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: b9da6ba8-29df-4bbb-825e-b0ad19b45178
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3700,
+          "y": 905
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1660,
+        "width": 4820,
+        "x": -740,
+        "y": 245
+      }
+    }
+  }
