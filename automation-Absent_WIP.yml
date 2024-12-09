@@ -1,0 +1,63 @@
+commonfields:
+  id: 49116bac-a1ba-4202-8978-0b3119216fec
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Absent_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  # import datetime,pytz
+
+  get_current_user=demisto.executeCommand("getUsers",{"current":True})[0]['Contents']
+  current_user={}
+
+  if get_current_user:
+      empid=(get_current_user[0].get('phone')).split('@')[0]
+      username=get_current_user[0].get('username')
+      # time=datetime.datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%H:%M:%S")
+
+  current_user=json.loads(demisto.executeCommand('getList', {'listName':'AbsentFromShift'})[0]['Contents'])
+
+  #Going over the data to see if data is already set for today, if so, override
+  Exists = None
+  for k,v in current_user.items():
+      if empid in k:
+          Exists = k
+
+  # Checking if the data is already set
+
+  if not Exists:
+      # data={"Name":username,"Time":time}
+      # current_user[empid]=data
+      current_user[empid]=username
+      # current_user["EmpID"]=empid
+      # current_user["Name"]=username
+      # Setting new list
+      res = demisto.executeCommand('setList', {'listName':"PresentInShift", 'listData':current_user})
+      demisto.results("Added to List")
+  else:
+      demisto.results("Already Present in List")
+
+
+
+
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
