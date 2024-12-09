@@ -1,0 +1,191 @@
+args:
+- name: incid
+commonfields:
+  id: ab646ad4-cb6d-4ba2-8aaa-9434b36880f6
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: docker.io/demisto/pandas:1.0.0.83429
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: BreakUpdate
+outputs:
+- {}
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  import pandas as pd
+  import csv
+  from datetime import date,timedelta
+  from datetime import datetime, time
+  import pytz
+
+
+  left_list=[]
+  startBreak='On Break'
+  time=datetime.now(pytz.timezone('Asia/Kolkata')).time().strftime("%H:%M")
+  print(time)
+
+  breaklist=json.loads(demisto.executeCommand('getList', {'listName':startBreak})[0]['Contents'])
+  #print(breaklist)
+  for key,value in breaklist.items():
+      if (value == time):
+
+          #print(key)
+          left_list.append(key)
+      else:
+          pass
+
+  print(left_list)
+  empid,username=[],[]
+  get_current_user=demisto.executeCommand("getUsers",{"onCall":True})[0]['Contents']
+  #print(get_current_user)
+
+
+
+
+  for i in range(len(get_current_user)):
+      empid=(get_current_user[i].get('phone')).split('@')[0]
+      if empid in left_list:
+
+          username.append(get_current_user[i].get('username'))
+      else:
+          pass
+
+  print(username)
+
+
+
+  profiles=json.loads(demisto.executeCommand('getList', {'listName':"Operators Profile"})[0]['Contents'])
+  '''for index in range(len(profiles)):
+      if profiles[index]["name"] in username:
+          profiles[index]["condition"]='Leave'
+          print(profiles[index])
+          print("leave set")'''
+
+
+  def fetchIndex(username,profiles):
+      value="No user found"
+      # print(profiles)
+      for e in profiles:
+          #print(username)
+          if e.get('name') in username:
+              value=profiles.index(e)
+              #print(profiles.index(e))
+
+
+          else:
+              pass
+
+      return value
+
+  profiles=json.loads(demisto.executeCommand('getList', {'listName':"Operators Profile"})[0]['Contents'])
+  #username=['Sreehari M', 'Arivanantham N']
+  def updateLeaves(username,profiles):
+      for i in username:
+          p=fetchIndex(i,profiles)
+          #print(p)
+          if(p=="No user found"):
+                  print(username+" Not found in profile list")
+          else:
+                  profiles[int(p)]['condition']="Leave"
+
+      return profiles
+
+  lprofiles=updateLeaves(username,profiles)
+  res=demisto.executeCommand('setList', {'listName':"Operators Profile",'listData':lprofiles})
+  if isError(res):
+      return_error(f'Failed to set list {str(get_error(res))}')
+  print(profiles)
+
+
+
+  join_list=[]
+  endBreak='Break_End'
+  time=datetime.now(pytz.timezone('Asia/Kolkata')).time().strftime("%H:%M")
+  print(time)
+
+  breaklist1=json.loads(demisto.executeCommand('getList', {'listName':endBreak})[0]['Contents'])
+  #print(breaklist)
+  for key,value in breaklist1.items():
+      if (value == time):
+
+          #print(key)
+          join_list.append(key)
+      else:
+          pass
+
+  print(join_list)
+  empid_e,username_e=[],[]
+  get_away_user=demisto.executeCommand("getUsers",{"onCall":False})[0]['Contents']
+  #print(get_current_user)
+
+
+
+
+  for i in range(len(get_away_user)):
+      empid_e=(get_away_user[i].get('phone')).split('@')[0]
+      if empid_e in join_list:
+
+          username_e.append(get_away_user[i].get('username'))
+      else:
+          pass
+
+  print(username_e)
+
+
+
+
+
+
+  profiles=json.loads(demisto.executeCommand('getList', {'listName':"Operators Profile"})[0]['Contents'])
+  #username=['Anusiya Banu S', 'Arivanantham N']
+  def endLeaves(username,profiles):
+      for i in username:
+          p=fetchIndex(i,profiles)
+          #print(p)
+          if(p=="No user found"):
+                  print(username+" Not found in profile list")
+          else:
+                  profiles[int(p)]['condition']="Perfect"
+
+      return profiles
+
+
+  addprofiles=endLeaves(username_e,profiles)
+  res=demisto.executeCommand('setList', {'listName':"Operators Profile",'listData':addprofiles})
+  if isError(res):
+      return_error(f'Failed to set list {str(get_error(res))}')
+  print(profiles)
+
+
+
+
+
+  '''result = datetime.now(pytz.timezone('Asia/Kolkata')).time().strftime("%H:%M") + timedelta(minutes=1)
+  print(result)
+  if time=="14:15":
+      print("true")
+
+  profiles=json.loads(demisto.executeCommand('getList', {'listName':"Operators Profile1_WIP"})[0]['Contents'])
+  #profiles[1]["condition"]="Perfect"
+  #print(profiles[i]["condition"])
+  for index in range(len(profiles)):
+      print(profiles[index])'''
+
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
