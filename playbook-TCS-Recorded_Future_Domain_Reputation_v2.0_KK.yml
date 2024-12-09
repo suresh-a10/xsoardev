@@ -1,0 +1,702 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.0.0
+    itemVersion: 1.2.1
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: Domain reputation using Recorded Future SOAR enrichment
+id: 112f0c2f-b261-4e28-8c81-7fdf574a2847
+inputs:
+- description: The domain name to get reputation of.
+  key: Domain
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: Name
+      root: Domain
+name: TCS-Recorded Future Domain Reputation v2.0_KK
+outputs:
+- contextPath: DBotScore.Indicator
+  description: The indicator that was tested
+  type: string
+- contextPath: DBotScore.Type
+  description: Indicator type
+  type: string
+- contextPath: DBotScore.Vendor
+  description: Vendor used to calculate the score
+  type: string
+- contextPath: DBotScore.Score
+  description: The actual score
+  type: number
+- contextPath: Domain.Malicious.Vendor
+  description: For malicious domains, the vendor that made the decision
+  type: string
+- contextPath: Domain.Malicious.Description
+  description: For malicious domains, the reason that the vendor made the decision
+  type: string
+- contextPath: Domain.Name
+  description: Domain name
+  type: string
+- contextPath: RecordedFuture.Domain.riskScore
+  description: Recorded Future Domain Risk Score
+  type: number
+- contextPath: RecordedFuture.Domain.riskLevel
+  description: Recorded Future Domain Risk Level
+  type: string
+- contextPath: RecordedFuture.Domain.Evidence.rule
+  description: Recorded Future Risk Rule Name
+  type: string
+- contextPath: RecordedFuture.Domain.Evidence.mitigation
+  description: Recorded Future Risk Rule Mitigation
+  type: string
+- contextPath: RecordedFuture.Domain.Evidence.description
+  description: Recorded Future Risk Rule description
+  type: string
+- contextPath: RecordedFuture.Domain.Evidence.timestamp
+  description: Recorded Future Risk Rule timestamp
+  type: date
+- contextPath: RecordedFuture.Domain.Evidence.level
+  description: Recorded Future Risk Rule Level
+  type: number
+- contextPath: RecordedFuture.Domain.Evidence.ruleid
+  description: Recorded Future Risk Rule ID
+  type: string
+- contextPath: RecordedFuture.Domain.name
+  description: Domain name
+  type: string
+- contextPath: RecordedFuture.Domain.maxRules
+  description: Maximum count of Recorded Future Domain Risk Rules
+  type: number
+- contextPath: RecordedFuture.Domain.ruleCount
+  description: Number of triggered Recorded Future Domain Risk Rules
+  type: number
+sourceplaybookid: Recorded Future Domain Reputation
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 643b21d2-ffb7-4458-8dfb-88161882e673
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 643b21d2-ffb7-4458-8dfb-88161882e673
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "16":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.Domain
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "24"
+      "yes":
+      - "29"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether the playbook's input contains at least one domain
+        name for which to get the reputation.
+      id: 051ce46e-ebc1-4638-82fa-aec22986f2c7
+      iscommand: false
+      name: Is there a domain to get reputation of?
+      type: condition
+      version: -1
+    taskid: 051ce46e-ebc1-4638-82fa-aec22986f2c7
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 195
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b7312536-243d-47e4-8715-b995effd3728
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: b7312536-243d-47e4-8715-b995effd3728
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1920
+        }
+      }
+  "26":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: brand
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: containsString
+                    right:
+                      value:
+                        simple: Recorded Future
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "24"
+      "yes":
+      - "28"
+      - "37"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if there is an active instance of the Recorded Future API
+        integration enabled.
+      id: e5714d14-57e2-4a32-8b3b-c1babdd5a1c5
+      iscommand: false
+      name: Is Recorded Future API enabled?
+      type: condition
+      version: -1
+    taskid: e5714d14-57e2-4a32-8b3b-c1babdd5a1c5
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 505
+        }
+      }
+  "28":
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      domain:
+        complex:
+          root: inputs.Domain
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2.1
+      description: Gets a quick indicator of the risk associated with a domain.
+      id: a6d76220-caa0-4eb9-82d9-c9c659a6ec72
+      iscommand: true
+      name: Get domain reputation from Recorded Future
+      script: Recorded Future v2.1|||domain
+      type: regular
+      version: -1
+    taskid: a6d76220-caa0-4eb9-82d9-c9c659a6ec72
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 560,
+          "y": 690
+        }
+      }
+  "29":
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d1655149-dff5-40bb-8d53-eef58e6a1a38
+      iscommand: false
+      name: Get reputation using Recorded Future API
+      type: title
+      version: -1
+    taskid: d1655149-dff5-40bb-8d53-eef58e6a1a38
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 370
+        }
+      }
+  "30":
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      recordedfutureriskrules:
+        simple: ${RecordedFuture.Domain.rules}
+      value:
+        simple: ${RecordedFuture.Domain.name}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Change the properties of an indicator
+      id: 8cbdc0d3-f941-4630-81aa-3025b67d2a20
+      iscommand: true
+      name: Set Indicator
+      script: Builtin|||setIndicator
+      type: regular
+      version: -1
+    taskid: 8cbdc0d3-f941-4630-81aa-3025b67d2a20
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 560,
+          "y": 870
+        }
+      }
+  "31":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.Domain
+          operator: lessThan
+          right:
+            value:
+              simple: "65"
+      label: "yes"
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "24"
+      "yes":
+      - "34"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 79650700-b148-4d46-8fc7-70f420da3b38
+      iscommand: false
+      name: Are There Any Domains  With Risk Score <  65
+      type: condition
+      version: -1
+    taskid: 79650700-b148-4d46-8fc7-70f420da3b38
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 560,
+          "y": 1280
+        }
+      }
+  "32":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.Domain
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "65"
+      label: "yes"
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "24"
+      "yes":
+      - "33"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ddf595dc-4459-4dcc-8b64-79a97659cd83
+      iscommand: false
+      name: Are There Any Domains  With Risk Score >  65
+      type: condition
+      version: -1
+    taskid: ddf595dc-4459-4dcc-8b64-79a97659cd83
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 990,
+          "y": 1280
+        }
+      }
+  "33":
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "24"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: SIXFIVE.Domain
+      value:
+        complex:
+          accessor: name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: RecordedFuture.Domain.riskScore
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "65"
+          root: RecordedFuture.Domain
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 5c41f38d-5416-4806-8429-341d03013e02
+      iscommand: false
+      name: 'Set Domain Greater 65 To Context '
+      script: Set
+      type: regular
+      version: -1
+    taskid: 5c41f38d-5416-4806-8429-341d03013e02
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 990,
+          "y": 1460
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "35"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: BELOWSIXFIVE.Domain
+      value:
+        complex:
+          accessor: name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: RecordedFuture.Domain.riskScore
+              operator: lessThan
+              right:
+                value:
+                  simple: "65"
+          root: RecordedFuture.Domain
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 10319e72-34d0-46a1-8f76-7390b22b77bf
+      iscommand: false
+      name: 'Set Domains Below 65 To Context '
+      script: Set
+      type: regular
+      version: -1
+    taskid: 10319e72-34d0-46a1-8f76-7390b22b77bf
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 560,
+          "y": 1460
+        }
+      }
+  "35":
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "24"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: Below65
+      value:
+        complex:
+          accessor: Domain
+          root: BELOWSIXFIVE
+          transformers:
+          - operator: StringifyArray
+          - args:
+              chars:
+                value:
+                  simple: '[" "] "'
+            operator: StripChars
+          - args:
+              regex:
+                value:
+                  simple: '","'
+              replaceWith:
+                value:
+                  simple: ' '
+            operator: replaceMatch
+          - args:
+              delimiter:
+                value:
+                  simple: ' '
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 8bda2ceb-1d1e-4d85-8753-5771895afea8
+      iscommand: false
+      name: Set IP Below 65 To Common Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 8bda2ceb-1d1e-4d85-8753-5771895afea8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 560,
+          "y": 1670
+        }
+      }
+  "36":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "31"
+      - "32"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      recordedfutureaiinsights:
+        simple: ${RecordedFuture.Domain.aiInsights.text}
+      recordedfutureriskrule:
+        simple: ${RecordedFuture.Domain.concatRules}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 166acc1e-8f80-412c-81fe-76b23b2add74
+      iscommand: true
+      name: Set Incident Field
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 166acc1e-8f80-412c-81fe-76b23b2add74
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 560,
+          "y": 1050
+        }
+      }
+  "37":
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      entity:
+        simple: ${inputs.Domain}
+      entity_type:
+        simple: domain
+      using:
+        simple: Recorded Future v2_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Get threat intelligence for an IP, Domain, CVE, URL, File or Malware.
+      id: c7aee724-e68b-465a-86ea-9ca26fd0cf14
+      iscommand: true
+      name: Get Domain Intelligence From Recorded Future
+      script: Recorded Future v2|||recordedfuture-intelligence
+      type: regular
+      version: -1
+    taskid: c7aee724-e68b-465a-86ea-9ca26fd0cf14
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 990,
+          "y": 690
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "16_24_#default#": 0.57,
+      "26_24_#default#": 0.55,
+      "26_28_yes": 0.61
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1935,
+        "width": 1320,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
