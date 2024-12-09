@@ -1,0 +1,359 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.0.0
+    itemVersion: 1.2.1
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: CVE reputation with Recorded Future SOAR enrichment
+id: 5d8f0d8c-c9fb-46e3-8c9b-ecc134efdf35
+inputs:
+- description: The CVE ID for which to get the reputation.
+  key: CVE
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: ID
+      root: CVE
+name: TCS-Recorded Future CVE Reputation_v3.0_KK_WIP
+outputs:
+- contextPath: DBotScore.Indicator
+  description: The indicator that was tested
+  type: string
+- contextPath: DBotScore.Type
+  description: Indicator type
+  type: string
+- contextPath: DBotScore.Vendor
+  description: Vendor used to calculate the score
+  type: string
+- contextPath: DBotScore.Score
+  description: The actual score
+  type: number
+- contextPath: CVE.ID
+  description: Vulnerability name
+  type: string
+- contextPath: RecordedFuture.CVE.riskLevel
+  description: Recorded Future vulnerability risk level
+  type: string
+- contextPath: RecordedFuture.CVE.riskScore
+  description: Risk score
+  type: number
+- contextPath: RecordedFuture.CVE.Evidence.rule
+  description: Recorded Future risk rule name
+  type: string
+- contextPath: RecordedFuture.CVE.Evidence.mitigation
+  description: Recorded Future risk rule mitigation
+  type: string
+- contextPath: RecordedFuture.CVE.Evidence.description
+  description: Recorded Future risk rule description
+  type: string
+- contextPath: RecordedFuture.CVE.Evidence.timestamp
+  description: Recorded Future risk rule timestamp
+  type: date
+- contextPath: RecordedFuture.CVE.Evidence.level
+  description: Recorded Future risk rule level
+  type: number
+- contextPath: RecordedFuture.CVE.Evidence.ruleid
+  description: Recorded Future risk rule ID
+  type: string
+- contextPath: RecordedFuture.CVE.name
+  description: Vulnerability name
+  type: string
+- contextPath: RecordedFuture.CVE.maxRules
+  description: Maximum count of Recorded Future vulnerability risk rules
+  type: number
+- contextPath: RecordedFuture.CVE.ruleCount
+  description: Number of triggered Recorded Future vulnerability risk rules
+  type: number
+sourceplaybookid: Recorded Future CVE Reputation
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 56a524dd-4ce5-4524-8f7a-4665c5cc2cf8
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 56a524dd-4ce5-4524-8f7a-4665c5cc2cf8
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "16":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.CVE
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "24"
+      "yes":
+      - "29"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether the playbook's input contains at least one domain
+        name for which to retrieve the reputation.
+      id: fde34804-6fe4-41b7-8573-4d6081cea678
+      iscommand: false
+      name: Is there a CVE ID to get reputation of?
+      type: condition
+      version: -1
+    taskid: fde34804-6fe4-41b7-8573-4d6081cea678
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 195
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e4b358a2-19dc-44b3-834f-d2f1d9a65ead
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: e4b358a2-19dc-44b3-834f-d2f1d9a65ead
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1185
+        }
+      }
+  "26":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: brand
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: containsString
+                    right:
+                      value:
+                        simple: Recorded Future
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "24"
+      "yes":
+      - "28"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if there is an active instance of the Recorded Future API
+        integration enabled.
+      id: 6fb40e52-f226-4abb-8330-6b356e4c02fa
+      iscommand: false
+      name: Is Recorded Future API enabled?
+      type: condition
+      version: -1
+    taskid: 6fb40e52-f226-4abb-8330-6b356e4c02fa
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 505
+        }
+      }
+  "28":
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "24"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      cve:
+        simple: ${inputs.CVE}
+      execution-timeout:
+        simple: "100000000"
+      retry-count:
+        simple: "4"
+      using:
+        simple: Recorded Future v2_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with a CVE.
+      id: 1c5b398a-47f7-4c48-8655-da953f31df6c
+      iscommand: true
+      name: Get CVE reputation from Recorded Future
+      script: Recorded Future v2|||cve
+      type: regular
+      version: -1
+    taskid: 1c5b398a-47f7-4c48-8655-da953f31df6c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 760
+        }
+      }
+  "29":
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6119e4b2-8aa1-4cae-8372-010fa5732530
+      iscommand: false
+      name: Get reputation using Recorded Future API
+      type: title
+      version: -1
+    taskid: 6119e4b2-8aa1-4cae-8372-010fa5732530
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 370
+        }
+      }
+  "30":
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      recordedfutureriskrules:
+        simple: ${RecordedFuture.CVE.rules}
+      value:
+        simple: ${RecordedFuture.CVE.name}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Change the properties of an indicator
+      id: b5a21839-a5e8-433f-82d6-6f1661a9a2d6
+      iscommand: true
+      name: setIndicator
+      script: Builtin|||setIndicator
+      type: regular
+      version: -1
+    taskid: b5a21839-a5e8-433f-82d6-6f1661a9a2d6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 930
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "16_24_#default#": 0.57,
+      "26_24_#default#": 0.55,
+      "26_28_yes": 0.61
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1200,
+        "width": 740,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
