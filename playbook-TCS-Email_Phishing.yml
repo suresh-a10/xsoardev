@@ -1,0 +1,1798 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: |-
+  This is an automated playbook to investigate suspected Phishing attempts.
+  It picks up the required information from the incident metadata as created by the mail listener.
+  Labels:
+  - Email/from: Email address of the user targeted by the suspected phishing attempt, who reported the email by forwarding it
+  - Email: the to recipients
+  - Email/cc: the cc recipients
+  - Email/format: the format of the email - text / html / etc.
+  - Email/html: the html body
+  - Email/text: the text body
+  - Email/subject: subject of the email
+  - Email/attachments: list of attachments
+  - Email/headers: the headers for the email
+hidden: true
+id: 006d5db4-54b4-454d-8dbd-825b0400dccd
+inputs:
+- description: The domains for the company to try and match closeness of sender. Comma
+    separated.
+  key: CompanyDomains
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: company.com
+name: TCS-Email Phishing
+outputs: []
+starttaskid: "0"
+tags:
+- Phishing
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "103"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e1006d00-e9cf-4c79-8194-b90f421314a5
+      iscommand: false
+      name: start_task
+      type: start
+      version: -1
+    taskid: e1006d00-e9cf-4c79-8194-b90f421314a5
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 705,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "132"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6dffc388-96b4-416e-8721-c468d032b644
+      iscommand: false
+      name: Triage and Engage
+      type: title
+      version: -1
+    taskid: 6dffc388-96b4-416e-8721-c468d032b644
+    timertriggers:
+    - action: start
+      fieldname: detectionsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 705,
+          "y": 370
+        }
+      }
+  "23":
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "28"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: "Yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 9c52b50c-3e12-42d9-8806-dbc507cf702f
+      iscommand: false
+      name: Is the attachment malicious according to Sandbox report?
+      script: Print
+      type: regular
+      version: -1
+    taskid: 9c52b50c-3e12-42d9-8806-dbc507cf702f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 592.5,
+          "y": 2030
+        }
+      }
+  "28":
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3684e4ef-5084-4acb-8b4b-3f037ce1eb5e
+      iscommand: false
+      name: 'Manual Investigation Step 1: Initial Inspection'
+      type: title
+      version: -1
+    taskid: 3684e4ef-5084-4acb-8b4b-3f037ce1eb5e
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 2205
+        }
+      }
+  "30":
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "89"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domain:
+        simple: ${inputs.CompanyDomains}
+      sender:
+        simple: ${incident.labels.Email/from}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if the sender is trying to confuse the user with a domain
+        that is very close to one of our own email domains
+      id: 536b3bce-bcda-4927-8df7-17dabc06c05a
+      iscommand: false
+      name: Check sender domain distance
+      script: CheckSenderDomainDistance
+      type: regular
+      version: -1
+    taskid: 536b3bce-bcda-4927-8df7-17dabc06c05a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 2350
+        }
+      }
+  "31":
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "32"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: Manually inspect the email for anything suspicious
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 480f78d1-b665-49ea-8c1d-7683a3650592
+      iscommand: false
+      name: Manually inspect the email for anything suspicious
+      script: Print
+      type: regular
+      version: -1
+    taskid: 480f78d1-b665-49ea-8c1d-7683a3650592
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 2700
+        }
+      }
+  "32":
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: Manually inspect the email for anything suspicious
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 1277f7ca-4844-4014-88e9-9c95226e27ef
+      iscommand: false
+      name: Assign and involve appropriate personnel
+      script: Print
+      type: regular
+      version: -1
+    taskid: 1277f7ca-4844-4014-88e9-9c95226e27ef
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 2875
+        }
+      }
+  "33":
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: Assess severity
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: d5835cfc-20db-4d7a-8173-e0362e0c37da
+      iscommand: false
+      name: Assess severity
+      script: Print
+      type: regular
+      version: -1
+    taskid: d5835cfc-20db-4d7a-8173-e0362e0c37da
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 3050
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3739474d-78a0-4804-8961-4b056ab5773d
+      iscommand: false
+      name: 'Manual Investigation Step 2: Deeper Inspection'
+      type: title
+      version: -1
+    taskid: 3739474d-78a0-4804-8961-4b056ab5773d
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 3225
+        }
+      }
+  "36":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.name
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "No":
+      - "106"
+      "Yes":
+      - "107"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        See if the URL text versus the hostname shown are different by hovering
+         over the link. Also carefully inspected the URL for spelling spoofing which
+         is typically a sign of phishing email.
+      id: a59d8436-924d-49c5-8ced-c4a1e542f1eb
+      iscommand: false
+      name: Are the hostnames in the urls being misrepresented?
+      type: condition
+      version: -1
+    taskid: a59d8436-924d-49c5-8ced-c4a1e542f1eb
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 3370
+        }
+      }
+  "42":
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "102"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: de6ba98d-1d2d-402b-88ad-5943102104d1
+      iscommand: false
+      name: Response
+      type: title
+      version: -1
+    taskid: de6ba98d-1d2d-402b-88ad-5943102104d1
+    timertriggers:
+    - action: stop
+      fieldname: detectionsla
+    - action: start
+      fieldname: remediationsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 3735
+        }
+      }
+  "44":
+    continueonerrortype: ""
+    evidencedata:
+      customfields: {}
+      description:
+        simple: Notify User
+    id: "44"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "134"
+    note: true
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: An e-mail has been sent to "${incident.emailfrom}" informing them
+          that the e-mail is safe.
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 67e1cb87-f0b8-4bb9-8788-2ee6574c9730
+      iscommand: false
+      name: Send email to user notifying them this email is safe
+      script: Print
+      type: regular
+      version: -1
+    taskid: 67e1cb87-f0b8-4bb9-8788-2ee6574c9730
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 3720
+        }
+      }
+  "45":
+    continueonerrortype: ""
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeNotes:
+        simple: E-mail is safe
+      closeReason:
+        simple: False Positive
+      id:
+        simple: ${incident.id}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 147505e3-8224-4e6f-8411-039b62779a2d
+      iscommand: true
+      name: Close the phishing investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 147505e3-8224-4e6f-8411-039b62779a2d
+    timertriggers:
+    - action: stop
+      fieldname: systemtimer
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 4035
+        }
+      }
+  "55":
+    continueonerrortype: ""
+    id: "55"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "135"
+      "yes":
+      - "108"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: AttachmentMD5
+      value:
+        simple: ${File(!(val.Type.toLowerCase().indexOf('composite document file v2
+          document') >= 0 || val.Type.toLowerCase().indexOf('rfc 822 mail') >= 0 ||
+          val.Extension == 'eml' && val.Type.toLowerCase().indexOf('ascii') >= 0 &&
+          val.Type.toLowerCase().indexOf('crlf') >= 0)).EntryID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 947d25ad-53c5-4ec7-8373-d01f67371539
+      iscommand: false
+      name: Did we find an attachment inside the email and extract its hash?
+      script: Exists
+      type: condition
+      version: -1
+    taskid: 947d25ad-53c5-4ec7-8373-d01f67371539
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 4070
+        }
+      }
+  "71":
+    continueonerrortype: ""
+    id: "71"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "120"
+      - "127"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 44974fcb-6ae1-4927-883a-92ba5a64fadb
+      iscommand: false
+      name: Extract indicators
+      type: title
+      version: -1
+    taskid: 44974fcb-6ae1-4927-883a-92ba5a64fadb
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": 865
+        }
+      }
+  "72":
+    continueonerrortype: ""
+    id: "72"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "133"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bb8d1f74-3900-4c1f-8140-a93c101ffa49
+      iscommand: false
+      name: Check indicators
+      type: title
+      version: -1
+    taskid: bb8d1f74-3900-4c1f-8140-a93c101ffa49
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 705,
+          "y": 1185
+        }
+      }
+  "81":
+    continueonerrortype: ""
+    id: "81"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "129"
+      "yes":
+      - "128"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e82efabb-dc7d-4f04-8133-2a5307a54ec1
+      iscommand: false
+      name: Was any malicious indicator found?
+      script: IsMaliciousIndicatorFound
+      type: condition
+      version: -1
+    taskid: e82efabb-dc7d-4f04-8133-2a5307a54ec1
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 705,
+          "y": 1505
+        }
+      }
+  "89":
+    continueonerrortype: ""
+    id: "89"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "31"
+      "yes":
+      - "105"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: ${LevenshteinDistance(val > 0 && val < 3}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: cc7fa499-a95b-424b-8c0f-1eacf6690000
+      iscommand: false
+      name: Is the distance really small
+      script: Exists
+      type: condition
+      version: -1
+    taskid: cc7fa499-a95b-424b-8c0f-1eacf6690000
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 2525
+        }
+      }
+  "91":
+    continueonerrortype: ""
+    id: "91"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "130"
+      "Yes":
+      - "131"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if the investigation found any malicious indicators (file,
+        URL, IP address, domain, or email). Returns "yes" if at least one malicious
+        indicator is found.
+      id: 412d2980-4859-4b66-82d7-e9eaa4ab03b9
+      iscommand: false
+      name: Confirmed Phishing?
+      script: IsMaliciousIndicatorFound
+      type: condition
+      version: -1
+    taskid: 412d2980-4859-4b66-82d7-e9eaa4ab03b9
+    timertriggers:
+    - action: stop
+      fieldname: remediationsla
+    - action: pause
+      fieldname: usertimer
+    - action: start
+      fieldname: systemtimer
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 4770
+        }
+      }
+  "94":
+    continueonerrortype: ""
+    id: "94"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "119"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: Account.Email.Address
+      value:
+        simple: ${incident.labels.Email/from}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c143c037-0d82-468d-8efc-1b219bb32468
+      iscommand: false
+      name: Store the sending account
+      script: Set
+      type: regular
+      version: -1
+    taskid: c143c037-0d82-468d-8efc-1b219bb32468
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 690
+        }
+      }
+  "100":
+    continueonerrortype: ""
+    id: "100"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 96e59ed1-b87e-4bbd-8b70-b1167e0fae64
+      iscommand: false
+      name: ""
+      playbookId: Detonate File - Generic
+      type: playbook
+      version: -1
+    taskid: 96e59ed1-b87e-4bbd-8b70-b1167e0fae64
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 592.5,
+          "y": 1855
+        }
+      }
+  "101":
+    continueonerrortype: ""
+    id: "101"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "135"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ce0dd625-fc3e-4f7f-8d63-c140b230e063
+      iscommand: false
+      name: ""
+      playbookId: Hunt for bad IOCs
+      type: playbook
+      version: -1
+    taskid: ce0dd625-fc3e-4f7f-8d63-c140b230e063
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 807.5,
+          "y": 4420
+        }
+      }
+  "102":
+    continueonerrortype: ""
+    id: "102"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "55"
+    note: true
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: |
+          This malicious email was not found in any other mailboxes.
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        - Find all mailboxes containing the malicious email
+        - Delete the emails from mailboxes
+      id: 93c45ead-a609-43b2-8086-e8ad42c31d3a
+      iscommand: false
+      name: Search for the malicious email in other mailboxes
+      script: Print
+      type: regular
+      version: -1
+    taskid: 93c45ead-a609-43b2-8086-e8ad42c31d3a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 3895
+        }
+      }
+  "103":
+    continueonerrortype: ""
+    id: "103"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      phase:
+        simple: 1. Triage
+      roles:
+        simple: Analyst
+      severity:
+        simple: Low
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: 92196e9b-57a8-4bda-862c-264ab9b14fae
+      iscommand: true
+      name: Set Incident Details
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 92196e9b-57a8-4bda-862c-264ab9b14fae
+    timertriggers:
+    - action: start
+      fieldname: systemtimer
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 705,
+          "y": 195
+        }
+      }
+  "105":
+    continueonerrortype: ""
+    id: "105"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      phase:
+        simple: 4. Response
+      severity:
+        simple: "2"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: fac36f52-93ca-4e69-8254-12cd452756f7
+      iscommand: true
+      name: SET Severity MEDIUM
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: fac36f52-93ca-4e69-8254-12cd452756f7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 807.5,
+          "y": 2700
+        }
+      }
+  "106":
+    continueonerrortype: ""
+    id: "106"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "44"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      severity:
+        simple: "0.5"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: aa2b7e73-2d80-42c3-8b8d-5a30b2940648
+      iscommand: true
+      name: SET Severity INFORMATIONAL
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: aa2b7e73-2d80-42c3-8b8d-5a30b2940648
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 3545
+        }
+      }
+  "107":
+    continueonerrortype: ""
+    id: "107"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      phase:
+        simple: 4. Response
+      severity:
+        simple: "3"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: 3b469fba-2e2b-4cd8-8f4d-35ec66758066
+      iscommand: true
+      name: SET Severity HIGH
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 3b469fba-2e2b-4cd8-8f4d-35ec66758066
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 3545
+        }
+      }
+  "108":
+    continueonerrortype: ""
+    id: "108"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "101"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      severity:
+        simple: "4"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: c6ef3095-4aec-4881-8111-cd056a84b430
+      iscommand: true
+      name: SET Severity CRITICAL
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: c6ef3095-4aec-4881-8111-cd056a84b430
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 807.5,
+          "y": 4245
+        }
+      }
+  "109":
+    continueonerrortype: ""
+    fieldMapping:
+    - incidentfield: phase
+      output:
+        simple: 2. Investigate
+    id: "109"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "71"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      htmlBody:
+        simple: ${incident.labels.Email/html}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7e811078-6c53-401b-81f5-a08c8b0a7d87
+      iscommand: true
+      name: Rasterize Email
+      script: '|||rasterize-email'
+      tags:
+      - email_html_image
+      type: regular
+      version: -1
+    taskid: 7e811078-6c53-401b-81f5-a08c8b0a7d87
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": 690
+        }
+      }
+  "110":
+    continueonerrortype: ""
+    id: "110"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeNotes:
+        simple: Deemed Phishing
+      closeReason:
+        simple: Resolved
+      phishingconfirmationstatus:
+        simple: Confirmed
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: 8562c15a-5a1a-4e06-874c-6e92567c4e57
+      iscommand: true
+      name: Set Phishing Review Status
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 8562c15a-5a1a-4e06-874c-6e92567c4e57
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 5470
+        }
+      }
+  "111":
+    continueonerrortype: ""
+    id: "111"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "110"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: Remediations task completed
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 6addb403-7706-497d-8945-9e91806508cf
+      iscommand: false
+      name: Perform remediation tasks
+      script: Print
+      type: regular
+      version: -1
+    taskid: 6addb403-7706-497d-8945-9e91806508cf
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 5295
+        }
+      }
+  "112":
+    continueonerrortype: ""
+    id: "112"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeNotes:
+        simple: Deemed to be phishing but remediated
+      closeReason:
+        simple: Resolved
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 3d17bad8-af93-4033-8f2b-eff7238d003b
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 3d17bad8-af93-4033-8f2b-eff7238d003b
+    timertriggers:
+    - action: stop
+      fieldname: systemtimer
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 5670
+        }
+      }
+  "113":
+    continueonerrortype: ""
+    id: "113"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "114"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeNotes:
+        simple: Deemed not phishing
+      closeReason:
+        simple: False Positive
+      phishingconfirmationstatus:
+        simple: False Positive
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: 6e5bd0ad-3546-422f-8731-f387976d1da7
+      iscommand: true
+      name: Set Phishing Review Status
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 6e5bd0ad-3546-422f-8731-f387976d1da7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 5295
+        }
+      }
+  "114":
+    continueonerrortype: ""
+    id: "114"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "126"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: Ready to close...
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: c7709384-6736-48e6-8c85-5e4af6d7fe5b
+      iscommand: false
+      name: Ready to close Investigation
+      script: Print
+      type: regular
+      version: -1
+    taskid: c7709384-6736-48e6-8c85-5e4af6d7fe5b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 5470
+        }
+      }
+  "117":
+    continueonerrortype: ""
+    id: "117"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "111"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      severity:
+        simple: "4"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: 4c50e65d-a2f2-4a55-8bfa-81843481011b
+      iscommand: true
+      name: SET Severity Critical
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 4c50e65d-a2f2-4a55-8bfa-81843481011b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 5120
+        }
+      }
+  "118":
+    continueonerrortype: ""
+    id: "118"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "113"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      severity:
+        simple: "1"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: bf9648a1-d226-449a-88ba-bbdf836f2591
+      iscommand: true
+      name: SET Severity Low
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: bf9648a1-d226-449a-88ba-bbdf836f2591
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 5120
+        }
+      }
+  "119":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "119"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "false"
+      key:
+        simple: incident.user
+      value:
+        complex:
+          accessor: owner
+          root: incident
+          transformers:
+          - operator: ParseJSON
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 9f8a1af6-9a41-4462-82fc-ea97a985680b
+      iscommand: false
+      name: Get User's AD info
+      script: Set
+      type: regular
+      version: -1
+    taskid: 9f8a1af6-9a41-4462-82fc-ea97a985680b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 850
+        }
+      }
+  "120":
+    continueonerrortype: ""
+    evidencedata:
+      customfields: {}
+      description:
+        simple: Extracted Indicators
+    id: "120"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "72"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      text:
+        complex:
+          accessor: HTML
+          root: Email
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Extract all indicators according to server indicators configuration
+      id: 46992f9a-41d5-448f-81fe-7bdebaf82a18
+      iscommand: true
+      name: Extract Indicators
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 46992f9a-41d5-448f-81fe-7bdebaf82a18
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 705,
+          "y": 1010
+        }
+      }
+  "126":
+    continueonerrortype: ""
+    id: "126"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeNotes:
+        simple: Found not to be phishing
+      closeReason:
+        simple: False Positive
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: abb0ddb5-dc60-48d4-857f-c5676a728b73
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: abb0ddb5-dc60-48d4-857f-c5676a728b73
+    timertriggers:
+    - action: stop
+      fieldname: systemtimer
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 5670
+        }
+      }
+  "127":
+    continueonerrortype: ""
+    id: "127"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: true
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: |
+          Indicators are being extracted. Please check the **Evidence** for indicators.
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: b2886bd6-8db6-482f-873a-28fb961966bc
+      iscommand: false
+      name: Update progress
+      script: Print
+      type: regular
+      version: -1
+    taskid: b2886bd6-8db6-482f-873a-28fb961966bc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1135,
+          "y": 1010
+        }
+      }
+  "128":
+    continueonerrortype: ""
+    id: "128"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "105"
+    note: true
+    quietmode: 0
+    scriptarguments:
+      value:
+        complex:
+          accessor: Indicator
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "2"
+          root: DBotScore
+          transformers:
+          - args:
+              prefix:
+                value:
+                  simple: ' - '
+              suffix: {}
+            operator: concat
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+          - args:
+              prefix:
+                value:
+                  simple: "## Malicious Indicators\nMalicious indicators were found
+                    in the incident: \n\n"
+              suffix:
+                value:
+                  simple: |2
+
+
+                    Also check the **Evidence** for indicators.
+            operator: concat
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 8eebfa6f-fa9c-4f04-8233-91fa64a2c12b
+      iscommand: false
+      name: Update progress
+      script: Print
+      type: regular
+      version: -1
+    taskid: 8eebfa6f-fa9c-4f04-8233-91fa64a2c12b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1257.5,
+          "y": 2525
+        }
+      }
+  "129":
+    continueonerrortype: ""
+    id: "129"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "100"
+    note: true
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: |-
+          ## Sandbox Detonation
+          There were no malicious indicators found in the incident. Attempting Sandbox Detonation...
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 8c0c25d9-1557-428a-8f5f-e06219832c58
+      iscommand: false
+      name: Update progress
+      script: Print
+      type: regular
+      version: -1
+    taskid: 8c0c25d9-1557-428a-8f5f-e06219832c58
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 592.5,
+          "y": 1680
+        }
+      }
+  "130":
+    continueonerrortype: ""
+    evidencedata:
+      customfields: {}
+      description:
+        simple: E-mail verdict
+    id: "130"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "118"
+    note: true
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: E-mail confirmed as **NOT** phishing
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 21ed6168-fcca-4288-889b-612f97479084
+      iscommand: false
+      name: Update Incident
+      script: Print
+      type: regular
+      version: -1
+    taskid: 21ed6168-fcca-4288-889b-612f97479084
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 4945
+        }
+      }
+  "131":
+    continueonerrortype: ""
+    evidencedata:
+      customfields: {}
+      description:
+        simple: E-mail verdict
+    id: "131"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "117"
+    note: true
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: E-mail confirmed as **phishing**
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: bffb46d2-5257-4acf-8616-199a4ec4b2f3
+      iscommand: false
+      name: Update Incident
+      script: Print
+      type: regular
+      version: -1
+    taskid: bffb46d2-5257-4acf-8616-199a4ec4b2f3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 4945
+        }
+      }
+  "132":
+    continueonerrortype: ""
+    id: "132"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "109"
+      - "94"
+    note: false
+    quietmode: 0
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3b652b93-09ba-4367-8b09-6e3f74012c5d
+      iscommand: false
+      name: Process Email - Generic
+      playbookId: process_email_-_generic
+      type: playbook
+      version: -1
+    taskid: 3b652b93-09ba-4367-8b09-6e3f74012c5d
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": 515
+        }
+      }
+  "133":
+    continueonerrortype: ""
+    id: "133"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "81"
+    note: false
+    quietmode: 0
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e9a2bede-f476-44b0-8ee9-0e5a807e601e
+      iscommand: false
+      name: Entity Enrichment - Generic v2
+      playbookId: Entity Enrichment - Generic v2
+      type: playbook
+      version: -1
+    taskid: e9a2bede-f476-44b0-8ee9-0e5a807e601e
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 705,
+          "y": 1330
+        }
+      }
+  "134":
+    continueonerrortype: ""
+    id: "134"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "45"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 1d443bb3-d009-45c9-8ad6-ea72df3cb53a
+      iscommand: false
+      name: Investigate Further
+      type: regular
+      version: -1
+    taskid: 1d443bb3-d009-45c9-8ad6-ea72df3cb53a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 3880
+        }
+      }
+  "135":
+    continueonerrortype: ""
+    id: "135"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "91"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 2d8d60f8-6b2e-487e-8423-3405e8257074
+      iscommand: false
+      name: Investigate Further
+      type: regular
+      version: -1
+    taskid: 2d8d60f8-6b2e-487e-8423-3405e8257074
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 4600
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "36_106_No": 0.9,
+      "55_108_yes": 0.9,
+      "81_128_yes": 0.83,
+      "89_105_yes": 0.69,
+      "91_130_#default#": 0.89
+    },
+    "paper": {
+      "dimensions": {
+        "height": 5715,
+        "width": 1587.5,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
