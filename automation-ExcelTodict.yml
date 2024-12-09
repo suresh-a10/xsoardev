@@ -1,0 +1,78 @@
+args:
+- name: entryid
+  required: true
+commonfields:
+  id: 13ae11cf-c8dc-4ef6-8f18-3e7fd71a9d48
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: docker.io/demisto/pandas:1.0.0.83429
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ExcelTodict
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  import pandas as pd
+  import csv
+  fid=demisto.args()['entryid']
+  #print(fid)
+  print("success")
+  file_info = demisto.getFilePath(fid)
+  file_path = file_info['path']
+  """
+
+  with open(file_path, encoding="utf8", newline='', errors='ignore') as csvfile:
+  #with open(file_path, newline='', errors='ignore') as csvfile:
+      spamreader = csv.reader(csvfile, delimiter=',')
+      df = pd.read_csv(csvfile)
+  #res=dict(zip(df.Name, df.Time))
+      res=df.set_index('Id').to_dict()['Start Time']
+      demisto.executeCommand('setList', {'listName':'On Break', 'listData':res})
+
+
+  with open(file_path, encoding="utf8", newline='', errors='ignore') as csvfile:
+  #with open(file_path, newline='', errors='ignore') as csvfile:
+      spamreader = csv.reader(csvfile, delimiter=',')
+      df = pd.read_csv(csvfile)
+  #res=dict(zip(df.Name, df.Time))
+      res=df.set_index('Id').to_dict()['End Time']
+      demisto.executeCommand('setList', {'listName':'Break_End', 'listData':res})
+
+  """
+
+
+
+  dict1={}
+  dict2={}
+  with open(file_path,'r') as file:
+      for line in file:
+          parts=line.strip().split()
+          if len(parts)==3:
+              key=parts[0]
+              value1=parts[1]
+              value2=parts[2]
+              dict1[key]=value1
+              dict2[key]=value2
+
+
+  demisto.executeCommand('setList', {'listName':'On Break', 'listData':dict1})
+  demisto.executeCommand('setList', {'listName':'Break_End', 'listData':dict2})
+
+
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
