@@ -1,0 +1,419 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 0b6be6b7-4303-4bfe-8e84-4fd1d695283e
+inputs: []
+name: TCS-CS suppress regedit.exe FP alerts  v1.0_KL
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1b09fe70-23ec-48b7-8215-c07c48276ccd
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 1b09fe70-23ec-48b7-8215-c07c48276ccd
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 160,
+          "y": -40
+        }
+      }
+  "1":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: crowdstriketactic
+                root: incident
+                transformers:
+                - operator: toLowerCase
+          operator: containsString
+          right:
+            value:
+              simple: defense evasion
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: crowdstriketechnique
+                root: incident
+                transformers:
+                - operator: toLowerCase
+          operator: containsString
+          right:
+            value:
+              simple: disable or modify tools
+      label: "yes"
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b98e3892-2b35-49c4-8219-75845415f939
+      iscommand: false
+      name: Is the CS Trigger Logic Satisfied ?
+      type: condition
+      version: -1
+    taskid: b98e3892-2b35-49c4-8219-75845415f939
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 160,
+          "y": 110
+        }
+      }
+  "2":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      device_id:
+        simple: ${incident.crowdstrikedeviceid}
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "60"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Get policy details of host
+      id: 49b8d0f9-4c9e-43ec-804c-3280733efc92
+      iscommand: true
+      name: get policy info
+      script: '|||cs-get-policy-details'
+      type: regular
+      version: -1
+    taskid: 49b8d0f9-4c9e-43ec-804c-3280733efc92
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 490
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 83520c56-a958-4645-8a34-4286ae6b8b83
+      iscommand: false
+      name: done
+      type: title
+      version: -1
+    taskid: 83520c56-a958-4645-8a34-4286ae6b8b83
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 160,
+          "y": 1020
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: PolicyDetails.policies.policy_id
+          operator: isEqualString
+          right:
+            value:
+              simple: 3b80e5a345694b2d975e9edc1a2ea880
+      - - left:
+            iscontext: true
+            value:
+              simple: PolicyDetails.policies.policy_id
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6bbebfcb-d8bf-4856-88d6-547e00dff3f4
+      iscommand: false
+      name: check if Tamper Protection Policy is  Disable
+      type: condition
+      version: -1
+    taskid: 6bbebfcb-d8bf-4856-88d6-547e00dff3f4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 685
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: create Ticket
+      value:
+        simple: "Yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 09ae22ae-1a2c-40b7-8ac1-eb64e8a57ede
+      iscommand: false
+      name: Ticket creation needed or not
+      script: Set
+      type: regular
+      version: -1
+    taskid: 09ae22ae-1a2c-40b7-8ac1-eb64e8a57ede
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 885
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: create Ticket
+      value:
+        simple: "Yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: e48e8930-3adf-4f1c-8b57-ccb8647ca702
+      iscommand: false
+      name: Ticket creation needed or not
+      script: Set
+      type: regular
+      version: -1
+    taskid: e48e8930-3adf-4f1c-8b57-ccb8647ca702
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1220,
+          "y": 850
+        }
+      }
+  "8":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: crowdstriketactic
+                root: incident
+                transformers:
+                - operator: toLowerCase
+          operator: containsString
+          right:
+            value:
+              simple: defense evasion
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: crowdstriketechnique
+                root: incident
+                transformers:
+                - operator: toLowerCase
+          operator: containsString
+          right:
+            value:
+              simple: disable or modify tools
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.crowdstrikefilename
+          operator: containsString
+          right:
+            value:
+              simple: regedit.exe
+      label: "yes"
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 827aadad-225d-4c18-8eea-3ee7786db3ef
+      iscommand: false
+      name: Is the CS Trigger Logic Satisfied ?
+      type: condition
+      version: -1
+    taskid: 827aadad-225d-4c18-8eea-3ee7786db3ef
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -390,
+          "y": -20
+        }
+      }
+  "9":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.crowdstrikefilename
+          operator: isEqualString
+          right:
+            value:
+              simple: regedit.exe
+        - left:
+            iscontext: true
+            value:
+              simple: incident.crowdstrikefilename
+          operator: isEqualString
+          right:
+            value:
+              simple: reg.exe
+      label: regedit
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      regedit:
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8cdcd3d6-ce5e-4e6b-8452-835c5c4c8f75
+      iscommand: false
+      name: Check if File is Regedit ?
+      type: condition
+      version: -1
+    taskid: 8cdcd3d6-ce5e-4e6b-8452-835c5c4c8f75
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -200,
+          "y": 290
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "5_6_yes": 0.6
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1125,
+        "width": 1990,
+        "x": -390,
+        "y": -40
+      }
+    }
+  }
