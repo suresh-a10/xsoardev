@@ -1,0 +1,52 @@
+args:
+- name: to
+- name: from
+- description: Stack Trend List Name
+  name: list
+commonfields:
+  id: b571d8ff-a278-4b88-85f0-2495bf1ecb34
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: StackedTrendsDashboard_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  to_arg = demisto.args().get('to')
+  from_arg = demisto.args().get('from')
+  timeline = json.loads(demisto.executeCommand('getList', {'listName':demisto.args().get('list')})[0]['Contents'])
+
+  widget=[]
+  for k,v in timeline.items():
+      k_formatted=datetime.strptime(k, '%Y-%m-%d').strftime('%d %b %Y')
+      # Checking if 'To' is not set in the widget
+      if to_arg == '0001-01-01T00:00:00Z':
+          if k >= from_arg[0:10]:
+              widget.append(v)
+      else:
+          if k > from_arg[0:10] and k <= to_arg[0:10]:
+              widget.append(v)
+
+
+
+  demisto.results(json.dumps(widget))
+
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
