@@ -1,0 +1,714 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 463f94cf-02a4-452e-8f89-43e121958872
+inputs: []
+name: TCS-Crowdstrike detection playbook
+outputs: []
+sourceplaybookid: 4cba8e1c-b958-4629-8ecf-b7cddccf9ec0
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4ec3dc33-5f11-44f7-8bc1-e828132feba0
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 4ec3dc33-5f11-44f7-8bc1-e828132feba0
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 740,
+          "y": -30
+        }
+      }
+  "1":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.labels.Email/from
+          operator: isEqualString
+          right:
+            value:
+              simple: v.ghule@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: incident.labels.Email/from
+          operator: isEqualString
+          right:
+            value:
+              simple: yogesh.gholap@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: incident.labels.Email/from
+          operator: isEqualString
+          right:
+            value:
+              simple: kunal.krushev@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: incident.labels.Email/from
+          operator: isEqualString
+          right:
+            value:
+              simple: internalis.cybersecurityops@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: incident.labels.Email/from
+          operator: isEqualString
+          right:
+            value:
+              simple: nishanth.dharuman@tcs.com
+      label: "yes"
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 41cd6327-eb2c-4df2-8237-13e315cd62f5
+      iscommand: false
+      name: Is Email From Authorized Sender ?
+      type: condition
+      version: -1
+    taskid: 41cd6327-eb2c-4df2-8237-13e315cd62f5
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 740,
+          "y": 140
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "24"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        simple: ${File.EntryID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: de1e05a5-22b3-4b56-86cc-8793bc80160b
+      iscommand: true
+      name: Extract Indicators From Text File
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: de1e05a5-22b3-4b56-86cc-8793bc80160b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 740,
+          "y": 320
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: |-
+          Hello Human,
+
+          You are not on my authorized list of senders to block these Hashes. Please contact Your XSOAR Support team.
+
+          Regards,
+          CSOC Cyber AutoBot
+      cc:
+        simple: v.ghule@tcs.com
+      subject:
+        simple: Not Authorized To Send Mail For Hash blocking on CS
+      to:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 952a0cc0-5a08-4372-8abe-f54b6bc9ced1
+      iscommand: true
+      name: Send Email Notification - Not Authorized User
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 952a0cc0-5a08-4372-8abe-f54b6bc9ced1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1970,
+          "y": 750
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "yes":
+      - "19"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: ${ExtractedIndicators.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if a given value exists in the context. Will return 'no'
+        for empty empty arrays. To be used mostly with DQ and selectors.
+      id: 155e3171-a3a6-430d-8033-97ccb031c3dc
+      iscommand: false
+      name: Are there IP to update?
+      script: Exists
+      type: condition
+      version: -1
+    taskid: 155e3171-a3a6-430d-8033-97ccb031c3dc
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -90,
+          "y": 680
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "yes":
+      - "20"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: ${ExtractedIndicators.Domain_Test_}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if a given value exists in the context. Will return 'no'
+        for empty empty arrays. To be used mostly with DQ and selectors.
+      id: f810e74f-9db9-4ee9-844e-5732c0c92a89
+      iscommand: false
+      name: Are there Domain to  update?
+      script: Exists
+      type: condition
+      version: -1
+    taskid: f810e74f-9db9-4ee9-844e-5732c0c92a89
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 320,
+          "y": 680
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "yes":
+      - "21"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: ${ExtractedIndicators.File_MD5}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if a given value exists in the context. Will return 'no'
+        for empty empty arrays. To be used mostly with DQ and selectors.
+      id: 944c711a-218f-49f8-87d1-cff185d3d3c9
+      iscommand: false
+      name: Are there MD5 to  update?
+      script: Exists
+      type: condition
+      version: -1
+    taskid: 944c711a-218f-49f8-87d1-cff185d3d3c9
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 740,
+          "y": 665
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: ${ExtractedIndicators.File_SHA1}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if a given value exists in the context. Will return 'no'
+        for empty empty arrays. To be used mostly with DQ and selectors.
+      id: 41d154d4-59ed-4189-83cf-2e3d984b6af7
+      iscommand: false
+      name: Are there SHA1 to  update?
+      script: Exists
+      type: condition
+      version: -1
+    taskid: 41d154d4-59ed-4189-83cf-2e3d984b6af7
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 670
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: ${ExtractedIndicators.File_SHA256}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if a given value exists in the context. Will return 'no'
+        for empty empty arrays. To be used mostly with DQ and selectors.
+      id: 488e7725-3804-43d6-8ade-1fcefbf4d9c0
+      iscommand: false
+      name: Are there SHA256 to  update?
+      script: Exists
+      type: condition
+      version: -1
+    taskid: 488e7725-3804-43d6-8ade-1fcefbf4d9c0
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1540,
+          "y": 670
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: |-
+          Hello Human,
+
+          IOC list is added in Crowdstrike hash detection- ${incident.attachment.name}
+
+          XSOAR Investigation id - ${incident.id}
+
+
+          Regards,
+          Cyber AutoBot
+      cc:
+        simple: v.ghule@tcs.com
+      subject:
+        simple: IOC Detection on Crowdstrike List Name - ${incident.attachment.name}
+      to:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 4641869b-ec1e-4abd-8313-aba67ee8066a
+      iscommand: true
+      name: Send Notification Mail
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 4641869b-ec1e-4abd-8313-aba67ee8066a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 740,
+          "y": 1330
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8156b09f-5b34-424c-82fb-920b3e808cb7
+      iscommand: false
+      name: Close
+      type: title
+      version: -1
+    taskid: 8156b09f-5b34-424c-82fb-920b3e808cb7
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 740,
+          "y": 1530
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "25"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ioc_type:
+        simple: ipv4
+      policy:
+        simple: detect
+      value:
+        simple: ${ExtractedIndicators.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Updates an indicator for CrowdStrike to monitor.
+      id: d0c888f0-cc10-4e7e-8004-39fb3f9c398e
+      iscommand: true
+      name: Update IOC on crowdstrike
+      script: CrowdstrikeFalcon|||cs-falcon-update-ioc
+      type: regular
+      version: -1
+    taskid: d0c888f0-cc10-4e7e-8004-39fb3f9c398e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -90,
+          "y": 860
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ioc_type:
+        simple: domain
+      value:
+        simple: ${ExtractedIndicators.Domain_Test_}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Updates an indicator for CrowdStrike to monitor.
+      id: 355a1759-cc8c-4a5f-8562-77edce3f2ecc
+      iscommand: true
+      name: Update IOC on crowdstrike
+      script: CrowdstrikeFalcon|||cs-falcon-update-ioc
+      type: regular
+      version: -1
+    taskid: 355a1759-cc8c-4a5f-8562-77edce3f2ecc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 320,
+          "y": 860
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ioc_type:
+        simple: md5
+      value:
+        simple: ${ExtractedIndicators.File_MD5}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Updates an indicator for CrowdStrike to monitor.
+      id: 8f0760cc-0641-402d-8a9c-c9bbcb8df0da
+      iscommand: true
+      name: Update IOC on crowdstrike
+      script: CrowdstrikeFalcon|||cs-falcon-update-ioc
+      type: regular
+      version: -1
+    taskid: 8f0760cc-0641-402d-8a9c-c9bbcb8df0da
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 730,
+          "y": 845
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ioc_type:
+        simple: sha1
+      value:
+        simple: ${ExtractedIndicators.File_SHA1}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Updates an indicator for CrowdStrike to monitor.
+      id: 219849a0-0d23-44f3-8aad-e0aa71464cf9
+      iscommand: true
+      name: Update IOC on crowdstrike
+      script: CrowdstrikeFalcon|||cs-falcon-update-ioc
+      type: regular
+      version: -1
+    taskid: 219849a0-0d23-44f3-8aad-e0aa71464cf9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": 845
+        }
+      }
+  "23":
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ioc_type:
+        simple: sha256
+      value:
+        simple: ${ExtractedIndicators.File_SHA256}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Updates an indicator for CrowdStrike to monitor.
+      id: 3b35a46a-0f7c-4ab4-8faa-a60bae4e19b2
+      iscommand: true
+      name: Update IOC on crowdstrike
+      script: CrowdstrikeFalcon|||cs-falcon-update-ioc
+      type: regular
+      version: -1
+    taskid: 3b35a46a-0f7c-4ab4-8faa-a60bae4e19b2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1560,
+          "y": 845
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+      - "9"
+      - "11"
+      - "12"
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 26dd4761-5dd3-4160-84a9-a5382baa5b39
+      iscommand: false
+      name: Crowdstrike detection
+      type: title
+      version: -1
+    taskid: 26dd4761-5dd3-4160-84a9-a5382baa5b39
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 740,
+          "y": 470
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ids:
+        simple: ${CrowdStrike.IOC.ID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Search for details of specific detections, either using a filter
+        query, or by providing the IDs of the detections.
+      id: 5e290f63-72b1-4c85-8ca4-96a55f061655
+      iscommand: true
+      name: search detection
+      script: CrowdstrikeFalcon|||cs-falcon-search-detection
+      type: regular
+      version: -1
+    taskid: 5e290f63-72b1-4c85-8ca4-96a55f061655
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 720,
+          "y": 1150
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1625,
+        "width": 2440,
+        "x": -90,
+        "y": -30
+      }
+    }
+  }
