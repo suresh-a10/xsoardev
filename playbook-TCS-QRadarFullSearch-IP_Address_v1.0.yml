@@ -1,0 +1,450 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: This playbook runs a QRadar query and return its results to the context.
+id: 8b758157-57bb-4098-8bd3-16adc150b749
+inputs:
+- description: How much time to wait before a timeout occurs (minutes)
+  key: timeout
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "600"
+- description: Polling frequency - how often the polling command should run (minutes)
+  key: interval
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "1"
+- description: The query expressions in AQL
+  key: query_expression
+  playbookInputQuery: null
+  required: true
+  value:
+    simple: select QIDNAME(qid) as 'Event Name',logsourcename(logSourceId) as 'Log
+      Source',"eventCount" as 'Event Count',"startTime" as 'Time',categoryname(category)
+      as 'Low Level Category',"sourceIP" as 'Source IP',"sourcePort" as 'Source Port',"destinationIP"
+      as 'Destination IP',"destinationPort" as 'Destination Port',"userName" as 'Username',"magnitude"
+      as 'Magnitude' from events where ( ( referencesetcontains('TCS_Daily_IOCs_IP',
+      "destinationIP") AND logSourceId='177' ) AND "deviceGroupList"='100376' ) order
+      by "startTime" desc desc last 2 days
+- description: Range of results to return (e.g. 0-20)
+  key: range
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Table headers
+  key: headers
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: IP
+      root: ExtractedIndicators
+name: TCS-QRadarFullSearch-IP Address v1.0
+outputs:
+- contextPath: QRadar.Search.Result
+  description: The result of the search
+sourceplaybookid: QRadarFullSearch
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Start of playbook
+      id: b326062b-31c3-4e92-829d-37d9fa334b79
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: b326062b-31c3-4e92-829d-37d9fa334b79
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": -780
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query_expression:
+        simple: select QIDNAME(qid) as 'Event Name',logsourcename(logSourceId) as
+          'Log Source',"eventCount" as 'Event Count',"startTime" as 'Time',categoryname(category)
+          as 'Low Level Category',"sourceIP" as 'Source IP',"sourcePort" as 'Source
+          Port',"destinationIP" as 'Destination IP',"destinationPort" as 'Destination
+          Port',"userName" as 'Username',"magnitude" as 'Magnitude' from events where
+          ( ( referencesetcontains('TCS_Daily_IOCs_IP', "destinationIP") AND logSourceId='177'
+          ) AND "deviceGroupList"='100376' ) order by "startTime" desc last 2 days
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Searches in QRadar using AQL. It is highly recommended to use the
+        playbook 'QRadarFullSearch' instead of this command - it will execute the
+        search, and will return the result.
+      id: 156b1f73-3c72-4c6f-8d1e-6800f7399918
+      iscommand: true
+      name: Initiate Qradar Search For Reported IP Address
+      script: '|||qradar-searches'
+      type: regular
+      version: -1
+    taskid: 156b1f73-3c72-4c6f-8d1e-6800f7399918
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": -170
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      headers:
+        simple: ${inputs.headers}
+      search_id:
+        simple: ${QRadar.Search.ID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Gets a specific search id and status
+      id: 28ba4df2-710f-43f2-885a-c8be8d0a712c
+      iscommand: true
+      name: Get The Qradar Search ID
+      script: '|||qradar-get-search'
+      type: regular
+      version: -1
+    taskid: 28ba4df2-710f-43f2-885a-c8be8d0a712c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 40
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 0
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Ids:
+        simple: ${QRadar.Search.ID}
+      Interval:
+        simple: ${inputs.interval}
+      PollingCommandArgName:
+        simple: search_id
+      PollingCommandName:
+        simple: qradar-get-search
+      Timeout:
+        simple: ${inputs.timeout}
+      dt:
+        simple: QRadar.Search(val.Status!=='COMPLETED' ).ID
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Generic polling of qradar-get-search
+      id: 9cbd5f20-a1fd-4385-8685-dd582817822b
+      iscommand: false
+      name: GenericPolling
+      playbookId: GenericPolling
+      type: playbook
+      version: -1
+    taskid: 9cbd5f20-a1fd-4385-8685-dd582817822b
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -60,
+          "y": 500
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      headers:
+        simple: ${inputs.headers}
+      range:
+        simple: ${inputs.range}
+      search_id:
+        simple: ${QRadar.Search.ID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Gets search results
+      id: 8e69e022-2ae2-4160-8d58-3c2591fb00e5
+      iscommand: true
+      name: Get Qradar Search Results
+      script: '|||qradar-get-search-results'
+      type: regular
+      version: -1
+    taskid: 8e69e022-2ae2-4160-8d58-3c2591fb00e5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 725
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Playbook is done
+      id: 45ccb221-e1ff-42e8-81ed-23f05b7b0590
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 45ccb221-e1ff-42e8-81ed-23f05b7b0590
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1190
+        }
+      }
+  "6":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: QRadar.Search.Status
+          operator: isEqualString
+          right:
+            value:
+              simple: COMPLETED
+      label: "yes"
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e117ec09-cab4-48ff-8500-4141a9adcd04
+      iscommand: false
+      name: Check If The Search Is Completed
+      type: condition
+      version: -1
+    taskid: e117ec09-cab4-48ff-8500-4141a9adcd04
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 235
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        simple: ${File.EntryID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 37b61e1a-72a7-4749-8582-64638a5c8338
+      iscommand: true
+      name: Extract Indicators From Text File
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 37b61e1a-72a7-4749-8582-64638a5c8338
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": -600
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: TCS_Daily_IOCs_IP​
+      value:
+        simple: ${ExtractedIndicators.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Add or update a value in a reference set.
+      id: 9a4d41a8-c4df-425b-870a-da545b7d326f
+      iscommand: true
+      name: Update IP Address Reference Set
+      script: '|||qradar-create-reference-set-value'
+      type: regular
+      version: -1
+    taskid: 9a4d41a8-c4df-425b-870a-da545b7d326f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": -380
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: TCS_Daily_IOCs_IP​
+      value:
+        simple: ${ExtractedIndicators.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Deletes a value in a reference set.
+      id: b92f8593-7935-45ae-8f22-58688a38f28a
+      iscommand: true
+      name: Delete Reference Set Values
+      script: '|||qradar-delete-reference-set-value'
+      type: regular
+      version: -1
+    taskid: b92f8593-7935-45ae-8f22-58688a38f28a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 930
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 2035,
+        "width": 602.5,
+        "x": -60,
+        "y": -780
+      }
+    }
+  }
