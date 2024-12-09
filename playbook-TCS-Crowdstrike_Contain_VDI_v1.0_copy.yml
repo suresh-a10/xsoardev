@@ -1,0 +1,434 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 1d2e4ba1-b309-4a83-86ef-d454f7f4c2ae
+inputs: []
+name: TCS-Crowdstrike Contain VDI v1.0_copy
+outputs: []
+sourceplaybookid: 0ef0b708-4d20-4d40-8cef-d70d7d374941
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 17b63cae-8906-4481-8825-154db164329e
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 17b63cae-8906-4481-8825-154db164329e
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 170,
+          "y": 460
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "24"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ids:
+        simple: ${CrowdStrike.Device.ID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Lifts containment on the host, which returns its network communications
+        to normal.
+      id: 27ef578d-4c56-4b8a-8878-c2c16ea9870c
+      iscommand: true
+      name: lift Host Containment
+      script: CrowdstrikeFalcon|||cs-falcon-lift-host-containment
+      type: regular
+      version: -1
+    taskid: 27ef578d-4c56-4b8a-8878-c2c16ea9870c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 170,
+          "y": 1570
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hostname:
+        complex:
+          accessor: labels.offense_source
+          root: incident
+          transformers:
+          - args:
+              chars:
+                value:
+                  simple: .india.tcs.com
+            operator: StripChars
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Searches for a device that matches the query.
+      id: 1fe84d24-a180-439e-852c-aeeb2c296619
+      iscommand: true
+      name: Get Host ID  from Crowdstrike
+      script: CrowdstrikeFalcon|||cs-falcon-search-device
+      type: regular
+      version: -1
+    taskid: 1fe84d24-a180-439e-852c-aeeb2c296619
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 170,
+          "y": 780
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ids:
+        simple: ${CrowdStrike.Device.ID}
+      using:
+        simple: CrowdstrikeFalcon_Host Contain
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Contains or lifts containment for a specified host. When contained,
+        a host can only communicate with the CrowdStrike cloud and any IPs specified
+        in your containment policy.
+      id: 9f7923d6-fcf3-4009-8b85-504c184fb291
+      iscommand: true
+      name: Contain Host
+      script: CrowdstrikeFalcon|||cs-falcon-contain-host
+      type: regular
+      version: -1
+    taskid: 9f7923d6-fcf3-4009-8b85-504c184fb291
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 170,
+          "y": 1170
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    form:
+      description: |2+
+
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Has The Host Been Contained? Please Verify on Crowdstrike
+        options:
+        - "Yes"
+        - "No"
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Non-standard hosts(personal hosts) is contain through Demisto
+      totalanswers: 0
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: {}
+      cc: null
+      format: ""
+      methods:
+      - email
+      subject:
+        simple: Non-standard hosts(personal hosts) is contain ${CrowdStrike.Device.Hostname}
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: false
+        retriescount: 2
+        retriesinterval: 360
+      to:
+        simple: v.ghule@tcs.com,InternalIs.CyberSecurityOps@tcs.com,kunal.krushev@tcs.com
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Extract user's response from EmailAskUser reply. Returns the first
+        textual response line of the provided entry that contains the reply body.
+        Use ${lastCompletedTaskEntries} to analyze the previous playbook task containing
+        the user's reply.
+      id: c5527778-d69d-441b-8d6a-36bce06a15ad
+      iscommand: false
+      name: 'Notify  Analyst/Operator Lead  Host is Containment '
+      type: collection
+      version: -1
+    taskid: c5527778-d69d-441b-8d6a-36bce06a15ad
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": -260,
+          "y": 1380
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f0b4d5a9-b17f-4bae-8db7-d9f36f7d9ed6
+      iscommand: false
+      name: Close incident
+      type: title
+      version: -1
+    taskid: f0b4d5a9-b17f-4bae-8db7-d9f36f7d9ed6
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -260,
+          "y": 1970
+        }
+      }
+  "22":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: CrowdStrike.Device.Hostname
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "25"
+      "yes":
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7fadbc8b-45be-4027-8730-cd58fb169f34
+      iscommand: false
+      name: 'Check If Hostname Exists in Crowdstrike '
+      type: condition
+      version: -1
+    taskid: 7fadbc8b-45be-4027-8730-cd58fb169f34
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 170,
+          "y": 950
+        }
+      }
+  "23":
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      seconds:
+        simple: "1800"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Sleep for X seconds
+      id: 7eff0c29-442f-463b-83e3-7d6e705484bc
+      iscommand: false
+      name: 30 Min Wait Timer
+      script: Sleep
+      type: regular
+      version: -1
+    taskid: 7eff0c29-442f-463b-83e3-7d6e705484bc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 170,
+          "y": 1380
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: Critical Host Containment Removed For ${CrowdStrike.Device.Hostname}
+      subject:
+        simple: Critical Host Containment Removed For ${CrowdStrike.Device.Hostname}
+      to:
+        simple: kunal.krushev@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: 158a8a54-3aed-444b-8e28-7156985c55bb
+      iscommand: true
+      name: Notify  Analyst/Operator lead Host is Removed From Containment
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: 158a8a54-3aed-444b-8e28-7156985c55bb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 170,
+          "y": 1780
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: Critical Host Containment Removed For ${CrowdStrike.Device.Hostname}
+      subject:
+        simple: Critical Host Containment Removed For ${CrowdStrike.Device.Hostname}
+      to:
+        simple: kunal.krushev@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: d6003420-5e20-4647-8686-3d758a103afa
+      iscommand: true
+      name: 'Notify Analyst/Operator Lead  Host Does Not Have Crowdstrike '
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: d6003420-5e20-4647-8686-3d758a103afa
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -260,
+          "y": 1170
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1575,
+        "width": 810,
+        "x": -260,
+        "y": 460
+      }
+    }
+  }
