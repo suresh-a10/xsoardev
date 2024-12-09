@@ -1,0 +1,56 @@
+commonfields:
+  id: 0658f2e4-40b9-447e-8c97-25572d3c612b
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: VA_PublicIP_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  ips=demisto.context().get('IOC').get('IP')
+
+  if ips:
+      iplookup = argToList(ips)
+
+      for ip in iplookup:
+          res = demisto.executeCommand("ip", { 'ip': ip, 'using' : 'Recorded Future v2_instance_1'})[0]['Contents']
+          ipset.append({
+              "ip" : res['data']['results'][0]['entity']['name'],
+              "riskscore" : res['data']['results'][0]['risk']['score']
+          })
+          if res['data']['results'][0]['risk']['score']>=65:
+              risklist.append(
+                  {"ioc" : res['data']['results'][0]['entity']['name'],
+                  "riskscore" : res['data']['results'][0]['risk']['score']}
+                  )
+          else:
+              safelist.append(
+                  {"ioc" : res['data']['results'][0]['entity']['name'],
+                  "riskscore" : res['data']['results'][0]['risk']['score']}
+                  )
+          # demisto.results(fileResult('resultSet.json', str(resultset)))
+      demisto.results({
+              "Type": entryTypes["note"],
+              "ContentsFormat": formats["json"],
+              "Contents": ipset,
+              "HumanReadable": tableToMarkdown('IP List', ipset),
+              "EntryContext": {'IPAddress':ipset}
+      })
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
