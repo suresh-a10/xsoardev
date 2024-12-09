@@ -1,0 +1,70 @@
+args:
+- description: The end date for searching indicators.
+  name: to
+- description: The start date for searching indicators.
+  name: from
+comment: This is a widget script returning MITRE indicators information for top indicators
+  shown in incidents.
+commonfields:
+  id: 352c3666-8e26-4356-8f63-86f611a7c59e
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.4.18682
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: MITREIndicatorsByOpenIncidents_Kunal
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2
+
+
+  import traceback
+
+
+  def main():
+      try:
+          from_date = demisto.args().get('from', '')
+          to_date = demisto.args().get('to', '')
+          query = 'type:"MITRE ATT&CK"'
+          search_indicators = IndicatorsSearcher()
+
+          res = search_indicators.search_indicators_by_version(query=query, from_date=from_date, to_date=to_date)
+
+          indicators = []
+          for ind in res.get('iocs', []):
+              indicators.append({
+                  'Value': dict_safe_get(ind, ['value']),
+                  'Name': dict_safe_get(ind, ['CustomFields', 'mitrename']),
+                  'Phase Name': dict_safe_get(ind, ['CustomFields', 'mitrekillchainphases', 0, 'phase_name']),
+                  'Description': dict_safe_get(ind, ['CustomFields', 'mitredescription']),
+
+              })
+
+          incidents_table = tableToMarkdown('MITRE ATT&CK techniques by related Incidents', indicators,
+                                            headers=['Value', 'Name', 'Phase Name', 'Description'])
+
+          return_outputs(incidents_table)
+      except Exception:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute MITREIndicatorsByOpenIncidents script. Error: {traceback.format_exc()}')
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
