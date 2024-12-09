@@ -1,0 +1,319 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 3d1791cf-1a85-4cd8-871d-81cb7b698159
+inputs: []
+name: TCS-Suppress Known McAfee Encryption Alerts v1.0_KL
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: cdb49263-c84e-49ce-8a07-6a5407e083bc
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: cdb49263-c84e-49ce-8a07-6a5407e083bc
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 640,
+          "y": 260
+        }
+      }
+  "1":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: crowdstriketactic
+                root: incident
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: execution
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: crowdstriketechnique
+                root: incident
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: command and scripting interpreter
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: crowdstrikefilename
+                root: incident
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: net.exe
+      label: "yes"
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 27ef8b09-77e4-4786-86bf-3c846b3953e9
+      iscommand: false
+      name: Is T&T Execution Command and Scripting Interpreter and Filename net.exe?
+      type: condition
+      version: -1
+    taskid: 27ef8b09-77e4-4786-86bf-3c846b3953e9
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 110,
+          "y": 245
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: McafeeServiceName
+      value:
+        complex:
+          accessor: crowdstrikecmdline
+          root: incident
+          transformers:
+          - args:
+              from:
+                value:
+                  simple: ' stop '
+            operator: substringFrom
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 5894b4ab-9b32-4cc3-8219-be5bca28575c
+      iscommand: false
+      name: Set Mcafee Service Name in Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 5894b4ab-9b32-4cc3-8219-be5bca28575c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 640,
+          "y": 450
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: CrowdStrike.Command.Stdout
+          operator: containsString
+          right:
+            value:
+              simple: Running
+      label: "yes"
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "9"
+      "yes":
+      - "8"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 12159367-d97f-47cd-8966-ee29d0e893f0
+      iscommand: false
+      name: Is service Running?
+      type: condition
+      version: -1
+    taskid: 12159367-d97f-47cd-8966-ee29d0e893f0
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 640,
+          "y": 830
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      host_ids:
+        simple: ${incident.crowdstrikedeviceid}
+      raw:
+        simple: Get-Service "${McafeeServiceName}" | Sort-Object status > servicestatus.txt;
+          cat servicestatus.txt
+      using:
+        simple: ${incident.sourceInstance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Runs a script on the agent host.
+      id: 3225bee2-4b86-43b0-837a-5285243670e0
+      iscommand: true
+      name: Get Service Status in File and Get its Status
+      script: CrowdstrikeFalcon|||cs-falcon-run-script
+      type: regular
+      version: -1
+    taskid: 3225bee2-4b86-43b0-837a-5285243670e0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 640,
+          "y": 640
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: create Ticket
+      value:
+        simple: "Yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: b4e5e987-0862-4f45-80cb-08ddebb394bd
+      iscommand: false
+      name: Ticket creation needed or not
+      script: Set
+      type: regular
+      version: -1
+    taskid: b4e5e987-0862-4f45-80cb-08ddebb394bd
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 640,
+          "y": 1045
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2627e624-6722-4a94-80b9-59a80c252977
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 2627e624-6722-4a94-80b9-59a80c252977
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 640,
+          "y": 1220
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "5_8_yes": 0.43
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1040,
+        "width": 910,
+        "x": 110,
+        "y": 245
+      }
+    }
+  }
