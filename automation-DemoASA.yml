@@ -1,0 +1,160 @@
+args:
+- description: Inputs the EDL
+  name: edl
+commonfields:
+  id: b51635a2-1bc3-4041-87bc-e0374eb02dee
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: netmiko:latest
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: DemoASA
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  # import netmiko
+  from netmiko import ConnectHandler
+
+
+  try:
+
+      ##Input the EDL Block List
+      # edl=argToList(demisto.args().get('edl'))
+      edl=['9.9.9.9','10.10.10.10']
+
+      ##Fetch the creds to login on fw with sa
+      res = demisto.executeCommand("fetch-credentials", {'using':'Credentials TCS_instance_1'})
+
+      username = res[0]['Contents']['username']
+      password = res[0]['Contents']['password']
+
+      ##List of firewalls
+      fw_list=["10.17.14.101","10.17.14.102","10.17.14.205","10.17.14.184"]
+      bad_fw=[]
+      pass_fw=[]
+
+      ##Loop through the firewalls and login
+
+      for fw in fw_list:
+
+          Firewall={
+          "host": fw,
+          "username": username,
+          "password": password,
+          "device_type": "cisco_ios",
+          "secret":password
+          }
+
+          ##Connect to firewall
+          connect= ConnectHandler(**Firewall)
+          connect.enable()
+
+          ##Configuration commands
+          config_args=["conf t","object-group network Dummy"]
+          for ip in edl:
+              config_args.append(f"network-object host {ip}")
+          res=connect.send_config_set(config_args)
+
+
+          # demisto.results(connect.send_config_set("show object-group id Dummy"))
+
+          demisto.results("done")
+
+      demisto.results("RESULTS")
+      demisto.results(res)
+      # demisto.results("DONE")
+      demisto.results(connect.send_config_set("show object-group id Dummy"))
+
+  except Exception as ex:
+      demisto.error(traceback.format_exc())  # print the traceback
+      return_error(f'Failed to execute Script. Error: {str(ex)}')
+
+
+
+
+
+
+  '''
+
+  try:
+
+      ##Input the EDL Block List
+      # edl=argToList(demisto.args().get('edl'))
+      edl=['19.9.9.9','1.1.1.1','101.10.10.10']
+
+      ##Fetch the creds to login on fw with sa
+      res = demisto.executeCommand("fetch-credentials", {'using':'Credentials TCS_instance_1'})
+
+      username = res[0]['Contents']['username']
+      password = res[0]['Contents']['password']
+
+      ##List of firewalls
+      fw_list=["10.17.14.101","10.17.14.102","10.17.14.205","10.17.14.184"]
+
+      ##Lopp through the firewalls and login
+
+
+
+      Firewall={
+          "host": "10.17.14.101",
+          "username": username,
+          "password": password,
+          "device_type": "cisco_ios",
+          "secret":password
+      }
+
+      ##Connect to firewall
+      connect= ConnectHandler(**Firewall)
+      connect.enable()
+
+      config_args=["conf t","object-group network Dummy"]
+      for ip in edl:
+          config_args.append(f"network-object host {ip}")
+      connect.send_config_set(config_args)
+      res=connect.send_config_set("show object-group id Dummy")
+      output=''
+
+      for e in edl:
+          if e not in res:
+              output+=e+' '
+
+
+
+      ##Configuration commands
+      # config_args=["conf t","object-group network Dummy","network-object host 2.2.2.2"]
+
+      # res=connect.send_config_set(config_args)
+      # res+=connect.send_config_set("network-object host 3.3.3.3")
+
+
+      demisto.results("OUTPUT "+output)
+      # demisto.results("RESULTS")
+      # if 'error' in res.lower():
+      #     demisto.results("ERROR")
+      # elif 'warning' in res.lower():
+      #     demisto.results("WARNING")
+      # else:
+      #     demisto.results("FALSE")
+
+
+  except Exception as ex:
+      demisto.error(traceback.format_exc())  # print the traceback
+      return_error(f'Failed to execute Script. Error: {str(ex)}')
+
+  '''
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
