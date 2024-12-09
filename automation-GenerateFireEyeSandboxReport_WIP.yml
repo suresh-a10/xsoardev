@@ -1,0 +1,85 @@
+args:
+- description: submissionID of the uploaded file
+  name: submissionID
+- description: submissionKey of the uploaded file
+  name: submissionKey
+commonfields:
+  id: d0b78a46-7bb0-4776-8cbf-cbbda56f892e
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: docker.io/demisto/python3:3.10.14.90585
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GenerateFireEyeSandboxReport_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  submissionid=argToList(demisto.args().get("submissionID"))
+  submissionKey=argToList(demisto.args().get("submissionKey"))
+  if submissionid:
+      for i in submissionid:
+          res = demisto.executeCommand("fe-submit-url-result", { 'submissionID': i, 'info_level' : 'extended'})[0]['Contents']
+          #print(res)
+          #print(type(res))
+
+          demisto.setContext('FireEyeAXReport',res)
+          if res.get('alerts').get('alert').get('explanation').get('malware-detected').get('malware')[1].get('original'):
+              name=res.get('alerts').get('alert').get('explanation').get('malware-detected').get('malware')[1].get('original')
+              # name=name.split('.')[0]
+              return_results(fileResult(filename=f"{name}_FireEye_Sandbox_Report.txt", data=json.dumps(res,indent=4, sort_keys=True), file_type=entryTypes['entryInfoFile']))
+              outputs={"Malicious":res.get('alerts').get('alert').get('-malicious'), "Severity":res.get('alerts').get('alert').get('-severity')}
+              command_results= CommandResults(
+                  readable_output=tableToMarkdown(f'Fire Eye Results for URL', outputs),
+                  outputs_prefix='Fire Eye Results',
+              )
+              return_results(command_results)
+          else:
+              return_results(fileResult(filename="FireEye URL Sandbox Report.txt", data=json.dumps(res,indent=4, sort_keys=True), file_type=entryTypes['entryInfoFile']))
+              outputs={"Malicious":res.get('alerts').get('alert').get('-malicious'), "Severity":res.get('alerts').get('alert').get('-severity')}
+              command_results= CommandResults(
+                  readable_output=tableToMarkdown(f'Fire Eye Results for URL', outputs),
+                  outputs_prefix='Fire Eye Results',
+              )
+              return_results(command_results)
+
+  if submissionKey:
+
+      for i in submissionKey:
+          print(i)
+          res = demisto.executeCommand("fe-submit-result", { 'submission_Key': i, 'info_level' : 'extended'})[0]['Contents']
+          print(res)
+          demisto.setContext('FireEyeAXReport',res)
+          if res.get('alerts').get('alert').get('explanation').get('malware-detected').get('malware')[1].get('original'):
+              name=res.get('alerts').get('alert').get('explanation').get('malware-detected').get('malware')[1].get('original')
+              # name=name.split('.')[0]
+              outputs={"Malicious":res.get('alerts').get('alert').get('-malicious'), "Severity":res.get('alerts').get('alert').get('-severity')}
+              command_results= CommandResults(
+                  readable_output=tableToMarkdown(f'Fire Eye Results for File {name}', outputs),
+                  outputs_prefix='Fire Eye Results',
+              )
+              return_results(command_results)
+              return_results(fileResult(filename=f"{name}_FireEye_Sandbox_Report.txt", data=json.dumps(res,indent=4, sort_keys=True), file_type=entryTypes['entryInfoFile']))
+          else:
+              return_results(fileResult(filename="FireEye Sandbox Report.txt", data=json.dumps(res,indent=4, sort_keys=True), file_type=entryTypes['entryInfoFile']))
+              outputs={"Malicious":res.get('alerts').get('alert').get('-malicious'), "Severity":res.get('alerts').get('alert').get('-severity')}
+              command_results= CommandResults(
+                  readable_output=tableToMarkdown(f'Fire Eye Results for File', outputs),
+                  outputs_prefix='Fire Eye Results',
+              )
+              return_results(command_results)
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
