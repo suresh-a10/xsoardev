@@ -1,4 +1,4 @@
-category: Cloud Services
+category: Email
 commonfields:
   id: Microsoft Graph Mail Single User
   version: -1
@@ -203,7 +203,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 1.6.18
+    itemVersion: 1.6.21
     packID: MicrosoftGraphMail
     packName: Microsoft Graph Mail
     packPropagationLabels:
@@ -1031,12 +1031,12 @@ script:
     description: Delete a specific email rule by ID for a user's mailbox using Microsoft
       Graph API.
     name: msgraph-mail-delete-rule
-  dockerimage: demisto/crypto:1.0.0.111961
+  dockerimage: demisto/crypto:1.0.0.114611
   isfetch: true
   runonce: false
   script: |
     register_module_line('Microsoft Graph Mail Single User', 'start', __line__())
-    demisto.debug('pack name = Microsoft Graph Mail, pack version = 1.6.18')
+    demisto.debug('pack name = Microsoft Graph Mail, pack version = 1.6.21')
 
 
     import json
@@ -1145,7 +1145,7 @@ script:
         "geo-eu": "https://api-eu.securitycenter.microsoft.com",
         "geo-uk": "https://api-uk.securitycenter.microsoft.com",
         "gcc": "https://api-gcc.securitycenter.microsoft.us",
-        "gcc-high": "https://api-gcc.securitycenter.microsoft.us",
+        "gcc-high": "https://api-gov.securitycenter.microsoft.us",
         "dod": "https://api-gov.securitycenter.microsoft.us",
     }
 
@@ -2909,13 +2909,13 @@ script:
                 if not attachment_name.isascii():
                     try:
                         demisto.debug(f"Trying to decode the attachment file name: {attachment_name}")
-                        attachment_name = base64.b64decode(attachment_name)  # type: ignore
+                        attachment_name = b64_decode(attachment_name)  # type: ignore
                     except Exception as e:
                         demisto.debug(f"Could not decode the {attachment_name=}: error: {e}")
 
                 if attachment_type == self.FILE_ATTACHMENT:
                     try:
-                        attachment_content = base64.b64decode(attachment.get('contentBytes', ''))
+                        attachment_content = b64_decode(attachment.get('contentBytes', ''))
                     except Exception as e:  # skip the uploading file step
                         demisto.info(f"failed in decoding base64 file attachment with error {str(e)}")
                         continue
@@ -3785,7 +3785,7 @@ script:
                     att = {
                         'maintype': maintype,
                         'subtype': subtype,
-                        'data': base64.b64decode(m.group(3)),
+                        'data': b64_decode(m.group(3)),
                         'name': name,
                         'cid': f'{name}@{str(uuid.uuid4())[:8]}_{str(uuid.uuid4())[:8]}',
                     }
@@ -3967,7 +3967,7 @@ script:
                 name = f"{content_id}-attachmentName-{name}"
             data = raw_attachment.get('contentBytes')
             try:
-                data = base64.b64decode(data)  # type: ignore
+                data = b64_decode(data)  # type: ignore
                 return fileResult(name, data)
             except binascii.Error:
                 raise DemistoException('Attachment could not be decoded')
