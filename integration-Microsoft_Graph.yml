@@ -201,7 +201,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 2.2.18
+    itemVersion: 2.2.21
     packID: MicrosoftGraphSecurity
     packName: Microsoft Graph Security
     packPropagationLabels:
@@ -2304,12 +2304,12 @@ script:
     - contextPath: MsGraph.Incident.systemTags
       description: The system tags associated with the incident.
       type: String collection
-  dockerimage: demisto/crypto:1.0.0.87358
+  dockerimage: demisto/crypto:1.0.0.114611
   isfetch: true
   runonce: false
   script: |
     register_module_line('Microsoft Graph', 'start', __line__())
-    ### pack version: 2.2.18
+    demisto.debug('pack name = Microsoft Graph Security, pack version = 2.2.21')
     from requests import Response
 
 
@@ -2417,7 +2417,7 @@ script:
         "geo-eu": "https://api-eu.securitycenter.microsoft.com",
         "geo-uk": "https://api-uk.securitycenter.microsoft.com",
         "gcc": "https://api-gcc.securitycenter.microsoft.us",
-        "gcc-high": "https://api-gcc.securitycenter.microsoft.us",
+        "gcc-high": "https://api-gov.securitycenter.microsoft.us",
         "dod": "https://api-gov.securitycenter.microsoft.us",
     }
 
@@ -2952,10 +2952,11 @@ script:
                                                      'active_directory': params.get('azure_ad_endpoint')
                                                      or 'https://login.microsoftonline.com'
                                                  })
-            # in multiple Graph integrations, the url is called 'url' instead of 'server_url' and the default url is different.
-            if 'url' in params:
+            # in multiple Graph integrations, the url is called 'url' or 'host' instead of 'server_url' and the default url is
+            # different.
+            if 'url' in params or 'host' in params:
                 return create_custom_azure_cloud(integration_name, defaults=AZURE_WORLDWIDE_CLOUD,
-                                                 endpoints={'microsoft_graph_resource_id': params.get('url')
+                                                 endpoints={'microsoft_graph_resource_id': params.get('url') or params.get('host')
                                                             or 'https://graph.microsoft.com'})
 
         # There is no need for backward compatibility support, as the integration didn't support it to begin with.
