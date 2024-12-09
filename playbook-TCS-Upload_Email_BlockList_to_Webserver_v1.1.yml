@@ -1,0 +1,1870 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+hidden: true
+id: 7334b258-7ffb-4c0a-8d61-1b71a90cc225
+inputs:
+- description: ""
+  key: Non Customer IP Address
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: IP
+      root: Address2
+- description: ""
+  key: Microsoft IP Address
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: MIP
+      root: Address
+- description: ""
+  key: Google IP Address
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: GIP
+      root: Address
+- description: ""
+  key: From User Info
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: Email/from
+      root: incident.labels
+name: TCS-Upload Email BlockList to Webserver v1.1
+outputs:
+- contextPath: EmailedDomains
+  description: Global Context Key for Domains received by Email
+  type: unknown
+- contextPath: EmailedIPs
+  description: Global Context Key for IPs received by Email
+  type: unknown
+- contextPath: EmailedHashs-MD5
+  description: Global Context Key for MD5 Hashs received by Email
+  type: unknown
+- contextPath: EmailedHashs-SHA1
+  description: Global Context Key for SHA1 Hashs received by Email
+  type: unknown
+- contextPath: EmailedHashs-SHA256
+  description: Global Context Key for SHA256 Hashs received by Email
+  type: unknown
+- contextPath: JoinedFilesUnique
+  description: Global Context Key for emailed IP's joined with IP Blocklist EDL and
+    deduped
+  type: unknown
+- contextPath: EmailedDomainsURLsUnique
+  description: Global Context Key for emailed Domains/URL's joined and deduped
+  type: unknown
+sourceplaybookid: dbc273f1-c131-4e07-80e6-4babc78a9e03
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "66"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f29c9f6c-24d0-4462-8246-e79668961c30
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: f29c9f6c-24d0-4462-8246-e79668961c30
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": -440
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      dest-dir:
+        simple: /var/lib/tomcat6/webapps/ROOT
+      fileID:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: inputs.File.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: Demisto_Block1.txt
+          root: inputs.File
+      using:
+        simple: remoteaccess_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: remoteaccess
+      description: commands.server.remoteacess.copyto.description
+      id: 68c25459-fe4e-43be-8551-891f1a6ba115
+      iscommand: true
+      name: Upload recordedfuture.csv (overwrite existing)
+      script: remoteaccess|||copy-to
+      type: regular
+      version: -1
+    taskid: 68c25459-fe4e-43be-8551-891f1a6ba115
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -560,
+          "y": 640
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      file:
+        simple: /var/lib/tomcat6/webapps/ROOT/Demisto_Block2.txt
+      using:
+        simple: remoteaccess_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: remoteaccess
+      description: commands.server.remoteacess.copyfrom.description
+      id: 29a96ebe-daf0-46dd-8bb3-31154289f334
+      iscommand: true
+      name: Download Email Block list from Webserver
+      script: remoteaccess|||copy-from
+      type: regular
+      version: -1
+    taskid: 29a96ebe-daf0-46dd-8bb3-31154289f334
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": 475
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: /var/lib/tomcat6/webapps/ROOT/Demisto_Block2.txt
+          root: File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: 8abb4053-d835-4539-8eb8-74be2fef3db5
+      iscommand: false
+      name: Read downloaded Email blocklist into context
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: 8abb4053-d835-4539-8eb8-74be2fef3db5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": 630
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      dest-dir:
+        simple: /var/lib/tomcat6/webapps/ROOT
+      entry:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: Demisto_Block2.txt
+          root: File
+      using:
+        simple: remoteaccess_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: remoteaccess
+      description: commands.server.remoteacess.copyto.description
+      id: 74a4ae96-ec6c-4cd1-821a-f19da2b37270
+      iscommand: true
+      name: Upload updated Block Email file to Webserver
+      script: remoteaccess|||copy-to
+      type: regular
+      version: -1
+    taskid: 74a4ae96-ec6c-4cd1-821a-f19da2b37270
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 980,
+          "y": 950
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: JoinedFiles
+      value:
+        simple: |-
+          ${FileData}
+          ${Address2.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 3a3fa75f-d095-48ab-859a-d40d0352dbd6
+      iscommand: false
+      name: Append the list of IOC's from the email to the Email Block List
+      script: Set
+      type: regular
+      version: -1
+    taskid: 3a3fa75f-d095-48ab-859a-d40d0352dbd6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 980,
+          "y": 475
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e75723f4-1ae3-4eb8-825d-625d4d247a60
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: e75723f4-1ae3-4eb8-825d-625d4d247a60
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 750,
+          "y": 1345
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      data:
+        complex:
+          root: ${JoinedFilesUnique}
+          transformers:
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+      filename:
+        simple: Demisto_Block2.txt
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        Will create a file (using the given data input or entry ID) and upload it to current investigation war room.
+      id: 7bb49084-5bdd-489a-8bbd-6ded7e27fc21
+      iscommand: false
+      name: Create final block ip file to be uploaded to webserver
+      script: FileCreateAndUpload
+      type: regular
+      version: -1
+    taskid: 7bb49084-5bdd-489a-8bbd-6ded7e27fc21
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 980,
+          "y": 800
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      data:
+        simple: ${FileData}
+      filename:
+        simple: Demisto_Block2-${incident.id}.txt
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        Will create a file (using the given data input or entry ID) and upload it to current investigation war room.
+      id: e8804e40-cf79-4759-835f-410e203817a8
+      iscommand: false
+      name: Create backup of downloaded Blocklist (appending IncidentID)
+      script: FileCreateAndUpload
+      type: regular
+      version: -1
+    taskid: e8804e40-cf79-4759-835f-410e203817a8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 520,
+          "y": 800
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      dest-dir:
+        simple: /var/lib/tomcat6/webapps/ROOT/backup
+      entry:
+        complex:
+          accessor: EntryID
+          root: File
+          transformers:
+          - operator: LastArrayElement
+      using:
+        simple: remoteaccess_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: remoteaccess
+      description: commands.server.remoteacess.copyto.description
+      id: 6fbd51eb-b5f3-42b7-8825-22bae3d6246b
+      iscommand: true
+      name: Upload backup Block  copy of Email file to Webserver
+      script: remoteaccess|||copy-to
+      type: regular
+      version: -1
+    taskid: 6fbd51eb-b5f3-42b7-8825-22bae3d6246b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 520,
+          "y": 950
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: JoinedFilesUnique
+      value:
+        complex:
+          root: JoinedFiles
+          transformers:
+          - args:
+              error_if_no_match: {}
+              ignore_case: {}
+              multi_line: {}
+              period_matches_newline: {}
+              regex:
+                value:
+                  simple: \b(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])(?:\[\.\]|\.)){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\b
+            operator: RegexExtractAll
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 57990493-beb8-48cd-8d6c-83779c2b678a
+      iscommand: false
+      name: Deduplicate new joined file
+      script: Set
+      type: regular
+      version: -1
+    taskid: 57990493-beb8-48cd-8d6c-83779c2b678a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 980,
+          "y": 640
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "65"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f24ec122-24a0-42a7-8179-4adaae3f33c0
+      iscommand: false
+      name: Verify Email Sender
+      type: title
+      version: -1
+    taskid: f24ec122-24a0-42a7-8179-4adaae3f33c0
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": -110
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 659b585c-7b30-4695-8d29-9d0813cba091
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 659b585c-7b30-4695-8d29-9d0813cba091
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -560,
+          "y": 795
+        }
+      }
+  "28":
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e44f13ed-5838-47ac-8c5b-8a1570368785
+      iscommand: false
+      name: Process MaliciousIPAddr.txt
+      type: title
+      version: -1
+    taskid: e44f13ed-5838-47ac-8c5b-8a1570368785
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": 320
+        }
+      }
+  "30":
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "35"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: abccf087-cdf0-4804-8f32-3abda60cc5a1
+      iscommand: false
+      name: Process MaliciousDomain.txt and MaliciousURL.txt
+      type: title
+      version: -1
+    taskid: abccf087-cdf0-4804-8f32-3abda60cc5a1
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1440,
+          "y": 360
+        }
+      }
+  "32":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.File.Name
+          operator: isEqualString
+          right:
+            value:
+              simple: MaliciousHash.txt
+      label: Emailed Hash IOC's
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "43"
+      Emailed Hash IOC's:
+      - "33"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7bdb4024-23df-4a09-8394-1e583d6e7d14
+      iscommand: false
+      name: Is this incident from a Recorded Furture or Email trigger
+      type: condition
+      version: -1
+    taskid: 7bdb4024-23df-4a09-8394-1e583d6e7d14
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2360,
+          "y": 185
+        }
+      }
+  "33":
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "37"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bfe88f93-76d8-4a57-84ac-0b50f4574fd1
+      iscommand: false
+      name: Process MaliciousHash.txt
+      type: title
+      version: -1
+    taskid: bfe88f93-76d8-4a57-84ac-0b50f4574fd1
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 2360,
+          "y": 345
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "44"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EmailedDomains
+      value:
+        complex:
+          root: FileData
+          transformers:
+          - operator: LastArrayElement
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: b65fab76-6ece-459c-832c-287910f49655
+      iscommand: false
+      name: Set Malicious Domain FileData into it's own key
+      script: Set
+      type: regular
+      version: -1
+    taskid: b65fab76-6ece-459c-832c-287910f49655
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1440,
+          "y": 650
+        }
+      }
+  "35":
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: inputs.File.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: MaliciousDomain.txt
+          root: inputs.File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: a40dd340-8970-48d6-82ed-8b20ef8fe6ee
+      iscommand: false
+      name: Read Emailed Malicious Domain File into context
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: a40dd340-8970-48d6-82ed-8b20ef8fe6ee
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1440,
+          "y": 500
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "32"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 044ef887-9d59-4f16-849d-b9c408d05e06
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 044ef887-9d59-4f16-849d-b9c408d05e06
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1890,
+          "y": 1270
+        }
+      }
+  "37":
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "49"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      encoding:
+        simple: utf-8
+      entryID:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: inputs.File.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: MaliciousHash.txt
+          root: inputs.File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: 7a554013-baae-45a0-8e4d-eb08c5409c21
+      iscommand: false
+      name: Read Emailed Malicious Hash File into context
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: 7a554013-baae-45a0-8e4d-eb08c5409c21
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2360,
+          "y": 470
+        }
+      }
+  "38":
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "43"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EmailedHashs-SHA256
+      value:
+        complex:
+          root: FileData
+          transformers:
+          - operator: LastArrayElement
+          - args:
+              error_if_no_match: {}
+              ignore_case: {}
+              multi_line: {}
+              period_matches_newline: {}
+              regex:
+                value:
+                  simple: \b[a-fA-F\d]{64}\b
+            operator: RegexExtractAll
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: e346e974-6fe9-4aa0-8eee-f3da1e7b87b8
+      iscommand: false
+      name: Set Malicious SHA-256 Hash FileData into it's own key
+      script: Set
+      type: regular
+      version: -1
+    taskid: e346e974-6fe9-4aa0-8eee-f3da1e7b87b8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2360,
+          "y": 1100
+        }
+      }
+  "41":
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "50"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EmailedHashs-MD5
+      value:
+        complex:
+          root: FileData
+          transformers:
+          - operator: LastArrayElement
+          - args:
+              error_if_no_match: {}
+              ignore_case: {}
+              multi_line: {}
+              period_matches_newline: {}
+              regex:
+                value:
+                  simple: \b[a-fA-F\d]{32}\b
+            operator: RegexExtractAll
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 069f3637-45af-42aa-8451-a5c852f5a5da
+      iscommand: false
+      name: Set Malicious MD5 Hash FileData into it's own key
+      script: Set
+      type: regular
+      version: -1
+    taskid: 069f3637-45af-42aa-8451-a5c852f5a5da
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2360,
+          "y": 675
+        }
+      }
+  "42":
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "51"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EmailedHashs-SHA1
+      value:
+        complex:
+          root: FileData
+          transformers:
+          - operator: LastArrayElement
+          - args:
+              error_if_no_match: {}
+              ignore_case: {}
+              multi_line: {}
+              period_matches_newline: {}
+              regex:
+                value:
+                  simple: \b[a-fA-F\d]{40}\b
+            operator: RegexExtractAll
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 096abf2e-19d8-419a-8d46-998389b73e99
+      iscommand: false
+      name: Set Malicious SHA-1 Hash FileData into it's own key
+      script: Set
+      type: regular
+      version: -1
+    taskid: 096abf2e-19d8-419a-8d46-998389b73e99
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2360,
+          "y": 895
+        }
+      }
+  "43":
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 913fb38f-dc84-4fab-8b73-8f738b987439
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 913fb38f-dc84-4fab-8b73-8f738b987439
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 2350,
+          "y": 1390
+        }
+      }
+  "44":
+    continueonerrortype: ""
+    id: "44"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "45"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: inputs.File.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: MaliciousURL.txt
+          root: inputs.File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: 333e98cf-4fba-4889-810a-541c03ecfff7
+      iscommand: false
+      name: Read Emailed Malicious URL File into context
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: 333e98cf-4fba-4889-810a-541c03ecfff7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1440,
+          "y": 800
+        }
+      }
+  "45":
+    continueonerrortype: ""
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "48"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EmailedURLs
+      value:
+        complex:
+          root: FileData
+          transformers:
+          - operator: LastArrayElement
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 6fd9f140-b88a-4428-84f2-b4b176de3ae8
+      iscommand: false
+      name: Set Malicious URL FileData into it's own key
+      script: Set
+      type: regular
+      version: -1
+    taskid: 6fd9f140-b88a-4428-84f2-b4b176de3ae8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1440,
+          "y": 950
+        }
+      }
+  "46":
+    continueonerrortype: ""
+    id: "46"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "47"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EmailedDomainsURLsJoined
+      value:
+        simple: |-
+          ${EmailedDomains}
+          ${EmailedURLsReduced}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 6ed2f090-f7ae-41e7-8628-f2a7218fac5d
+      iscommand: false
+      name: Append the list of IOC's from the email to the Email Block List
+      script: Set
+      type: regular
+      version: -1
+    taskid: 6ed2f090-f7ae-41e7-8628-f2a7218fac5d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1890,
+          "y": 630
+        }
+      }
+  "47":
+    continueonerrortype: ""
+    id: "47"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EmailedDomainsURLsUnique
+      value:
+        complex:
+          root: EmailedDomainsURLsJoined
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 7bfa2446-ee40-4232-8375-2a7f105cb4d9
+      iscommand: false
+      name: Deduplicate new joined file
+      script: Set
+      type: regular
+      version: -1
+    taskid: 7bfa2446-ee40-4232-8375-2a7f105cb4d9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1890,
+          "y": 800
+        }
+      }
+  "48":
+    continueonerrortype: ""
+    id: "48"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "46"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EmailedURLsReduced
+      value:
+        complex:
+          root: EmailedURLs
+          transformers:
+          - args:
+              error_if_no_match: {}
+              ignore_case: {}
+              multi_line: {}
+              period_matches_newline: {}
+              regex:
+                value:
+                  simple: https?:\/\/([-\d\p{L}+&@#%=~_$?!\-:,.;*–—―|]+)
+            operator: RegexExtractAll
+          - operator: uniq
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: cececabc-f57e-4e7b-866a-e1c684c83aa4
+      iscommand: false
+      name: Set Reduced Malicious URL FileData into it's own key
+      script: Set
+      type: regular
+      version: -1
+    taskid: cececabc-f57e-4e7b-866a-e1c684c83aa4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1890,
+          "y": 475
+        }
+      }
+  "49":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: FileData.[4]
+          operator: match
+          right:
+            value:
+              simple: \b[a-fA-F\d]{32}\b
+      label: MD5 Hashs Exist
+    continueonerrortype: ""
+    id: "49"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "50"
+      MD5 Hashs Exist:
+      - "41"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b470cc41-95db-482a-8a98-7f58090a07c4
+      iscommand: false
+      name: Are there any MD5 hashs?
+      type: condition
+      version: -1
+    taskid: b470cc41-95db-482a-8a98-7f58090a07c4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2780,
+          "y": 640
+        }
+      }
+  "50":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: FileData.[4]
+          operator: match
+          right:
+            value:
+              simple: \b[a-fA-F\d]{40}\b
+      label: SHA1 Hashs Exist
+    continueonerrortype: ""
+    id: "50"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "51"
+      SHA1 Hashs Exist:
+      - "42"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c5c61b6e-22ed-4b80-85a8-83909b9951e7
+      iscommand: false
+      name: Are there any SHA1 hashs?
+      type: condition
+      version: -1
+    taskid: c5c61b6e-22ed-4b80-85a8-83909b9951e7
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2780,
+          "y": 870
+        }
+      }
+  "51":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: FileData.[4]
+          operator: match
+          right:
+            value:
+              simple: \b[a-fA-F\d]{64}\b
+      label: SHA256 Hashs Exist
+    continueonerrortype: ""
+    id: "51"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "43"
+      SHA256 Hashs Exist:
+      - "38"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 78adacf6-2ce3-4aca-88e8-28a9aa98ffcc
+      iscommand: false
+      name: Are there any SHA256 hashs?
+      type: condition
+      version: -1
+    taskid: 78adacf6-2ce3-4aca-88e8-28a9aa98ffcc
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2780,
+          "y": 1080
+        }
+      }
+  "55":
+    continueonerrortype: ""
+    id: "55"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "57"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EmailedDomains
+      value:
+        simple: ${lists.RecordedFutureDomainRiskList}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 8b05b125-0af5-4ea0-8dfd-064ec04f6480
+      iscommand: false
+      name: Set Malicious Domain XSOAR list into it's own key
+      script: Set
+      type: regular
+      version: -1
+    taskid: 8b05b125-0af5-4ea0-8dfd-064ec04f6480
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -120,
+          "y": 485
+        }
+      }
+  "57":
+    continueonerrortype: ""
+    id: "57"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "61"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EmailedURLs
+      value:
+        simple: ${lists.RecordedFutureURLRiskList}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 226b339a-267c-409d-82dd-c2621e77b119
+      iscommand: false
+      name: Set Malicious URL XSOAR List into it's own key
+      script: Set
+      type: regular
+      version: -1
+    taskid: 226b339a-267c-409d-82dd-c2621e77b119
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -120,
+          "y": 640
+        }
+      }
+  "59":
+    continueonerrortype: ""
+    id: "59"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "63"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EmailedDomainsURLsUnique
+      value:
+        complex:
+          root: EmailedDomainsURLsJoined
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 3d0caf2d-14c5-4879-8f31-5169a6c57e88
+      iscommand: false
+      name: Deduplicate new joined file
+      script: Set
+      type: regular
+      version: -1
+    taskid: 3d0caf2d-14c5-4879-8f31-5169a6c57e88
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -120,
+          "y": 1090
+        }
+      }
+  "60":
+    continueonerrortype: ""
+    id: "60"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5a0672f9-3df5-4e45-855b-bac9d273aff6
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 5a0672f9-3df5-4e45-855b-bac9d273aff6
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -120,
+          "y": 1410
+        }
+      }
+  "61":
+    continueonerrortype: ""
+    id: "61"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "64"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EmailedURLsReduced
+      value:
+        complex:
+          root: EmailedURLs
+          transformers:
+          - args:
+              error_if_no_match: {}
+              ignore_case: {}
+              multi_line: {}
+              period_matches_newline: {}
+              regex:
+                value:
+                  simple: https?:\/\/([-\d\p{L}+&@#%=~_$?!\-:,.;*–—―|]+)
+            operator: RegexExtractAll
+          - operator: uniq
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 3eeb62ae-c111-4faa-806f-ded669d3f1e0
+      iscommand: false
+      name: Set combined Malicious URL/Domain list into it's own key
+      script: Set
+      type: regular
+      version: -1
+    taskid: 3eeb62ae-c111-4faa-806f-ded669d3f1e0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -120,
+          "y": 790
+        }
+      }
+  "63":
+    continueonerrortype: ""
+    id: "63"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "60"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      listData:
+        complex:
+          root: ${EmailedDomainsURLsUnique}
+      listName:
+        simple: RecordedFutureURLDomainRiskList
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.set
+      id: e32a5000-b317-4524-8065-fe9e2bf11421
+      iscommand: true
+      name: Overwrite Recorded Future URLDomainRiskList List
+      script: Builtin|||setList
+      type: regular
+      version: -1
+    taskid: e32a5000-b317-4524-8065-fe9e2bf11421
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -120,
+          "y": 1250
+        }
+      }
+  "64":
+    continueonerrortype: ""
+    id: "64"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "59"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: EmailedDomainsURLsJoined
+      value:
+        simple: ${EmailedDomains}${EmailedURLsReduced}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: 622d3ef6-f380-4693-8eb3-81ebe448f0a4
+      iscommand: false
+      name: Append the list of IOC's from the email to the Email Block List
+      script: Set
+      type: regular
+      version: -1
+    taskid: 622d3ef6-f380-4693-8eb3-81ebe448f0a4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -120,
+          "y": 940
+        }
+      }
+  "65":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.labels.Email/from
+          operator: isEqualString
+          right:
+            value:
+              simple: internalis.cybersecurityops@tcs.com
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.labels.Email/from
+          operator: isEqualString
+          right:
+            value:
+              simple: kunal.krushev@tcs.com
+      label: "yes"
+    continueonerrortype: ""
+    id: "65"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "67"
+      "yes":
+      - "28"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 88846d3f-dc5b-46d3-8b9a-b4bf57087512
+      iscommand: false
+      name: Is Email From Authorized Sender ?
+      type: condition
+      version: -1
+    taskid: 88846d3f-dc5b-46d3-8b9a-b4bf57087512
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": 100
+        }
+      }
+  "66":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: IP
+                root: Address2
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "66"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "7"
+      "yes":
+      - "16"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 37619d84-148b-4591-85be-192c41a7e765
+      iscommand: false
+      name: Are There IP Addresses To Block ?
+      type: condition
+      version: -1
+    taskid: 37619d84-148b-4591-85be-192c41a7e765
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": -295
+        }
+      }
+  "67":
+    continueonerrortype: ""
+    id: "67"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: |-
+          Hello Human,
+
+          You are not on my authorized list of senders to block these IP address. Please contact Your XSOAR Support team.
+
+          Regards,
+          CSOC Cyber AutoBot
+      subject:
+        simple: Not Authorized To Send Mail For Blocking IP Address
+      to:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: b7aa4469-acf0-4119-890d-97407097a786
+      iscommand: true
+      name: Send Notification - Not Authorized User
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: b7aa4469-acf0-4119-890d-97407097a786
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 960,
+          "y": 100
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "32_33_Emailed Hash IOC's": 0.42,
+      "32_43_#default#": 0.39,
+      "65_28_yes": 0.21
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1915,
+        "width": 3720,
+        "x": -560,
+        "y": -440
+      }
+    }
+  }
