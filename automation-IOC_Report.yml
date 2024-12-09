@@ -1,0 +1,122 @@
+commonfields:
+  id: 29dbf043-9ae5-42b0-8ef9-29de8b3515c3
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: IOC_Report
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  context=demisto.context()
+  ioc=[]
+  rfioc=[]
+  ciscoioc=[]
+  abuseip=[]
+
+  if context.get("DBotScore"):
+      for i in context.get("DBotScore"):
+          ioc.append({
+              "Indicator" : i["Indicator"],
+              "Demsito Score" : i["Score"],
+              "Threat Intel": i["Vendor"]
+          })
+
+      demisto.results({
+              "Type": entryTypes["note"],
+              "ContentsFormat": formats["json"],
+              "Contents": ioc,
+              "HumanReadable": tableToMarkdown('Indicators', ioc)
+      })
+
+
+  if context.get("RecordedFuture"):
+
+      if context.get("RecordedFuture").get("Domain"):
+
+          if type(context.get("RecordedFuture").get("Domain"))==list:
+              for i in context.get("RecordedFuture").get("Domain"):
+                  rfioc.append({
+                      "Indicators" : i["name"],
+                      "RF Riskscore" : i["riskScore"]
+                  })
+          else:
+              rfioc.append({
+                      "Indicators" : context.get("RecordedFuture").get("Domain").get("name"),
+                      "RF Riskscore" : context.get("RecordedFuture").get("Domain").get("riskScore")
+                  })
+
+      if context.get("RecordedFuture").get("IP"):
+
+          if type(context.get("RecordedFuture").get("IP"))==list:
+              for i in context.get("RecordedFuture").get("IP"):
+                  rfioc.append({
+                      "Indicators" : i["name"],
+                      "RF Riskscore" : i["riskScore"]
+                  })
+          else:
+              rfioc.append({
+                      "Indicators" : context.get("RecordedFuture").get("IP").get("name"),
+                      "RF Riskscore" : context.get("RecordedFuture").get("IP").get("riskScore")
+                  })
+
+      if context.get("RecordedFuture").get("File"):
+
+          if type(context.get("RecordedFuture").get("File"))==list:
+              for i in context.get("RecordedFuture").get("File"):
+                  rfioc.append({
+                      "Indicators" : i["name"],
+                      "RF Riskscore" : i["riskScore"]
+                  })
+          else:
+              rfioc.append({
+                      "Indicators" : context.get("RecordedFuture").get("File").get("name"),
+                      "RF Riskscore" : context.get("RecordedFuture").get("File").get("riskScore")
+                  })
+
+
+      demisto.results({
+                  "Type": entryTypes["note"],
+                  "ContentsFormat": formats["json"],
+                  "Contents": rfioc,
+                  "HumanReadable": tableToMarkdown('RF', rfioc)
+          })
+
+
+  if context.get("AbuseIPDB"):
+      if type(context.get("AbuseIPDB"))==list:
+          for i in context.get("AbuseIPDB"):
+              abuseip.append({
+                  "IP" : i["IP"]["Address"],
+                  "Abuse ConfidenceScore" : i["IP"]["AbuseConfidenceScore"]
+              })
+      else:
+          abuseip.append({
+                  "IP" : context.get("AbuseIPDB").get("IP").get("Address"),
+                  "Abuse ConfidenceScore" : context.get("AbuseIPDB").get("IP").get("AbuseConfidenceScore")
+              })
+
+      demisto.results({
+              "Type": entryTypes["note"],
+              "ContentsFormat": formats["json"],
+              "Contents": abuseip,
+              "HumanReadable": tableToMarkdown('Abuse IP', abuseip)
+      })
+scripttarget: 0
+subtype: python3
+tags:
+- dynamic-section
+type: python
