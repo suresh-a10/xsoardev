@@ -1,0 +1,78 @@
+args:
+- description: Extract from specified entry
+  name: entryID
+- description: Transient file to extract indicators from
+  name: filePath
+- description: Investigation to apply to
+  name: investigationID
+- description: Transient text to extract indicators from
+  name: text
+commonfields:
+  id: 6b997ec7-2603-420e-8538-3211ab962c35
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ExtractAndEnrichHuntDomains
+pswd: ""
+runas: DBotRole
+runonce: false
+script: |
+  import io
+
+  def main():
+      try:
+          args=demisto.incidents()[0].get('CustomFields').get('huntingdomains')
+          # args=demisto.context().get('huntingdomains')
+          args=args.split()
+          args1=args
+          ips=[]
+          # indicator= demisto.context().get('ExtractedIndicators')
+          # if indicator:
+          #     for i in indicator:
+          #         if i.get('Domain_Test_'):
+          #             for arg in args:
+          #                 if arg in i.get('Domain_Test_'):
+          #                     args1.remove(arg)
+
+          if args1:
+              res=demisto.executeCommand('extractIndicators', {'text':args1})
+              demisto.results(res)
+
+
+              extractedIOC=[]
+              result=json.loads(res[0]['Contents'])
+
+              for k,v in result.items():
+                  for i in v:
+                      extractedIOC.append(i)
+
+              demisto.results(demisto.executeCommand('enrichIndicators',{'indicatorsValues':extractedIOC}))
+
+          else:
+              demisto.results("No Domains found.")
+
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+  if __name__ in ('__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+timeout: 600ns
+type: python
