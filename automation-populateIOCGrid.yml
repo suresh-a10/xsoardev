@@ -1,0 +1,67 @@
+commonfields:
+  id: dd263f09-938b-4928-89e2-eee12978fef8
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.8.5.10455
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: populateIOCGrid
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  context = demisto.context()
+  ipaddr = demisto.get(context,'ExtractedIndicators.IP')[0]
+  domain = demisto.get(context,'ExtractedIndicators.Domain')[0]
+  file = demisto.get(context,'ExtractedIndicators.File')[0]
+  ip_score = ''
+  domain_score = ''
+  file_score = ''
+  dbot_score = demisto.get(context, 'DBotScore')
+  for score in dbot_score:
+      if score['Type'] == 'ip':
+          ip_score = score['Score']
+      if score['Type'] == 'domain':
+          domain_score = score['Score']
+      if score['Type'] == 'file':
+          file_score = score['Score']
+
+  rf_ip_score = demisto.get(context,'RecordedFuture.IP.riskScore')
+  rf_domain_score = demisto.get(context,'RecordedFuture.Domain.riskScore')
+  rf_file_score = demisto.get(context,'RecordedFuture.File.riskScore')
+  cisco_domain_score_content = demisto.get(context,'Domain.Umbrella.ContentCategories')
+  cisco_domain_score_malware = demisto.get(context,'Domain.Umbrella.MalwareCategories')
+  if not cisco_domain_score_content:
+      cisco_domain_score_content = 'NA'
+  if not cisco_domain_score_malware:
+      cisco_domain_score_malware = 'NA'
+  cisco_domain_score = cisco_domain_score_content +', ' + cisco_domain_score_malware
+  cisco_ip_score = 'NA'
+  cisco_file_score = 'NA'
+  af_ip_score = demisto.get(context,'AutoFocus.IP.LatestPanVerdicts.PAN_DB')
+  af_domain_score = demisto.get(context,'AutoFocus.Domain.LatestPanVerdicts.PAN_DB')
+  af_file_score = demisto.get(context,'AutoFocus.File.LatestPanVerdicts.PAN_DB')
+  abuse_ip_score = demisto.get(context,'AbuseIPDB.IP.AbuseConfidenceScore')
+  abuse_domain_score = 'NA'
+  abuse_file_score = 'NA'
+
+  grid = []
+  grid.append({'indicator':ipaddr,'demistoscore':ip_score, 'recordedfuturescore':rf_ip_score,'ciscoumbrellaverdict':cisco_ip_score,'autofocusverdict':af_ip_score,'abuseipdbscore':abuse_ip_score})
+  grid.append({'indicator':domain,'demistoscore':domain_score, 'recordedfuturescore':rf_domain_score,'ciscoumbrellaverdict':cisco_domain_score,'autofocusverdict':af_domain_score,'abuseipdbscore':abuse_domain_score})
+  grid.append({'indicator':file,'demistoscore':file_score, 'recordedfuturescore':rf_file_score,'ciscoumbrellaverdict':cisco_file_score,'autofocusverdict':af_file_score,'abuseipdbscore':abuse_file_score})
+  demisto.executeCommand('setIncident', {'iocvendorscores':grid})
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
