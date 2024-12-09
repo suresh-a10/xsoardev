@@ -1,0 +1,787 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 62711d6d-c4b2-4aed-8e46-1c8e92b536c4
+inputs: []
+name: TCS-get IP from Hostname
+outputs: []
+sourceplaybookid: dc7d02c4-9e4e-4e78-866e-35dde9c38272
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d26f9e4a-8ff0-4022-82c8-c0a642d83a9e
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: d26f9e4a-8ff0-4022-82c8-c0a642d83a9e
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 900,
+          "y": 120
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          root: File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: 9dd3b1d1-0f75-499b-8b62-fce6efa41665
+      iscommand: false
+      name: Read The Text Attachment
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: 9dd3b1d1-0f75-499b-8b62-fce6efa41665
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 900,
+          "y": 310
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: TCSHostname
+      value:
+        complex:
+          root: FileData
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: |2+
+
+            operator: splitAndTrim
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 63f6ae1b-3f47-473d-8a07-930c4b151e5c
+      iscommand: false
+      name: Set Data To Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 63f6ae1b-3f47-473d-8a07-930c4b151e5c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 900,
+          "y": 455
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hostname:
+        complex:
+          root: TCSHostname
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Searches for a device that matches the query.
+      id: 48e9d7ca-25ea-4644-88ad-c6eb8441fa7b
+      iscommand: true
+      name: Get Host Data From Crowdstrike
+      script: CrowdstrikeFalcon|||cs-falcon-search-device
+      type: regular
+      version: -1
+    taskid: 48e9d7ca-25ea-4644-88ad-c6eb8441fa7b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 900,
+          "y": 605
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      csvArray:
+        complex:
+          accessor: Device
+          root: CrowdStrike
+      fileName:
+        simple: Get hostname.csv
+      headers:
+        simple: Hostname,ID,FirstSeen,LastSeen,OS,ExternalIP,LocalIP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Export given array to csv file
+      id: 71572a8e-724d-4288-8b11-5162f889a3b8
+      iscommand: false
+      name: Create Excel Report
+      script: ExportToCSV
+      type: regular
+      version: -1
+    taskid: 71572a8e-724d-4288-8b11-5162f889a3b8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 900,
+          "y": 780
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Report
+      value:
+        simple: '${.=(val.File instanceof Array ? val.File[val.File.length-1].EntryID
+          : val.File.EntryID)}'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 257a049d-c7f8-4b04-8a2f-14d84d6601d5
+      iscommand: false
+      name: Set Report To New Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 257a049d-c7f8-4b04-8a2f-14d84d6601d5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 1245
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      left:
+        complex:
+          root: TCSHostname
+          transformers:
+          - operator: toUpperCase
+      right:
+        complex:
+          accessor: Hostname
+          root: CrowdStrike.Device
+          transformers:
+          - operator: toUpperCase
+          - args:
+              delimiter:
+                value:
+                  simple: ','
+            operator: splitAndTrim
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Compare  two lists and put the differences in context.
+      id: 02be707c-1541-43dd-80a6-92dac005ff4e
+      iscommand: false
+      name: Compare Submitted List With CS Results
+      script: CompareLists
+      type: regular
+      version: -1
+    taskid: 02be707c-1541-43dd-80a6-92dac005ff4e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 1400
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: LeftOnly
+                root: ListCompare
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: LeftOnly
+                root: ListCompare
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "12"
+      "yes":
+      - "8"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d6def052-1aae-4cc2-86af-0b81156668b5
+      iscommand: false
+      name: Are There Any Hosts Not Found in Crowsstrike ?
+      type: condition
+      version: -1
+    taskid: d6def052-1aae-4cc2-86af-0b81156668b5
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 1565
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Hostnotfound
+      value:
+        complex:
+          accessor: LeftOnly
+          root: ListCompare
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: ','
+            operator: splitAndTrim
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 339131e0-b89c-4dcb-88f2-abc63af857e2
+      iscommand: false
+      name: Set The Host To Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 339131e0-b89c-4dcb-88f2-abc63af857e2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 1770
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: |
+          Hello Human,
+
+          None of the Hostname in this list - ${incident.attachment.name} were found in Crowdstrike.
+
+          Regards,
+          Cyber Autobot
+          Automation task id : ${incident.id}
+      cc:
+        simple: v.ghule@tcs.com
+      subject:
+        simple: None of The Hostname in this list - ${incident.attachment.name} Were
+          Found in Crowdstrike
+      to:
+        complex:
+          accessor: Email/from
+          root: incident.labels
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: a774df49-bb33-4c84-8761-3392f8af1aaa
+      iscommand: true
+      name: Send Notification 'No Hosts Found on Crowdstrike'
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: a774df49-bb33-4c84-8761-3392f8af1aaa
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 60,
+          "y": 2470
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${Report}
+      body:
+        simple: |
+          Hello Human,
+
+          I have contained all the hosts shared in this list - ${incident.attachment.name}. Please refer to the attached report.
+
+
+          Regards,
+          Cyber Autobot
+          Automation id : ${incident.id}
+      cc:
+        simple: v.ghule@tcs.com,kunal.krushev@tcs.com
+      subject:
+        simple: ' Crowdstrike Contained Host Report For Submitted File - ${incident.attachment.name}'
+      to:
+        complex:
+          accessor: Email/from
+          root: incident.labels
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 5a9cc201-3125-4823-85ff-0321a5eef8ee
+      iscommand: true
+      name: Send Report of Hosts Found on Crowdstrike (All Hosts)
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 5a9cc201-3125-4823-85ff-0321a5eef8ee
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 2470
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${Report}
+      body:
+        simple: |
+          Hello Human,
+
+          I have contained some of the hosts shared in this list - ${incident.attachment.name}
+
+          PFA report of hosts contained and also a list of hosts not found in the CrowdStrike database.
+
+
+          Regards,
+          Cyber Autobot
+          Automation id : ${incident.id}
+      cc:
+        simple: v.ghule@tcs.com,kunal.krushev@tcs.com
+      subject:
+        simple: ' Crowdstrike Contained Host Report For Submitted File - ${incident.attachment.name}'
+      to:
+        complex:
+          accessor: Email/from
+          root: incident.labels
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 8c00d958-e1f0-4e0a-8fcd-5e12050768df
+      iscommand: true
+      name: Send Report of Hosts Found on Crowdstrike (Some Hosts)
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 8c00d958-e1f0-4e0a-8fcd-5e12050768df
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 2470
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: |-
+          Hello Human,
+
+          You are not on my authorized list of senders. Please contact Your XSOAR Support team.
+
+          Regards,
+          CSOC Cyber AutoBot
+          Automation task id : ${incident.id}
+      cc:
+        simple: kunal.krushev@tcs.com,v.ghule@tcs.com,sonam.bhandari@tcs.com
+      subject:
+        simple: Not Authorized For This Task
+      to:
+        complex:
+          accessor: Email/from
+          root: incident.labels
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 687da0cb-9642-47bf-8d21-d515df1c5d1e
+      iscommand: true
+      name: Send Notification 'Not Authorized Sender'
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 687da0cb-9642-47bf-8d21-d515df1c5d1e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -80,
+          "y": 310
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: a7c5330a-3942-4aa7-8c68-c102ac6ab908
+      iscommand: true
+      name: Close Playbook
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: a7c5330a-3942-4aa7-8c68-c102ac6ab908
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 2645
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: dc1e94ca-0bfe-4774-821a-cd4933878682
+      iscommand: false
+      name: The End
+      type: title
+      version: -1
+    taskid: dc1e94ca-0bfe-4774-821a-cd4933878682
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 2820
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      csvArray:
+        simple: Hostnotfoundarray
+      fileName:
+        simple: Host_Not_Found.csv
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Export given array to csv file
+      id: 02f9f8bd-c009-4f43-8eb1-703034ac3e3c
+      iscommand: false
+      name: Create Excel Report of Hosts Not Found
+      script: ExportToCSV
+      type: regular
+      version: -1
+    taskid: 02f9f8bd-c009-4f43-8eb1-703034ac3e3c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 2120
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: Report
+      value:
+        simple: '${.=(val.File instanceof Array ? val.File[val.File.length-1].EntryID
+          : val.File.EntryID)}'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 646f4bf7-1a5b-4241-8190-fbb91aaf22e0
+      iscommand: false
+      name: Set Report To New Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 646f4bf7-1a5b-4241-8190-fbb91aaf22e0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 2295
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      arrayData:
+        complex:
+          root: Hostnotfound
+      contextKey:
+        simple: Hostnotfoundarray
+      separator:
+        simple: ','
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: 'Will create an array object in context from given string input '
+      id: 50fa9f56-b76d-490e-8bb5-dce1514ff137
+      iscommand: false
+      name: Create Array For Report
+      script: CreateArray
+      type: regular
+      version: -1
+    taskid: 50fa9f56-b76d-490e-8bb5-dce1514ff137
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 1945
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 2765,
+        "width": 1370,
+        "x": -80,
+        "y": 120
+      }
+    }
+  }
