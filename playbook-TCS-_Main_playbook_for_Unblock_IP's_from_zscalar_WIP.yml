@@ -1,0 +1,322 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 00511668-454c-460b-895d-a2ba96b673ab
+inputs: []
+name: TCS- Main playbook for Unblock IP's from zscalar_WIP
+outputs: []
+quiet: true
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b25c5e26-97c0-45db-8fc6-c4b485ac1e9a
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: b25c5e26-97c0-45db-8fc6-c4b485ac1e9a
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 460,
+          "y": -60
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          root: File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: b1e8906f-af49-44ad-82cd-58d2925fdc7c
+      iscommand: false
+      name: Read The Text Attachment
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: b1e8906f-af49-44ad-82cd-58d2925fdc7c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 460,
+          "y": 70
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: ZscalarIp
+      value:
+        complex:
+          root: FileData
+          transformers:
+          - operator: trim
+          - args:
+              delimiter:
+                value:
+                  simple: |2+
+
+            operator: splitAndTrim
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 1938b3f0-67b7-4bb0-87a0-64a36046f70a
+      iscommand: false
+      name: set data
+      script: Set
+      type: regular
+      version: -1
+    taskid: 1938b3f0-67b7-4bb0-87a0-64a36046f70a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 460,
+          "y": 230
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      arrayData:
+        simple: ${ZscalarIp}
+      contextKey:
+        simple: ZscalarIpArray
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: 'Will create an array object in context from given string input '
+      id: 5975ed4c-ad6a-4a6b-87fe-c22ca32c8a5f
+      iscommand: false
+      name: Create Array
+      script: CreateArray
+      type: regular
+      version: -1
+    taskid: 5975ed4c-ad6a-4a6b-87fe-c22ca32c8a5f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 460,
+          "y": 400
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: output=value
+      query:
+        simple: (tags:certblockipaddress or tags:csocblockedip or tags:CSPIOCBlocked)
+          and expirationStatus:active
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.find.indicators
+      id: 849fb8ba-4c81-4e5e-8f06-3ec6a98c1ee1
+      iscommand: true
+      name: find the indicators
+      script: Builtin|||findIndicators
+      type: regular
+      version: -1
+    taskid: 849fb8ba-4c81-4e5e-8f06-3ec6a98c1ee1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -120,
+          "y": 200
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      listData:
+        complex:
+          root: ${output}
+      listName:
+        simple: UnblockIPs_Zscaler
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.add
+      id: 3222e74f-0bb3-40e5-8048-45d0e6b0a9bb
+      iscommand: true
+      name: Adding into list
+      script: Builtin|||addToList
+      type: regular
+      version: -1
+    taskid: 3222e74f-0bb3-40e5-8048-45d0e6b0a9bb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -120,
+          "y": 385
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8b1a264d-d633-4c87-81d2-03a513276b47
+      iscommand: false
+      name: END
+      type: title
+      version: -1
+    taskid: 8b1a264d-d633-4c87-81d2-03a513276b47
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 460,
+          "y": 720
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 0
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ZscalerIp:
+        simple: ${ZscalarIpArray}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 82f0e3f7-b373-4ab3-8ba8-0de1537acd8e
+      iscommand: false
+      name: TCS-Unblock IP's from zscalar_WIP
+      playbookId: f6a86b2a-9a92-4362-87d8-6d2a633a9109
+      type: playbook
+      version: -1
+    taskid: 82f0e3f7-b373-4ab3-8ba8-0de1537acd8e
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 460,
+          "y": 560
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 845,
+        "width": 960,
+        "x": -120,
+        "y": -60
+      }
+    }
+  }
