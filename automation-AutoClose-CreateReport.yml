@@ -1,0 +1,71 @@
+args:
+- isArray: true
+  name: incidents
+  required: true
+- name: version
+commonfields:
+  id: 1a721ef9-4eb0-428a-8fc2-439a92ef0576
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: AutoClose-CreateReport
+outputs:
+- contextPath: summaryHTML
+  description: Close report
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  var ticketHTML = function(incident) {
+      zdUrl = incident.CustomFields.ticketurl;
+      zdAssignee = incident.CustomFields.assigneename;
+      zdRequester = incident.CustomFields.requestername;
+      zdSubject = incident.name;
+      zdID = incident.CustomFields.ticketid;
+      ghUrl = incident.CustomFields.githubissueurl;
+      ghIssue = incident.CustomFields.githubissue;
+      ghTitle = incident.CustomFields.githubissuetitle;
+      ghTags = incident.CustomFields.githubissuetags;
+      ghClosedAt = incident.CustomFields.githubissueclosedat;
+
+      var ret = '<strong style="color:red">Ticket</strong> <a href="'+zdUrl+'" target=_blank>#' + zdID + '</a> - ' + zdSubject + '<br/>';
+      ret += '<ul><li>Assignee: ' + zdAssignee + '</li>';
+      ret += '<li>Requester: ' + zdRequester + '</li></ul>';
+      ret += '<strong style="color:red">On hold for issue</strong> <a href="'+ghUrl+'" target=_blank>#' + ghIssue + '</a> - ' + ghTitle;
+      ret += '<ul>';
+      ret += '<li>Tags:' + ghTags + '</li>';
+      ret += '<li>Closed at ' + ghClosedAt + '</li>';
+      ret += '</ul>';
+      return ret;
+  };
+
+
+  summaryHTML = '<h2>Closing Zendesk Ticket for new release - ' + args.version + '<h2>';
+  summaryHTML += '<h3>Please review the following lists, and make sure it is accurate and up to date.</h3><br/>';
+  summaryHTML += '<strong style="color:red">Auto-closing tickets will happen in 72 hours</strong><br/>';
+
+  summaryHTML += '<h5>Closing the following tickets</h5><ul>';
+  args.incidents.forEach(function(incident) {
+      summaryHTML += '<li>' + ticketHTML(incident) + '<br/></li>';
+  });
+  summaryHTML += '</ul>';
+
+  setContext('summaryHTML',summaryHTML);
+
+  return({ContentsFormat: 'html', Type: entryTypes.note, Contents: summaryHTML, Note: true});
+
+scripttarget: 0
+tags: []
+type: javascript
