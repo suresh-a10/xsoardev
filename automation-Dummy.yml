@@ -1,0 +1,83 @@
+commonfields:
+  id: 0bc5b08f-b34f-40d8-8c4d-d01f35cb14ff
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: netmiko:latest
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Dummy
+outputs:
+- contextPath: BashCLI
+  description: Displays all the commands ran on the bash shell
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  from netmiko import ConnectHandler
+
+
+
+  ''' MAIN FUNCTION'''
+
+
+  def main():
+      try:
+          ##Input the EDL Block List
+          # edl=argToList(demisto.args().get('edl'))
+          edl=['9.9.9.9','10.10.10.10']
+
+          res = demisto.executeCommand("fetch-credentials", {'using':'Credentials TCS_instance_1'})
+          username = res[0]['Contents']['username']
+          password = res[0]['Contents']['password']
+          fw_list=["10.17.14.101","10.17.14.102","10.17.14.205","10.17.14.184"]
+          cmds=[]
+
+          for fw in fw_list:
+              is_connected=False
+              for i in range(3):
+                  try:
+                      Firewall={
+                          "host": fw,
+                          "username": username,
+                          "password": password,
+                          "device_type": "cisco_ios",
+                          "secret":password
+                      }
+                      connect= ConnectHandler(**Firewall)
+                      connect.enable()
+                      is_connected=True
+                      config_args=["conf t","object-group network Dummy","network-object host 1.1.1.1"]
+                      cmds.append(connect.send_config_set(config_args))
+                      demisto.context("BashCLI",cmds)
+                      if is_connected:
+                          break
+                  except:
+                      demisto.results(f"{fw} not connected")
+                      demisto.error(traceback.format_exc())  # print the traceback
+                      # return_error(f'Failed to execute BaseScript. Error: ')
+      except:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: ')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
