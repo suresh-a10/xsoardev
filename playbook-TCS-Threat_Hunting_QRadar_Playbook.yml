@@ -1,0 +1,243 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: ac478943-d94f-4774-8f80-2ca7114d3f58
+inputs: []
+name: TCS-Threat Hunting QRadar Playbook
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 93da3546-00d4-4df0-8f28-5b3b673adbc3
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 93da3546-00d4-4df0-8f28-5b3b673adbc3
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      IPAddress:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+      InvestigationIPFields:
+        simple: sourceip,destinationip
+      InvestigationUserFields:
+        simple: username
+      MD5:
+        complex:
+          root: ExtractedIndicators.MD5
+      QradarIPfield:
+        simple: sourceip,destinationip
+      QradarMD5Field:
+        simple: File Hash
+      QradarSHA1Field:
+        simple: File Hash
+      QradarSHA256Field:
+        simple: File Hash
+      SHA1:
+        complex:
+          accessor: SHA1
+          root: ExtractedIndicators
+      SHA256:
+        complex:
+          accessor: SHA256
+          root: ExtractedIndicators
+      TimeFrame:
+        simple: LAST 7 DAYS
+      URLDomain:
+        complex:
+          accessor: Domain_Test_
+          root: ExtractedIndicators
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: 'The Playbook queries QRadar SIEM for indicators such as file hashes,
+        IP addresses, domains, or urls. '
+      id: 16d8bac4-5c44-42e0-8252-257211e02c1a
+      iscommand: false
+      name: QRadar Indicator Hunting V2
+      playbookId: QRadar Indicator Hunting V2
+      type: playbook
+      version: -1
+    taskid: 16d8bac4-5c44-42e0-8252-257211e02c1a
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 380
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      entryID:
+        simple: ${File.EntryID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 4e945569-6ec6-4c19-81cb-3d3e4e9b024f
+      iscommand: true
+      name: Extract indicators from file
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 4e945569-6ec6-4c19-81cb-3d3e4e9b024f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 190
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: |-
+          Please find attached Detected IOC:
+
+          Detected User: ${QRadar.DetectedUsers}
+          Detected InternalIP : ${QRadar.DetectedInternalIPs}
+          Detected External IP : ${QRadar.DetectedExternalIPs}
+          Detected Internal Host: ${QRadar.DetectedInternalHosts}
+          Detected External Host: ${QRadar.DetectedExternalHosts}
+
+          Thanks,
+          CSOC Cyber AutoBot
+      subject:
+        simple: 'Detected IOC  in QRadar '
+      to:
+        simple: v.ghule@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Send an email
+      id: 805bb716-8a89-4f8f-89f2-1be3cf6cc4c4
+      iscommand: true
+      name: Send Detected Indicators on mail
+      script: '|||send-mail'
+      type: regular
+      version: -1
+    taskid: 805bb716-8a89-4f8f-89f2-1be3cf6cc4c4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 550
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bd32e8d1-dd5e-45f6-8208-45bdd5d5cd8e
+      iscommand: false
+      name: Close Investigation
+      type: title
+      version: -1
+    taskid: bd32e8d1-dd5e-45f6-8208-45bdd5d5cd8e
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 710
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 725,
+        "width": 380,
+        "x": 450,
+        "y": 50
+      }
+    }
+  }
