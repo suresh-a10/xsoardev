@@ -1,0 +1,55 @@
+commonfields:
+  id: 1284addb-42d7-4385-8353-420e619ad3f7
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CSFilename_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  md5=[]
+  res = demisto.executeCommand("getIncidents", {"query": "-crowdstrikefilename:\"\""})[0]["Contents"]["data"]
+
+
+  for i in range(len(res)):
+      md5.append(res[i]['CustomFields']['crowdstrikefilename'])
+
+
+  md5_data={}
+
+  for i in md5:
+      for j in i:
+          if j in md5_data.keys():
+              for k,v in md5_data.items():
+                  if k==j:
+                      md5_data[k] = v+1
+                  else:
+                      md5_data[j] = 1
+
+  sorted_dict=dict(sorted(md5_data.items(), key=lambda item: item[1]))
+
+  data=[]
+  for key,value in sorted_dict.items():
+      data.append({"name":key, "data": [value]})
+
+  data1 = data;
+  demisto.results(json.dumps(data1));
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
