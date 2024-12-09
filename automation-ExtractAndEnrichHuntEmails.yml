@@ -1,0 +1,65 @@
+args:
+- description: Extract from specified entry
+  name: entryID
+- description: Transient file to extract indicators from
+  name: filePath
+- description: Investigation to apply to
+  name: investigationID
+- description: Transient text to extract indicators from
+  name: text
+commonfields:
+  id: 80005ff3-762b-4345-8d2d-06613edef525
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ExtractAndEnrichHuntEmails
+pswd: ""
+runas: DBotRole
+runonce: false
+script: |
+  import io
+
+  def main():
+      try:
+          args=demisto.incidents()[0].get('CustomFields').get('huntingemails')
+          if args:
+              res=demisto.executeCommand('extractIndicators', {'text':args})
+              demisto.results(res)
+
+
+              extractedIOC=[]
+              result=json.loads(res[0]['Contents'])
+
+              for k,v in result.items():
+                  for i in v:
+                      extractedIOC.append(i)
+
+              demisto.results(demisto.executeCommand('enrichIndicators',{'indicatorsValues':extractedIOC}))
+
+          else:
+              demisto.results("No Email Ids found.")
+
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+  if __name__ in ('__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
