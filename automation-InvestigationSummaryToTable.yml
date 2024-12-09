@@ -6,7 +6,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 6.2.0
-    itemVersion: 2.0.12
+    itemVersion: 2.0.14
     packID: MalwareInvestigationAndResponse
     packName: Malware Investigation and Response
     packPropagationLabels:
@@ -14,7 +14,7 @@ contentitemexportablefields:
     prevname: ""
     propagationLabels: []
     toServerVersion: ""
-dockerimage: demisto/python3:3.10.13.83255
+dockerimage: demisto/python3:3.11.10.115186
 engineinfo: {}
 mainengineinfo: {}
 name: InvestigationSummaryToTable
@@ -29,22 +29,23 @@ outputs:
 pswd: ""
 runas: DBotWeakRole
 runonce: false
-script: "register_module_line('InvestigationSummaryToTable', 'start', __line__())\n###
-  pack version: 2.0.12\nfrom enum import Enum\n\n\n\nRESULT = 'Result'\nTACTIC = 'Tactic'\n\n\nclass
-  Result(Enum):\n    SUSPICIOUS = 'Suspicious'\n    NOT_DETECTED = 'Not Detected'\n\n\nRESULT_TO_COLOR
-  = {\n    Result.SUSPICIOUS: \"\U0001F534\",\n    Result.NOT_DETECTED: \"\U0001F7E2\",\n}\n\n\nclass
-  Finding:\n    tactic: str\n    result: Result\n\n    def __init__(self, context_name:
-  str, value: dict):\n        self.context_name = context_name\n        self.tactic
-  = value.get(TACTIC, f'{self.context_name} (missing tactic value)')\n        self.result
-  = Result(value.get(RESULT, Result.NOT_DETECTED.value))\n\n    def to_summary_line(self)
-  -> Dict[str, str]:\n        return {\n            TACTIC: self.tactic,\n            RESULT:
-  f'{RESULT_TO_COLOR[self.result]}  {self.result.value.title()}'\n        }\n\n\ndef
-  get_findings(malware_findings_context: dict) -> List[Finding]:\n    findings = []\n
-  \   for name, value in malware_findings_context.items():\n        if isinstance(value,
-  list):  # when running the script for the second time, values are put in lists.\n
-  \           value = value[-1]  # solves for one or multiple values\n        findings.append(Finding(name,
-  value))\n    return findings\n\n\ndef findings_to_command_results(findings: List[Finding])
-  -> CommandResults:\n    if not findings:\n        return CommandResults(\n            readable_output='###
+script: "register_module_line('InvestigationSummaryToTable', 'start', __line__())\ndemisto.debug('pack
+  name = Malware Investigation and Response, pack version = 2.0.14')\nfrom enum import
+  Enum\n\n\n\nRESULT = 'Result'\nTACTIC = 'Tactic'\n\n\nclass Result(Enum):\n    SUSPICIOUS
+  = 'Suspicious'\n    NOT_DETECTED = 'Not Detected'\n\n\nRESULT_TO_COLOR = {\n    Result.SUSPICIOUS:
+  \"\U0001F534\",\n    Result.NOT_DETECTED: \"\U0001F7E2\",\n}\n\n\nclass Finding:\n
+  \   tactic: str\n    result: Result\n\n    def __init__(self, context_name: str,
+  value: dict):\n        self.context_name = context_name\n        self.tactic = value.get(TACTIC,
+  f'{self.context_name} (missing tactic value)')\n        self.result = Result(value.get(RESULT,
+  Result.NOT_DETECTED.value))\n\n    def to_summary_line(self) -> Dict[str, str]:\n
+  \       return {\n            TACTIC: self.tactic,\n            RESULT: f'{RESULT_TO_COLOR[self.result]}
+  \ {self.result.value.title()}'\n        }\n\n\ndef get_findings(malware_findings_context:
+  dict) -> List[Finding]:\n    findings = []\n    for name, value in malware_findings_context.items():\n
+  \       if isinstance(value, list):  # when running the script for the second time,
+  values are put in lists.\n            value = value[-1]  # solves for one or multiple
+  values\n        findings.append(Finding(name, value))\n    return findings\n\n\ndef
+  findings_to_command_results(findings: List[Finding]) -> CommandResults:\n    if
+  not findings:\n        return CommandResults(\n            readable_output='###
   Waiting on entries\\n'\n                            'When `InvestigationSummaryParse`
   is finished, its results will appear here.'\n        )\n    outputs = list(finding.to_summary_line()
   for finding in findings)\n    return CommandResults(\n        outputs_prefix='InvestigationSummary',\n
