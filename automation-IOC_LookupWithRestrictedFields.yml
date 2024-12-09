@@ -1,0 +1,188 @@
+commonfields:
+  id: b15a38a4-e760-4de5-80e3-8ff23b052b78
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: IOC_LookupWithRestrictedFields
+outputs:
+- contextPath: IPAddress
+  description: IP Address List
+- contextPath: Hash
+  description: Hash List
+- contextPath: Domain
+  description: Domain List
+- contextPath: Domain_Test_
+  description: Domain_Test_ List
+- contextPath: URL
+  description: URL List
+- contextPath: Above65RiskList
+  description: Above 65 Risk List
+- contextPath: Below65RiskList
+  description: Below 65 Risk List
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2
+
+  ips=demisto.context().get('IOC').get('IP')
+  hashes=demisto.context().get('IOC').get('Hash')
+  domains=demisto.context().get('IOC').get('Domain')
+  domaintest=demisto.context().get('IOC').get('Domain_Test_')
+  urls=demisto.context().get('IOC').get('URL')
+
+  ipset = []
+  hashset=[]
+  domainset=[]
+  domaintestset=[]
+  urlset=[]
+
+  risklist=[]
+  safelist=[]
+
+  if ips:
+      iplookup = argToList(ips)
+
+      for ip in iplookup:
+          res = demisto.executeCommand("ip", { 'ip': ip, 'using' : 'Recorded Future v2_instance_1'})[0]['Contents']
+          ipset.append({
+              "ip" : res['data']['results'][0]['entity']['name'],
+              "riskscore" : res['data']['results'][0]['risk']['score']
+          })
+          if res['data']['results'][0]['risk']['score']>=65:
+              risklist.append(
+                  {"ioc" : res['data']['results'][0]['entity']['name'],
+                  "riskscore" : res['data']['results'][0]['risk']['score']}
+                  )
+          else:
+              safelist.append(
+                  {"ioc" : res['data']['results'][0]['entity']['name'],
+                  "riskscore" : res['data']['results'][0]['risk']['score']}
+                  )
+          # demisto.results(fileResult('resultSet.json', str(resultset)))
+      demisto.results({
+              "Type": entryTypes["note"],
+              "ContentsFormat": formats["json"],
+              "Contents": ipset,
+              "HumanReadable": tableToMarkdown('IP List', ipset),
+              "EntryContext": {'IPAddress':ipset}
+      })
+
+  if hashes:
+      hashlookup = argToList(hashes)
+
+      for hsh in hashlookup:
+          res = demisto.executeCommand("file", { 'file': hsh, 'using' : 'Recorded Future v2_instance_1'})[0]['Contents']
+          hashset.append({
+              "hash" : res['data']['results'][0]['entity']['name'],
+              "riskscore" : res['data']['results'][0]['risk']['score']
+          })
+          if res['data']['results'][0]['risk']['score']>=65:
+              risklist.append(
+                 { "ioc" : res['data']['results'][0]['entity']['name'],
+                  "riskscore" : res['data']['results'][0]['risk']['score']}
+                  )
+          else:
+              safelist.append(
+                  {"ioc" : res['data']['results'][0]['entity']['name'],
+                  "riskscore" : res['data']['results'][0]['risk']['score']}
+                  )
+
+      demisto.results({
+              "Type": entryTypes["note"],
+              "ContentsFormat": formats["json"],
+              "Contents": hashset,
+              "HumanReadable": tableToMarkdown('Hash List', hashset),
+              "EntryContext": {'Hash':hashset}
+      })
+
+
+  if domaintest:
+      domaintestlookup = argToList(domaintest)
+
+      for domain in domaintestlookup:
+          res = demisto.executeCommand("domain", { 'domain': domain, 'using' : 'Recorded Future v2_instance_1'})[0]['Contents']
+          domaintestset.append({
+              "domain_test_" : res['data']['results'][0]['entity']['name'],
+              "riskscore" : res['data']['results'][0]['risk']['score']
+          })
+          if res['data']['results'][0]['risk']['score']>=65:
+              risklist.append(
+                  {"ioc" : res['data']['results'][0]['entity']['name'],
+                  "riskscore" : res['data']['results'][0]['risk']['score']}
+                  )
+          else:
+              safelist.append(
+                  {"ioc" : res['data']['results'][0]['entity']['name'],
+                  "riskscore" : res['data']['results'][0]['risk']['score']}
+                  )
+
+      demisto.results({
+              "Type": entryTypes["note"],
+              "ContentsFormat": formats["json"],
+              "Contents": domaintestset,
+              "HumanReadable": tableToMarkdown('Domain_Test_ List', domaintestset),
+              "EntryContext": {'Domain_Test_':domaintestset}
+      })
+
+  if urls:
+      urllookup = argToList(urls)
+
+      for url in urllookup:
+          res = demisto.executeCommand("url", { 'url': url, 'using' : 'Recorded Future v2_instance_1'})[0]['Contents']
+          urlset.append({
+              "url" : res['data']['results'][0]['entity']['name'],
+              "riskscore" : res['data']['results'][0]['risk']['score']
+          })
+          if res['data']['results'][0]['risk']['score']>=65:
+              risklist.append(
+                  {"ioc" : res['data']['results'][0]['entity']['name'],
+                  "riskscore" : res['data']['results'][0]['risk']['score']}
+                  )
+          else:
+              safelist.append(
+                  {"ioc" : res['data']['results'][0]['entity']['name'],
+                  "riskscore" : res['data']['results'][0]['risk']['score']}
+                  )
+
+      demisto.results({
+              "Type": entryTypes["note"],
+              "ContentsFormat": formats["json"],
+              "Contents": urlset,
+              "HumanReadable": tableToMarkdown('URL List', urlset),
+              "EntryContext": {'URL':urlset}
+      })
+
+
+  demisto.results({
+              "Type": entryTypes["note"],
+              "ContentsFormat": formats["json"],
+              "Contents": risklist,
+              # "HumanReadable": tableToMarkdown('Above 65 Risk List', risklist),
+              "EntryContext": {'Above65RiskList':risklist}
+      })
+
+  demisto.results({
+              "Type": entryTypes["note"],
+              "ContentsFormat": formats["json"],
+              "Contents": safelist,
+              # "HumanReadable": tableToMarkdown('Below 65 Risk List', safelist),
+              "EntryContext": {'Below65RiskList':safelist}
+      })
+scripttarget: 0
+subtype: python3
+tags: []
+timeout: 18µs
+type: python
