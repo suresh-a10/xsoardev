@@ -1,0 +1,81 @@
+args:
+- description: The old value of the changed field
+  name: old
+- description: The new value of the changed field
+  name: new
+- default: true
+  defaultValue: CrowdstrikeFalcon_instance_1
+  description: Specify the CS instance to use
+  name: using_instance
+comment: |-
+  Stops the "Response SLA" timer once an owner is assigned to the Incident
+  Starts the "Remediation SLA' timer once an owner is assigned to the Incident
+commonfields:
+  id: 5504ed3e-59da-42f3-89dd-83809f8871c7
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.8.24399
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: TimersOnOwnerChange_KK
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  #This script reflects the owner details in CS on owner change.
+
+  # context=demisto.incident()
+  # incident_type=context.get('type')
+  # if incident_type=="Malware Investigation":
+  #     label=context.get('labels')
+  #     csdetectionid=list(filter(lambda label: label['type'] == 'detection_id', label))[0]['value']
+  #     demisto.results(csdetectionid)
+  #     newowner=demisto.args().get('new')
+  #     users=demisto.executeCommand('getUsers', {})[0]['Contents']
+  #     useremail=list(filter(lambda users: users['username'] == newowner, users))[0]['email']
+  #     demisto.results(newowner)
+  #     instance=demisto.incidents()[0].get('sourceInstance')
+  #     print(instance)
+
+  #     using=demisto.args().get('using_instance')
+  #     if csdetectionid:
+  #         try:
+  #             res=demisto.executeCommand("cs-falcon-resolve-detection",{"ids":csdetectionid,"status":"in_progress","username":useremail,"using":instance})
+
+  #             if isError(res):
+  #                 print(f'{str(get_error(res))}')
+  #                 # update only status
+  #                 res1=demisto.executeCommand("cs-falcon-resolve-detection",{"ids":csdetectionid,"status":"in_progress","using":instance})
+  #                 print(f'{str(get_error(res1))}')
+  #                 if isError(res1):
+  #                     raise exception
+  #         except:
+  #             demisto.results("Task has gone in exception. Owner details not reflected in CrowdStrike")
+
+
+  # This script stops the Time to Assignment timer when an Owner is assigned to an Incident, and starts the Remediation
+  # SLA Timer.
+
+  if not demisto.args().get('old') and demisto.args().get('new'):  # If owner was no-one and is now someone:
+      demisto.executeCommand("stopTimer", {"timerField": "responsesla"})
+      demisto.executeCommand("startTimer", {"timerField": "remediationsla"})
+      demisto.results(
+          "Assignment of the incident was successful, Time to Assignment has been stopped, and the Remediation timer has"
+          " been started!")
+
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
