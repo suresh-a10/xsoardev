@@ -1,0 +1,81 @@
+comment: Returns a list of all the users marked as away in Cortex XSOAR.
+commonfields:
+  id: 97343a2d-4524-4325-8949-a7c635ef1bee
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.8.24399
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetPresentUsers_Dashboard_WIP
+outputs:
+- contextPath: AwayUsers.id
+  description: Away user ID.
+  type: String
+- contextPath: AwayUsers.username
+  description: Away user username.
+  type: String
+- contextPath: AwayUsers.name
+  description: Away user name.
+  type: String
+- contextPath: AwayUsers.phone
+  description: Away user phone.
+  type: String
+- contextPath: AwayUsers.roles
+  description: Away user roles.
+  type: Unknown
+- contextPath: AwayUsers.email
+  description: Away user email.
+  type: String
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2
+
+
+
+  def main():
+      try:
+          presentusers=json.loads(demisto.executeCommand('getList', {'listName':'PresentInCurrentShift'})[0]['Contents'])
+          newlist=[]
+          for k,v in presentusers.items():
+              dic={}
+              dic["EmpID"]=k
+              dic["Name"]=v
+              newlist.append(dic)
+
+
+          # readable_output = tableToMarkdown("Present In Shift", presentusers , headers=["EmpID","Name"] if presentusers else None)
+          readable_output = tableToMarkdown("Present In Shift", newlist , headers=list(newlist[0].keys()) if newlist else None)
+          # readable_output = tableToMarkdown("Present In Shift", newlist , headers=["EmpID","Name","Time"] if newlist else None)
+          cmd_results = {
+              'Type': entryTypes['note'],
+              'ContentsFormat': formats['markdown'],
+              'Contents': readable_output
+          }
+          return_results(cmd_results)
+      except Exception as e:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute GetPresentUsers. Error: {str(e)}')
+
+
+  ''' ENTRY POINT '''
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+- dynamic-section
+type: python
