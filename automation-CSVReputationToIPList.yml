@@ -1,0 +1,53 @@
+args:
+- default: true
+  description: The War Room entryID of the .csv file
+  name: entry_id
+  required: true
+- description: the threshold in which the reputation will start at
+  name: threshold
+  required: true
+commonfields:
+  id: 0168202e-ccbb-45b4-8c04-ab2dc493a3a6
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CSVReputationToIPList
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  import csv
+  entry_id = demisto.args()["entry_id"]
+  threshold = demisto.args()["threshold"]
+
+  file_path = demisto.getFilePath(entry_id).get('path')
+
+  with open(file_path, 'r') as fh:
+      csv_in = fh.readlines()
+
+  csv_out = ""
+
+  for row in csv_in[1:]:
+      rep = int(row.split(',')[1][1:-1])
+      if rep >= int(threshold):
+          ip = row.split(",")[0]
+          csv_out += ip + "\n"
+
+  demisto.results(fileResult('reduced_csv.csv', csv_out.encode("utf-8")))
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
