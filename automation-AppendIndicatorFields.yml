@@ -1,0 +1,76 @@
+args:
+- description: Indicator value for finding the indicator
+  name: value
+  required: true
+- description: (string) Search query for finding the indicator
+  name: query
+- description: Filter by from date for finding the indicator (e.g. 2006-01-02T15:04:05+07:00)
+  name: fromdate
+- description: Page number of indicator results to return for findIndicator
+  name: page
+- description: Maximum number of indicators to return for findIndicator
+  name: size
+- description: Filter by to date for finding the indicator(e.g. 2016-01-02T15:04:05+07:00)
+  name: todate
+- description: 'Args for new indicator in key:value format Eg: {"key1":"value1","key2":"value2"}
+    Refer the command to find the possible argument values'
+  name: argsForNewIndicator
+- description: 'A comma-separated list of values to add to the specified field if
+    the indicator value already exists. For example, to add several tags: "tag1,tag2,tag3".'
+  name: fieldValue
+- description: The machine name (CLI name) of the indicator field to add values to
+    if the indicator already exists. For example, "tags".
+  name: field
+- description: Sets indicator type when creating new indicator
+  name: type
+- description: Tags to add to the new indicator value
+  name: tags
+commonfields:
+  id: 88adcc81-d279-4bd8-8bea-b7773d15d418
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: AppendIndicatorFields
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  args=demisto.args()
+  value=args.get('value') if args.get('value') else None
+  query=args.get('query') if args.get('query') else None
+  fromdate=args.get('fromdate') if args.get('fromdate') else None
+  todate=args.get('todate') if args.get('todate') else None
+  page=args.get('page') if args.get('page') else None
+  size=args.get('size') if args.get('size') else None
+
+  res=demisto.executeCommand('findIndicators',{'value':value,'query':query,'fromdate':fromdate,'page':page,'size':size,'todate':todate})[0]['Contents']
+
+  if res:
+      print("Indicator exists")
+      field=args.get('field') if args.get('field') else None
+      fieldValue=args.get('fieldValue') if args.get('fieldValue') else None
+      result=demisto.executeCommand('appendIndicatorField',{'indicatorsValues':value,'field':field,'fieldValue':fieldValue})
+      demisto.results(result)
+  else:
+      print("Indicator does not exist")
+      indicator_type=args.get('type') if args.get('type') else None
+      tags=args.get('tags') if args.get('tags') else None
+      result=demisto.executeCommand('createNewIndicator',{'value':value,'type':indicator_type,'tags':tags})
+      demisto.results(result)
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
