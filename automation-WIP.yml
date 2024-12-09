@@ -1,0 +1,100 @@
+commonfields:
+  id: bb3c2e56-1866-4012-805f-68e022f4bedf
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  import datetime
+  context=demisto.context()
+  ioc={}
+  rfioc={}
+  ciscoioc=[]
+  abuseip={}
+  allioc=[]
+
+
+  rf=False
+  if context.get("RecordedFuture"):
+      if context.get("RecordedFuture").get("Domain"):
+          rf=True
+          if type(context.get("RecordedFuture").get("Domain"))==list:
+              for i in context.get("RecordedFuture").get("Domain"):
+                  ioc[i["name"]]={"RecordedFuture":i["riskScore"]}
+          else:
+              ioc[context.get("RecordedFuture").get("Domain").get("name")]={"RecordedFuture":context.get("RecordedFuture").get("Domain").get("riskScore")}
+
+
+      if context.get("RecordedFuture").get("IP"):
+          rf=True
+          if type(context.get("RecordedFuture").get("IP"))==list:
+              for i in context.get("RecordedFuture").get("IP"):
+                  ioc[i["name"]]={"RecordedFuture":i["riskScore"]}
+                  ioc[i["name"]]["Indicator"]=i["name"]
+          else:
+              ioc[context.get("RecordedFuture").get("IP").get("name")]={"RecordedFuture":context.get("RecordedFuture").get("IP").get("riskScore")}
+              ioc[context.get("RecordedFuture").get("IP").get("name")]["Indicator"]=context.get("RecordedFuture").get("IP").get("name")
+
+
+      if context.get("RecordedFuture").get("File"):
+          rf=True
+          if type(context.get("RecordedFuture").get("File"))==list:
+              for i in context.get("RecordedFuture").get("File"):
+                  ioc[i["name"]]={"RecordedFuture":i["riskScore"]}
+          else:
+              ioc[context.get("RecordedFuture").get("File").get("name")]={"RecordedFuture":context.get("RecordedFuture").get("File").get("riskScore")}
+
+
+
+  if context.get("AbuseIPDB"):
+      if context.get("AbuseIPDB")==list:
+          for i in context.get("AbuseIPDB"):
+              if i["IP"]["Address"] in ioc:
+                  ioc[i["IP"]["Address"]]["AbuseIPDB"]=i["IP"]["AbuseConfidenceScore"]
+                  # ioc[i["IP"]["Address"]]["Indicator"]=i["IP"]["Address"]
+              else:
+                  ioc[i["IP"]["Address"]]={"AbuseIPDB":i["IP"]["AbuseConfidenceScore"]}
+                  # ioc[i["IP"]["Address"]]={"Indicator":i["IP"]["Address"]}
+
+      else:
+              if context.get("AbuseIPDB").get("IP").get("Address") in ioc:
+                  ioc[context.get("AbuseIPDB").get("IP").get("Address")]["AbuseIPDB"]=context.get("AbuseIPDB").get("IP").get("AbuseConfidenceScore")
+                  # ioc[context.get("AbuseIPDB").get("IP").get("Address")]["Indicator"]=context.get("AbuseIPDB").get("IP").get("Address")
+              else:
+                  ioc[context.get("AbuseIPDB").get("IP").get("Address")]={"AbuseIPDB":context.get("AbuseIPDB").get("IP").get("AbuseConfidenceScore")}
+                  # ioc[context.get("AbuseIPDB").get("IP").get("Address")]={"Indicator":context.get("AbuseIPDB").get("IP").get("Address")}
+
+
+  allioc=list(ioc.values())
+
+  # print(allioc)
+
+  demisto.results({
+          "Type": entryTypes["note"],
+          "ContentsFormat": formats["json"],
+          "Contents": allioc,
+          "HumanReadable": tableToMarkdown(' ', allioc, headers=["Indicator","RecordedFuture","AbuseIPDB"])
+      })
+
+
+scripttarget: 0
+subtype: python3
+tags:
+- dynamic-section
+type: python
