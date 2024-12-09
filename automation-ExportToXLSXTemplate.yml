@@ -1,0 +1,89 @@
+args:
+- name: file_name
+- auto: PREDEFINED
+  default: true
+  defaultValue: "false"
+  name: uploadfile
+  predefined:
+  - "false"
+  - "true"
+commonfields:
+  id: ba72866c-ccbc-461d-81c1-db94bbdd4340
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.11.10.113941
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ExportToXLSXTemplate
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import json
+  import time
+
+  def main():
+      file_name = demisto.args().get("file_name", "filenew.xlsx")
+      if demisto.args()['uploadfile'] == 'false':
+          # Define multiple datasets for different sheets
+          data_sheet1 = [
+              {"Name": "Alice", "Role": "Engineer", "Location": "New York"},
+              {"Name": "Bob", "Role": "Analyst", "Location": "San Francisco"}
+          ]
+
+          data_sheet2 = [
+              {"Product": "Laptop", "Price": 1200, "Quantity": 5},
+              {"Product": "Phone", "Price": 800, "Quantity": 10}
+          ]
+
+          # Convert each dataset to JSON and join them with commas
+          data_for_sheets = f"{json.dumps(data_sheet1)},{json.dumps(data_sheet2)}"
+          headers = "Name,Role,Location;Product,Price,Quantity"
+
+          # Step 1: Execute the ExportToXLSX command to create the Excel file
+          print("Step 1: Creating Excel file using ExportToXLSX command.")
+
+          result = demisto.executeCommand("ExportToXLSX", {
+              "data": data_for_sheets,
+              "sheet_name": "Employees,Inventory",
+              "file_name": file_name,
+              "headers": headers
+          })
+          demisto.results(result)
+          demisto.executeCommand('ScheduleCommand', { 'command' : f'!ExportToXLSXTemplate uploadfile=True file_name={file_name}', 'cron' : "* * * * *", 'times' : 1} )
+          exit(0)
+      else:
+          context = demisto.context().get('File')
+          incID = demisto.incident()['id']
+          if context:
+              # Added conditional check, if more than one file present in the incident
+              if type(context) == list:
+                  for item in context:
+                      if item['Name'] == file_name:
+                          demisto.executeCommand("core-api-multipart", {
+                              "uri": f'incident/upload/{incID}',
+                              "entryID": item['EntryID'],
+                              "body": 'NA'
+                          })
+              else:
+                  demisto.executeCommand("core-api-multipart", {
+                      "uri": f'incident/upload/{incID}',
+                      "entryID": context['EntryID'],
+                      "body": 'NA'
+                  })
+  main()
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
