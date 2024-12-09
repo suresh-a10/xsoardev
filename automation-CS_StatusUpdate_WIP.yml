@@ -1,0 +1,61 @@
+args:
+- description: Detection ID to resolve.
+  name: detection_id
+  required: true
+- description: Email id of user
+  name: useremail
+- description: 'The status to which to transition a detection. Possible values are:
+    "new", "in_progress", "true_positive", "false_positive", "closed", "reopened"
+    and "ignored".'
+  name: status
+  required: true
+- default: true
+  defaultValue: CrowdstrikeFalcon_instance_1
+  description: Specify the CS instance to use
+  name: using_instance
+- description: Add comment
+  name: comment
+commonfields:
+  id: f1403956-dca6-4739-89b9-b6d17e92b2eb
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CS_StatusUpdate_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  args=demisto.args()
+
+  detection_id=args.get('detection_id')
+  status=args.get('status')
+  useremail=args.get('useremail')
+  using=args.get('using_instance')
+  comment=args.get('comment')
+
+  try:
+      res=demisto.executeCommand("cs-falcon-resolve-detection",{"ids":detection_id,"status":status,"username":useremail,"comment":comment,"using":using})
+      if isError(res):
+          #Raise exception if useremail not found (BPS associates)
+          raise exception
+  except:
+      # update only status
+      demisto.executeCommand("cs-falcon-resolve-detection",{"ids":detection_id,"status":status,"comment":comment,"using":using})
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+type: python
