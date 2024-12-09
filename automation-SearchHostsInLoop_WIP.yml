@@ -1,0 +1,95 @@
+args:
+- name: entryID
+  required: true
+commonfields:
+  id: bd179b86-895d-43b4-8034-35f6fe6c1136
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SearchHostsInLoop_WIP
+outputs:
+- description: ""
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2
+
+  entryID=demisto.args().get('entryID')
+  text=''
+  limit=100
+  counter=0
+  context={}
+  allhosts=[]#all the hosts provided as input
+  hostpresent=[]#hosts that are currently in the loop of grp of 100 and are present in CS and are present in cs
+  allhostpresent=[]##all the hosts that are currently present in CS
+  hostnotpresent=[]# hosts that are not found on CS
+  file_info = {}  # type: dict
+  try:
+  # if True:
+      file_info = demisto.getFilePath(entryID)
+      file_path = file_info['path']
+      with open(file_path) as openfileobject:
+          # lines = openfileobject.read().splitlines()
+
+          for line in openfileobject:
+              counter+=1
+              text=text+line
+              if counter==limit:
+                  if text.endswith('\n'):
+                      text=text[:-1]
+                  textlist=text.split('\n')
+                  allhosts+=textlist
+                  ids=text.replace('\n',',')
+                  # print(ids)
+                  res = demisto.executeCommand("cs-falcon-search-device", {'hostname':ids,'using':'CrowdstrikeFalcon_instance_1'})[0]['Contents']
+                  if res:
+                      for i in res['resources']:
+                          hostpresent.append(i['hostname'])
+                      allhostpresent+=hostpresent
+                      idspresent=",".join(hostpresent)
+                  counter=0
+                  text=''
+                  hostpresent=[]
+          if text:
+              if text.endswith('\n'):
+                  text=text[:-1]
+              textlist=text.split('\n')
+              allhosts+=textlist
+              ids=text.replace('\n',',')
+              # print(ids)
+              res = demisto.executeCommand("cs-falcon-search-device", {'hostname':ids,'using':'CrowdstrikeFalcon_instance_1'})[0]['Contents']
+              if res:
+                  for i in res['resources']:
+                      # print(i)
+                      hostpresent.append(i['hostname'])
+                  allhostpresent+=hostpresent
+                  if len(hostpresent)>1:
+                      idspresent=",".join(hostpresent)
+                  else:
+                      idspresent=hostpresent[0]
+
+          hostnotpresent=list(set(allhosts) - set(allhostpresent))
+
+          demisto.setContext('HostsNotFound',hostnotpresent)
+
+
+  except Exception as e:
+      return_error('Failed to get the file path for entry: {} the error message was {}'.format(entryID, str(e)))
+scripttarget: 0
+subtype: python3
+tags: []
+timeout: 7.2µs
+type: python
