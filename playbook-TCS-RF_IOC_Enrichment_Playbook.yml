@@ -1,0 +1,682 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 784fd3fb-33bb-4406-80f4-e13e8b0cf265
+inputs:
+- description: ""
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: IP
+      root: ExtractedIndicators
+      transformers:
+      - operator: uniq
+- description: ""
+  key: Domain
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: Domain_Test_
+      root: ExtractedIndicators
+- description: ""
+  key: Hash
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: File
+      root: ExtractedIndicators
+name: TCS-RF IOC Enrichment Playbook
+outputs:
+- contextPath: ExtractedIndicators.IP
+  description: IP address
+- contextPath: DBotScore
+  description: DBot Score
+  type: unknown
+- contextPath: ExtractedIndicators.Domain
+  description: Domain
+- contextPath: ExtractedIndicators.File
+  description: Hash
+  type: unknown
+sourceplaybookid: 08c3b260-77a7-4316-8c5d-802cc55f4e22
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1dd06363-5dd0-41d8-8a95-71d47bb08f53
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 1dd06363-5dd0-41d8-8a95-71d47bb08f53
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 450
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4bbb32c0-6284-41f8-8971-25df5e0686d1
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 4bbb32c0-6284-41f8-8971-25df5e0686d1
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 300,
+          "y": 1940
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.IP
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "34"
+      "yes":
+      - "11"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: d4c03a53-acc0-4a7f-86dd-1ee12eb74651
+      iscommand: false
+      name: Are there any IP addresses ?
+      type: condition
+      version: -1
+    taskid: d4c03a53-acc0-4a7f-86dd-1ee12eb74651
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 860
+        }
+      }
+  "10":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: brand
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Recorded Future
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if there is an active instance of the ThreatCrowd integration
+        enabled.
+      id: d4d65c0e-27ed-4cbc-8a3c-bce9b52cf9db
+      iscommand: false
+      name: Is Recorded Future enabled?
+      type: condition
+      version: -1
+    taskid: d4d65c0e-27ed-4cbc-8a3c-bce9b52cf9db
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 640
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "46"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        simple: ${inputs.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with an IP address.
+      id: 3236bdf8-070a-4096-8003-71d567fc63ad
+      iscommand: true
+      name: Get IP Report From Recorded Future
+      script: Recorded Future v2|||ip
+      type: regular
+      version: -1
+    taskid: 3236bdf8-070a-4096-8003-71d567fc63ad
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1075
+        }
+      }
+  "34":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.Domain
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "38"
+      "yes":
+      - "36"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: c5d3d994-8b40-4d1c-8b0a-551c9718f6a0
+      iscommand: false
+      name: Are there any Domains ?
+      type: condition
+      version: -1
+    taskid: c5d3d994-8b40-4d1c-8b0a-551c9718f6a0
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 620
+        }
+      }
+  "36":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "41"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domain:
+        simple: ${inputs.Domain}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with a domain.
+      id: 24b1c08f-5b6d-45dc-8f52-5c6b23cd3fbb
+      iscommand: true
+      name: Get Domain Report From Recorded Future
+      script: Recorded Future v2|||domain
+      type: regular
+      version: -1
+    taskid: 24b1c08f-5b6d-45dc-8f52-5c6b23cd3fbb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 790
+        }
+      }
+  "38":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.Hash
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "39"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: a3fdf193-b3ca-465b-87b3-ff573dfdea84
+      iscommand: false
+      name: Are there any Hash Values ?
+      type: condition
+      version: -1
+    taskid: a3fdf193-b3ca-465b-87b3-ff573dfdea84
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 1270
+        }
+      }
+  "39":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      file:
+        simple: ${inputs.Hash}
+      long:
+        simple: "true"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with a file.
+      id: ccac8f8f-c0cf-453f-8735-93102620851a
+      iscommand: true
+      name: Get Hash Report From Recorded Future
+      script: Recorded Future v2|||file
+      type: regular
+      version: -1
+    taskid: ccac8f8f-c0cf-453f-8735-93102620851a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 1445
+        }
+      }
+  "41":
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "44"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      csvArray:
+        simple: ${RecordedFuture.Domain}
+      fileName:
+        simple: Domain_riskScore.csv
+      headers:
+        simple: name,riskScore
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Export given array to csv file
+      id: 43ef733d-737c-463c-8182-6947c67e6f47
+      iscommand: false
+      name: Export csv report
+      script: ExportToCSV
+      type: regular
+      version: -1
+    taskid: 43ef733d-737c-463c-8182-6947c67e6f47
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 945
+        }
+      }
+  "42":
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "45"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      csvArray:
+        simple: ${RecordedFuture.File}
+      fileName:
+        simple: Hash_riskScore.csv
+      headers:
+        simple: name,riskScore
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Export given array to csv file
+      id: 90a0937a-3e1f-4564-85c8-9b7bb0d9ab89
+      iscommand: false
+      name: Export csv report
+      script: ExportToCSV
+      type: regular
+      version: -1
+    taskid: 90a0937a-3e1f-4564-85c8-9b7bb0d9ab89
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 1600
+        }
+      }
+  "44":
+    continueonerrortype: ""
+    id: "44"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "38"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${.=val.File.filter(function(f){return f.EntryID;}).reduce(function(acc,
+          f) {return f;}, null).EntryID}
+      attachNames:
+        simple: Domain_riskScore.csv
+      htmlBody:
+        simple: |-
+          <p>Dear Team,</p>
+          <p>Please find attached IOC Score.</p>
+          <p></p>
+          <div>Thanks &amp; Regards,</div>
+          <div>CSOC Cyber AutoBot</div>
+      subject:
+        simple: Domain Risk score
+      to:
+        simple: v.ghule@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Send an email
+      id: 8a0407d8-98c8-4e5e-8560-a86c458d9431
+      iscommand: true
+      name: Send mail
+      script: '|||send-mail'
+      type: regular
+      version: -1
+    taskid: 8a0407d8-98c8-4e5e-8560-a86c458d9431
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 1100
+        }
+      }
+  "45":
+    continueonerrortype: ""
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${.=val.File.filter(function(f){return f.EntryID;}).reduce(function(acc,
+          f) {return f;}, null).EntryID}
+      attachNames:
+        simple: Hash_riskScore.csv
+      htmlBody:
+        simple: |-
+          <p>Dear Team,</p>
+          <p>Please find attached IOC Score.</p>
+          <p></p>
+          <div>Thanks &amp; Regards,</div>
+          <div>CSOC Cyber AutoBot</div>
+      subject:
+        simple: Hash Risk Score
+      to:
+        simple: v.ghule@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Send an email
+      id: 890e611b-a280-4a8d-85db-f9679eac648e
+      iscommand: true
+      name: Send mail
+      script: '|||send-mail'
+      type: regular
+      version: -1
+    taskid: 890e611b-a280-4a8d-85db-f9679eac648e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 630,
+          "y": 1750
+        }
+      }
+  "46":
+    continueonerrortype: ""
+    id: "46"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "47"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      csvArray:
+        simple: ${RecordedFuture.IP}
+      fileName:
+        simple: IP_RiskScore.csv
+      headers:
+        simple: name,riskScore
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Export given array to csv file
+      id: 10373aa6-a513-46f4-8929-4a0853af1daa
+      iscommand: false
+      name: Export CSV Report
+      script: ExportToCSV
+      type: regular
+      version: -1
+    taskid: 10373aa6-a513-46f4-8929-4a0853af1daa
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1270
+        }
+      }
+  "47":
+    continueonerrortype: ""
+    id: "47"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${File.EntryID}
+      attachNames:
+        simple: IP_RiskScore.csv
+      htmlBody:
+        simple: |-
+          <p>Dear Team,</p>
+          <p>Please find attached IOC Score.</p>
+          <p></p>
+          <div>Thanks &amp; Regards,</div>
+          <div>CSOC Cyber AutoBot</div>
+      subject:
+        simple: IP Risk Score
+      to:
+        simple: v.ghule@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Send an email
+      id: 8afbdbfb-14b0-4651-83a3-4009f4d23135
+      iscommand: true
+      name: 'Send mail '
+      script: '|||send-mail'
+      type: regular
+      version: -1
+    taskid: 8afbdbfb-14b0-4651-83a3-4009f4d23135
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1445
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1555,
+        "width": 960,
+        "x": 50,
+        "y": 450
+      }
+    }
+  }
