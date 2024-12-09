@@ -1,0 +1,853 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 8ecfbb09-5e4c-4a64-8416-5fbee98831c8
+inputs:
+- description: How much time to wait before a timeout occurs (minutes)
+  key: timeout
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "600"
+- description: Polling frequency - how often the polling command should run (minutes)
+  key: interval
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "1"
+- description: The query expressions in AQL
+  key: query_expression
+  playbookInputQuery: null
+  required: true
+  value: {}
+- description: Range of results to return (e.g. 0-20)
+  key: range
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Table headers
+  key: headers
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: TCS-Stacked Blocked Intrusion on WAF v1.0_KK
+outputs:
+- contextPath: QRadar.Search.Result
+  description: The result of the search.
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8c54dd40-5724-4c37-8998-0eb8104fb59b
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 8c54dd40-5724-4c37-8998-0eb8104fb59b
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 442.5,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query_expression:
+        simple: select CATEGORYNAME(category) AS Lowcategory,LONG(SUM(eventcount))
+          AS eventcount from events where (ActualAction='blocked' AND deviceGroupList='100787'
+          AND processorID in ('159', '246')) AND NETWORKNAME(sourceip) != 'VA_Scanners'
+          GROUP BY Lowcategory ORDER BY eventcount DESC last 24 HOURS
+      using:
+        simple: QRadar v3_Typosquat Offences
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Creates a new asynchronous Ariel search. Returns the search ID.
+        Search status and results can be polled by sending the search ID to the 'qradar-search-status-get'
+        and 'qradar-search-results-get' commands. Accepts SELECT query expressions
+        only.
+      id: 5b5dc5f6-8912-4fb6-804e-21b14862bced
+      iscommand: true
+      name: qradar-searches Stack Count
+      script: QRadar v3|||qradar-search-create
+      type: regular
+      version: -1
+    taskid: 5b5dc5f6-8912-4fb6-804e-21b14862bced
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 442.5,
+          "y": 190
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      headers:
+        simple: ${inputs.headers}
+      search_id:
+        simple: ${QRadar.Search.ID}
+      using:
+        simple: QRadar_v2_Autoclosure_of_phishing_offenses
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Gets search object to initialize polling playbook
+      id: bf0c39e7-b691-4cb2-8341-ca48eed824c8
+      iscommand: true
+      name: qradar-get-search
+      script: '|||qradar-get-search'
+      type: regular
+      version: -1
+    taskid: bf0c39e7-b691-4cb2-8341-ca48eed824c8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 442.5,
+          "y": 400
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: QRadar.Search.Status
+          operator: isEqualString
+          right:
+            value:
+              simple: COMPLETED
+      label: "yes"
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether the search is completed
+      id: 0ef000f2-bef0-41dc-863c-c436d48e2c81
+      iscommand: false
+      name: Is search completed?
+      type: condition
+      version: -1
+    taskid: 0ef000f2-bef0-41dc-863c-c436d48e2c81
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 442.5,
+          "y": 575
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      AdditionalPollingCommandArgNames:
+        simple: using
+      AdditionalPollingCommandArgValues:
+        simple: QRadar v3_Typosquat Offences
+      Ids:
+        simple: ${QRadar.Search.ID}
+      Interval:
+        simple: ${inputs.interval}
+      PollingCommandArgName:
+        simple: search_id
+      PollingCommandName:
+        simple: qradar-get-search
+      Timeout:
+        simple: ${inputs.timeout}
+      dt:
+        simple: QRadar.Search(val.Status!=='COMPLETED' ).ID
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Use this playbook as a sub-playbook to block execution of the master playbook until a remote action is complete.
+        This playbook implements polling by continuously running the command in Step \#2 until the operation completes.
+        The remote action should have the following structure:
+
+        1. Initiate the operation.
+        2. Poll to check if the operation completed.
+        3. (optional) Get the results of the operation.
+      id: 84f3249c-c636-4223-8468-16d0034bf440
+      iscommand: false
+      name: GenericPolling
+      playbookId: GenericPolling
+      type: playbook
+      version: -1
+    taskid: 84f3249c-c636-4223-8468-16d0034bf440
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 100,
+          "y": 760
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      headers:
+        simple: ${inputs.headers}
+      range:
+        simple: ${inputs.range}
+      search_id:
+        simple: ${QRadar.Search.ID}
+      using:
+        simple: QRadar_v2_Autoclosure_of_phishing_offenses
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: executes qradar-get-search-results to get the search results
+      id: 81456e8d-6a47-4eba-87c9-4a9351f64078
+      iscommand: true
+      name: qradar-get-search-results
+      script: '|||qradar-get-search-results'
+      type: regular
+      version: -1
+    taskid: 81456e8d-6a47-4eba-87c9-4a9351f64078
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 442.5,
+          "y": 955
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      counts:
+        simple: ${QRadar.Search.Result}
+      stackListName:
+        simple: WAFStackList
+      subCounts:
+        simple: ${subplaybook-1.QRadar.Search.Result}
+      totalCount:
+        simple: ${QRadar.Search.Result.events.EventCount}
+      totalList:
+        simple: WAFIOCTimeline
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 86f67705-e15f-4eb2-80d0-8ef07b30c9dc
+      iscommand: false
+      name: Update List
+      script: a72fa6bd-c1b9-44f6-82db-d2f6b43161dc
+      type: regular
+      version: -1
+    taskid: 86f67705-e15f-4eb2-80d0-8ef07b30c9dc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1310
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: QRadar.Search.Result
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "9"
+      "yes":
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ef2ea9e7-1dcb-49bf-81e8-0732eedf1992
+      iscommand: false
+      name: Are results fetched?
+      type: condition
+      version: -1
+    taskid: ef2ea9e7-1dcb-49bf-81e8-0732eedf1992
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 442.5,
+          "y": 1110
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      counts:
+        simple: "0"
+      stackListName:
+        simple: WAFStackList
+      subCounts:
+        simple: ${subplaybook-1.QRadar.Search.Result}
+      totalCount:
+        simple: ${QRadar.Search.Result.events.EventCount}
+      totalList:
+        simple: WAFIOCTimeline
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 72e83bcb-aafb-4a08-8202-abad7478cd44
+      iscommand: false
+      name: Update List with 0 count
+      script: a72fa6bd-c1b9-44f6-82db-d2f6b43161dc
+      type: regular
+      version: -1
+    taskid: 72e83bcb-aafb-4a08-8202-abad7478cd44
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 680,
+          "y": 1310
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      list:
+        simple: WAFIOCTimeline
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: cb4493ea-6a24-49e9-85c7-49d332895ebd
+      iscommand: false
+      name: Calculate and Set Context for Threshold Value
+      script: 914ac02b-da5c-48fa-880d-103752aeaa92
+      type: regular
+      version: -1
+    taskid: cb4493ea-6a24-49e9-85c7-49d332895ebd
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -70,
+          "y": 1780
+        }
+      }
+  "12":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: EventSum
+          operator: greaterThan
+          right:
+            iscontext: true
+            value:
+              simple: Threshold
+      label: "yes"
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "14"
+      "yes":
+      - "13"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b227946e-bf9b-414c-861c-08a9774886f9
+      iscommand: false
+      name: Is Threshold Exceeded?
+      type: condition
+      version: -1
+    taskid: b227946e-bf9b-414c-861c-08a9774886f9
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -70,
+          "y": 1980
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: "Hello,\n\nWAF Inbound Threats Mitigated events count for ${Date}
+          is ${QRadar.Search.Result.events.EventCount}, which has crossed the threshold
+          limit - ${Threshold}. \nTotal events - ${EventSum}\nKindly investigate further.\n\nRegards,\nCSOC
+          Cyber AutoBot"
+      cc:
+        simple: kunal.krushev@tcs.com,yogesh.gholap@tcs.com,rupesh.sane@tcs.com,badrinath.sivakumar@tcs.com,deepak.ghanwat@tcs.com
+      subject:
+        simple: WAF Inbound Threats Mitigated - Threshold limit exceeded
+      to:
+        simple: vaithilingam.arumugam@tcs.com,prashant.matle@tcs.com,samadhan.pardeshi@tcs.com,gayathri.pulla@tcs.com
+      using:
+        simple: EWS Mail Sender_Autobot
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: b9101101-3f06-4705-8f4f-a4547e8a61aa
+      iscommand: true
+      name: Send email notification to Leads
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: b9101101-3f06-4705-8f4f-a4547e8a61aa
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 330,
+          "y": 2180
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 493e5091-967e-479e-8996-d8fdd895ca54
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 493e5091-967e-479e-8996-d8fdd895ca54
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 680,
+          "y": 2520
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Playbook is done
+      id: 571cce7d-18dc-4fbf-85df-cb08ab6b00f2
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 571cce7d-18dc-4fbf-85df-cb08ab6b00f2
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 680,
+          "y": 2680
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: |-
+          Hello,
+
+          No results were found for WAF Inbound Threats Mitigated for ${Date}.
+
+          Regards,
+          CSOC Cyber AutoBot
+      cc:
+        simple: kunal.krushev@tcs.com,yogesh.gholap@tcs.com,rupesh.sane@tcs.com,nimisha.prajapati@tcs.com,Shahnawaz.Kohati@tcs.com
+      subject:
+        simple: WAF Inbound Threats Mitigated - No results found
+      to:
+        simple: vaithilingam.arumugam@tcs.com,gayathri.pulla@tcs.com,samadhan.pardeshi@tcs.com
+      using:
+        simple: EWS Mail Sender_Autobot
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: 6b3e5bb3-b388-4a00-81e4-a5f8c12c9324
+      iscommand: true
+      name: Send email notification to Leads
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: 6b3e5bb3-b388-4a00-81e4-a5f8c12c9324
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 680,
+          "y": 1520
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      name:
+        simple: WAF Threshold Breached - ${Date}
+      qradardescription:
+        simple: ${QRadar.Search.Result}
+      thresholdvalue:
+        complex:
+          root: Threshold
+      trendeventsum:
+        simple: ${EventSum}
+      type:
+        simple: Threshold Breach Investigation
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.create.inc
+      id: 2ad49fc6-2c3b-4470-81ee-4a8eacdee497
+      iscommand: true
+      name: Trigger New Incident For Investigation
+      script: Builtin|||createNewIncident
+      type: regular
+      version: -1
+    taskid: 2ad49fc6-2c3b-4470-81ee-4a8eacdee497
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 330,
+          "y": 2330
+        }
+      }
+  "18":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Day
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: saturday
+        - left:
+            iscontext: true
+            value:
+              complex:
+                root: Day
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: sunday
+      label: "yes"
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "10"
+      "yes":
+      - "20"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 135715ed-526b-4c34-8801-bc679ee32810
+      iscommand: false
+      name: Is It Weekend?
+      type: condition
+      version: -1
+    taskid: 135715ed-526b-4c34-8801-bc679ee32810
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1510
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Threshold
+      value:
+        simple: "101000"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: fed05d81-7250-43f2-86ba-f2cbb4562dc6
+      iscommand: false
+      name: Set Threshold Value for Weekends in Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: fed05d81-7250-43f2-86ba-f2cbb4562dc6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 1780
+        }
+      }
+  "21":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: EventSum
+          operator: greaterThan
+          right:
+            iscontext: true
+            value:
+              simple: Threshold
+      label: "yes"
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "14"
+      "yes":
+      - "13"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 65698a72-7a9c-4b0f-819b-aa9ddc03c593
+      iscommand: false
+      name: Is EventSum Exceeding Weekend Threshold?
+      type: condition
+      version: -1
+    taskid: 65698a72-7a9c-4b0f-819b-aa9ddc03c593
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 1970
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "12_14_#default#": 0.25,
+      "21_13_yes": 0.43
+    },
+    "paper": {
+      "dimensions": {
+        "height": 2695,
+        "width": 1130,
+        "x": -70,
+        "y": 50
+      }
+    }
+  }
