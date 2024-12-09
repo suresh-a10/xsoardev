@@ -1,0 +1,463 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+hidden: true
+id: de9df75a-a6ae-491a-8d13-d39456c63434
+inputs: []
+name: TCS-Attivo MITM Alert playbook
+outputs:
+- contextPath: Hostname
+  type: string
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2709bf75-5e1e-4384-8626-11741842232f
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 2709bf75-5e1e-4384-8626-11741842232f
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 790,
+          "y": 70
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      hostname:
+        simple: ${incident.destinationhostname}
+      using:
+        simple: CrowdstrikeFalcon_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Searches for a device that matches the query.
+      id: 72e47627-2fe4-4b27-8965-aa7713aa2f08
+      iscommand: true
+      name: search device
+      script: CrowdstrikeFalcon|||cs-falcon-search-device
+      type: regular
+      version: -1
+    taskid: 72e47627-2fe4-4b27-8965-aa7713aa2f08
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 790,
+          "y": 210
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      dateFormat:
+        simple: UTC
+      daysAgo:
+        simple: "2"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        Retrieves the current date and time.
+      id: d134f172-8d79-4734-827f-57b672fe0703
+      iscommand: false
+      name: GetTime 2 days ago
+      script: GetTime
+      type: regular
+      version: -1
+    taskid: d134f172-8d79-4734-827f-57b672fe0703
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 460,
+          "y": 550
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: FirstSeen
+                root: CrowdStrike.Device
+                transformers:
+                - args:
+                    add_utc_timezone: {}
+                    dayfirst: {}
+                    fuzzy: {}
+                    yearfirst: {}
+                  operator: DateStringToISOFormat
+          operator: isBefore
+          right:
+            iscontext: true
+            value:
+              complex:
+                root: TimeNow
+                transformers:
+                - args:
+                    add_utc_timezone: {}
+                    dayfirst: {}
+                    fuzzy: {}
+                    yearfirst: {}
+                  operator: DateStringToISOFormat
+                - args:
+                    delimiter:
+                      value:
+                        simple: T
+                    fields:
+                      value:
+                        simple: "1"
+                  operator: Cut
+                - args:
+                    prefix: {}
+                    suffix:
+                      value:
+                        simple: T00:00:00+00:00
+                  operator: concat
+      label: "yes"
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "10"
+      "yes":
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f391c607-3a0f-41ee-8be2-f4a361ad456a
+      iscommand: false
+      name: Was the first seen greater than 2 days
+      type: condition
+      version: -1
+    taskid: f391c607-3a0f-41ee-8be2-f4a361ad456a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 470,
+          "y": 700
+        }
+      }
+  "4":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: CrowdStrike.Device.Hostname
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if a given value exists in the context. Will return 'no'
+        for empty empty arrays. To be used mostly with DQ and selectors.
+      id: b6a2e406-fc83-4301-8c8f-d8590966c7d4
+      iscommand: false
+      name: If host has crowdstrike ?
+      type: condition
+      version: -1
+    taskid: b6a2e406-fc83-4301-8c8f-d8590966c7d4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 790,
+          "y": 370
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: "Hi Team , \n\nHost is not available on CS . Please proceed with the
+          investigation ."
+      subject:
+        simple: Attivo MITM Alert need Attention
+      to:
+        simple: sonam.bhandari@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 4838bbb2-b36b-4fee-8e7f-b833fa71f949
+      iscommand: true
+      name: Inform Analyst that host is not under CS survillence
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 4838bbb2-b36b-4fee-8e7f-b833fa71f949
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 990,
+          "y": 550
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: a8cd2023-39cc-408c-8de8-22841fbc2654
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: a8cd2023-39cc-408c-8de8-22841fbc2654
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 990,
+          "y": 1270
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 22cee18a-f3e8-416d-898b-83becdf1844c
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 22cee18a-f3e8-416d-898b-83becdf1844c
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 990,
+          "y": 1125
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c4e09c7e-b919-4560-8eef-4e62cec0897d
+      iscommand: false
+      name: The End
+      type: title
+      version: -1
+    taskid: c4e09c7e-b919-4560-8eef-4e62cec0897d
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 990,
+          "y": 1460
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: "Hi Team , \n\nHost is not available on CS . Please proceed with the
+          investigation ."
+      subject:
+        simple: 'True positive '
+      to:
+        simple: sonam.bhandari@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 16b5c0ff-6008-4598-8e1f-a76c2fac8837
+      iscommand: true
+      name: Inform Analyst that host is suspicious , need to investigate
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 16b5c0ff-6008-4598-8e1f-a76c2fac8837
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 690,
+          "y": 880
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: "Hi Team , \n\nHost is not available on CS . Please proceed with the
+          investigation ."
+      subject:
+        simple: falsepositive
+      to:
+        simple: sonam.bhandari@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: b90fa19f-c4b2-4ef1-88b5-46b26aa7dce6
+      iscommand: true
+      name: falsepositive
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: b90fa19f-c4b2-4ef1-88b5-46b26aa7dce6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 180,
+          "y": 880
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1455,
+        "width": 1190,
+        "x": 180,
+        "y": 70
+      }
+    }
+  }
