@@ -1,0 +1,857 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+hidden: true
+id: f4971a66-b8b3-42b9-8999-ff353c2f730c
+inputs: []
+name: TCS-Typosquat Response v1.0
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e3205cb7-ce9e-4759-8302-6b7f0f155b40
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: e3205cb7-ce9e-4759-8302-6b7f0f155b40
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      text:
+        simple: ${incident.labels.Email/subject}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 46f5d8ee-23f8-477c-8e47-62b19687f1ad
+      iscommand: true
+      name: Extract Domain Indicators From Mail Subject
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 46f5d8ee-23f8-477c-8e47-62b19687f1ad
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 195
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entity:
+        simple: ${ExtractedIndicators.Domain_Test_}
+      entity_type:
+        simple: domain
+      fetch_related_entities:
+        simple: "yes"
+      fetch_riskyCIDRips:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets threat intelligence data for an IP address, domain, CVE, URL,
+        or file.
+      id: c1153a12-7491-48dd-833c-5e7cc64e15ea
+      iscommand: true
+      name: Get Recorded Future Intelligence Report
+      script: Recorded Future v2|||recordedfuture-intelligence
+      type: regular
+      version: -1
+    taskid: c1153a12-7491-48dd-833c-5e7cc64e15ea
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "3":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      detailed:
+        simple: "true"
+      domain:
+        simple: ${ExtractedIndicators.Domain_Test_}
+      fullResponse:
+        simple: "true"
+      long:
+        simple: "true"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cisco Umbrella Investigate
+      description: Get Domain Reputation info using Cisco Umbrella Investigate. Domain
+        reputation score is either true or false from the service and cannot be modified
+        using a threshold.
+      id: c628c15d-2ca6-43db-8090-5a3c66b9505c
+      iscommand: true
+      name: Get Whois Information
+      script: Cisco Umbrella Investigate|||domain
+      type: regular
+      version: -1
+    taskid: c628c15d-2ca6-43db-8090-5a3c66b9505c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 545
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      incidentId:
+        simple: ${incident.id}
+      name:
+        simple: IOC Threat Intel
+      type:
+        simple: pdf
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        A script to generate investigation summary report in an automated way
+        Can be used in post-processing flow as well.
+      id: 39ee7109-2354-4fff-8d54-48c3b323e2cc
+      iscommand: false
+      name: Generate Investigation Report
+      script: GenerateInvestigationSummaryReport
+      type: regular
+      version: -1
+    taskid: 39ee7109-2354-4fff-8d54-48c3b323e2cc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1595
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${InfoFile.EntryID}
+      cc:
+        simple: kunal.krushev@tcs.com, yogesh.gholap@tcs.com,CyberAutoBotGrp@tcscomprod.onmicrosoft.com
+      htmlBody:
+        simple: |+
+          <p>Hello Human</p>
+          <p>PFB the Recorded Future Typosquat alert. Also attached is my investigation report.Please review and take necessary action. </p>
+          <p>I have also blocked the following domain(s) on proxy</p>
+          <p>Domain: ${ExtractedIndicators.Domain_Test_}</p>
+
+          <p>---------------------------------------------------------------------------------------------</p>
+          ${incident.labels.Email/html}
+          <p>---------------------------------------------------------------------------------------------</p>
+
+          <p>Regards,</p>
+          <p>Cyber AutoBot</p>
+
+      subject:
+        simple: Recorded Future - ${incident.labels.Email/subject}
+      to:
+        simple: internalis.cybersecurityops@tcs.com,internalis.cybersecurity@tcs.com,
+      using:
+        simple: Mail Sender_instance_AutoBot
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: cb35f980-13f5-4423-864f-374ea6a25125
+      iscommand: true
+      name: Share Report With CSOC Team
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: cb35f980-13f5-4423-864f-374ea6a25125
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 2090
+        }
+      }
+  "6":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Domain.Registrant.Name
+          operator: containsString
+          right:
+            value:
+              simple: TCS
+        - left:
+            iscontext: true
+            value:
+              simple: Domain.Registrant.Name
+          operator: containsString
+          right:
+            value:
+              simple: Tata Consultancy Services
+        - left:
+            iscontext: true
+            value:
+              simple: Domain.Registrant.Name
+          operator: containsString
+          right:
+            value:
+              simple: Tata
+      label: "yes"
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "9"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 027e34e8-9615-4757-8715-c09f8aba3c52
+      iscommand: false
+      name: Is There  A TCS Domain
+      type: condition
+      version: -1
+    taskid: 027e34e8-9615-4757-8715-c09f8aba3c52
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 720
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: TCSDomain
+      value:
+        complex:
+          accessor: Name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: Domain.Registrant.Name
+              operator: containsString
+              right:
+                value:
+                  simple: TCS
+            - left:
+                iscontext: true
+                value:
+                  simple: Domain.Registrant.Name
+              operator: containsString
+              right:
+                value:
+                  simple: Tata Consultancy Services
+            - left:
+                iscontext: true
+                value:
+                  simple: Domain.Registrant.Name
+              operator: containsString
+              right:
+                value:
+                  simple: Tata
+          root: Domain
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 09ada275-a7af-4470-877b-59ad8621956b
+      iscommand: false
+      name: Set TCS Domain To Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 09ada275-a7af-4470-877b-59ad8621956b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 895
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      left:
+        complex:
+          accessor: Domain_Test_
+          root: ExtractedIndicators
+          transformers:
+          - operator: toLowerCase
+      right:
+        complex:
+          root: TCSDomain
+          transformers:
+          - operator: toLowerCase
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Compare  two lists and put the differences in context.
+      id: 755582df-c662-4d78-82ff-a640f3e7bb23
+      iscommand: false
+      name: Compare The TCS Domain With The Extracted Domain and Set Difference To
+        Context
+      script: CompareLists
+      type: regular
+      version: -1
+    taskid: 755582df-c662-4d78-82ff-a640f3e7bb23
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1070
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      url:
+        complex:
+          accessor: Domain_Test_
+          root: ExtractedIndicators
+          transformers:
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds the specified URLs to the blacklist.
+      id: 28fa5c9c-8936-405a-85ee-e64325c82848
+      iscommand: true
+      name: Block Reported Typoquat Domain in Proxy
+      script: Zscaler|||zscaler-blacklist-url
+      type: regular
+      version: -1
+    taskid: 28fa5c9c-8936-405a-85ee-e64325c82848
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1070
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      url:
+        complex:
+          accessor: LeftOnly
+          root: ListCompare
+          transformers:
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds the specified URLs to the blacklist.
+      id: 0ff60d41-2d69-4243-81db-cc360a49e5f2
+      iscommand: true
+      name: Block Non TCS Typoquat Domain in Proxy
+      script: Zscaler|||zscaler-blacklist-url
+      type: regular
+      version: -1
+    taskid: 0ff60d41-2d69-4243-81db-cc360a49e5f2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1245
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 62ddce48-9374-417c-86b1-b2a0d3df3b83
+      iscommand: false
+      name: Notification
+      type: title
+      version: -1
+    taskid: 62ddce48-9374-417c-86b1-b2a0d3df3b83
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1770
+        }
+      }
+  "12":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: TCSDomain
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: TCSDomain
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      "yes":
+      - "13"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6a57de86-c61b-46e7-8c80-89ae07dbfe8c
+      iscommand: false
+      name: Any TCS Domains Found ?
+      type: condition
+      version: -1
+    taskid: 6a57de86-c61b-46e7-8c80-89ae07dbfe8c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1915
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${InfoFile.EntryID}
+      cc:
+        simple: kunal.krushev@tcs.com, yogesh.gholap@tcs.com,CyberAutoBotGrp@tcscomprod.onmicrosoft.com
+      htmlBody:
+        simple: |+
+          <p>Hello Human</p>
+          <p>PFB the Recorded Future Typosquat alert. Also attached is my investigation report. Please review and take necessary action. </p>
+          <p>From the reported domain(s) I've verified that the following are TCS registered domains.</p>
+          <p>Domain: ${TCSDomain}</p>
+          <p>I have also blocked the following domain(s) on proxy.</p>
+          <p>Domain: ${ListCompare.LeftOnly}</p>
+
+          <p>---------------------------------------------------------------------------------------------</p>
+          ${incident.labels.Email/html}
+          <p>---------------------------------------------------------------------------------------------</p>
+
+          <p>Regards,</p>
+          <p>Cyber AutoBot</p>
+
+      subject:
+        simple: Recorded Future - ${incident.labels.Email/subject}
+      to:
+        simple: internalis.cybersecurityops@tcs.com,internalis.cybersecurity@tcs.com,
+      using:
+        simple: Mail Sender_instance_AutoBot
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: ba08e1e0-9434-4c65-8f82-fbe39d7fa766
+      iscommand: true
+      name: Share Report With CSOC Team
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: ba08e1e0-9434-4c65-8f82-fbe39d7fa766
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 2090
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: fa0c5f69-8cb6-4e26-8ca9-2e18b8c51463
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: fa0c5f69-8cb6-4e26-8ca9-2e18b8c51463
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 2265
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7d8ce20f-8c91-45bf-8185-898e779aa099
+      iscommand: false
+      name: The End
+      type: title
+      version: -1
+    taskid: 7d8ce20f-8c91-45bf-8185-898e779aa099
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 2440
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: TCS_Typosquat_IOC
+      value:
+        complex:
+          accessor: LeftOnly
+          root: ListCompare
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Adds or updates a value in a reference set.
+      id: 71e6b4f8-5218-43bd-8dc7-7e650e9c5db1
+      iscommand: true
+      name: Set Qradar Typosquat Reference List
+      script: '|||qradar-update-reference-set-value'
+      type: regular
+      version: -1
+    taskid: 71e6b4f8-5218-43bd-8dc7-7e650e9c5db1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1420
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: TCS_Typosquat_IOC
+      value:
+        complex:
+          accessor: Domain_Test_
+          root: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Adds or updates a value in a reference set.
+      id: 491ff40a-d3d9-466f-83b3-81d0e8cffcd6
+      iscommand: true
+      name: Set Qradar Typosquat Reference List
+      script: '|||qradar-update-reference-set-value'
+      type: regular
+      version: -1
+    taskid: 491ff40a-d3d9-466f-83b3-81d0e8cffcd6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1420
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      reputation:
+        simple: Bad
+      tags:
+        simple: ProxyBlockDomain,rftyposquat
+      type:
+        simple: Domain
+      value:
+        complex:
+          accessor: Domain_Test_
+          root: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.new.indicator
+      id: a692aad9-ff48-4878-8e26-d107e4813f5e
+      iscommand: true
+      name: Create Typosquat Indicator
+      script: Builtin|||createNewIndicator
+      type: regular
+      version: -1
+    taskid: a692aad9-ff48-4878-8e26-d107e4813f5e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1240
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 2455,
+        "width": 810,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
