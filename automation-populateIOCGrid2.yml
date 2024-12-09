@@ -1,0 +1,55 @@
+commonfields:
+  id: ef6e0431-7078-4afd-8a8c-c32615ba3a1e
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.8.5.10455
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: populateIOCGrid2
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  context = demisto.context()
+  ipaddr = demisto.get(context,'ExtractedIndicators.IP')
+  domain = demisto.get(context,'ExtractedIndicators.Domain')
+  file = demisto.get(context,'ExtractedIndicators.File')
+  ip_score = demisto.get(context,'DBotScore.Score') #Need to modify this to fetch specific ip score
+  domain_score = demisto.get(context,'DBotScore.Score')#Need to modify this to fetch specific domain score
+  file_score = demisto.get(context,'DBotScore.Score')#Need to modify this to fetch specific file score
+  rf_ip_score = demisto.get(context,'RecordedFuture.IP.riskScore')
+  rf_domain_score = demisto.get(context,'RecordedFuture.Domain.riskScore')
+  rf_file_score = demisto.get(context,'RecordedFuture.File.riskScore')
+  cisco_ip_score = '' # Modify this by copying The Domain Cisco Score
+  cisco_domain_score_content = demisto.get(context,'Domain.Umbrella.ContentCategories')
+  cisco_domain_score_malware = demisto.get(context,'Domain.Umbrella.MalwareCategories')
+  cisco_domain_score = cisco_domain_score_content +','+ cisco_domain_score_malware
+  cisco_ip_score = '' # Modify this by copying The Domain Cisco Score
+  cisco_file_score = '' # Modify this by copying The Domain Cisco Score
+  af_ip_score = demisto.get(context,'AutoFocus.IP.LatestPanVerdicts.PAN_DB')
+  af_domain_score = demisto.get(context,'AutoFocus.Domain.LatestPanVerdicts.PAN_DB')
+  af_file_score = demisto.get(context,'AutoFocus.File.LatestPanVerdicts.PAN_DB')
+  abuse_ip_score = demisto.get(context,'AbuseIPDB.IP.AbuseConfidenceScore')
+  abuse_domain_score = demisto.get(context,'')# Modify this by copying The ip abuse Score
+  abuse_file_score = demisto.get(context,'')# Modify this by copying The ip abuse Score
+
+  grid = []
+  grid.append({'Indicator':ipaddr,'Dbot Score':ip_score, 'Recorded Future Score':rf_ip_score,'Cisco Umbrella Verdict':cisco_ip_score,'Auto Focus Verdict':af_ip_score,'AbuseIPDB Score':abuse_ip_score})
+  grid.append({'Indicator':domain,'Dbot Score':domain_score, 'Recorded Future Score':rf_domain_score,'Cisco Umbrella Verdict':cisco_domain_score,'Auto Focus Verdict':af_domain_score,'AbuseIPDB Score':abuse_domain_score})
+  grid.append({'Indicator':file,'Dbot Score':file_score, 'Recorded Future Score':rf_file_score,'Cisco Umbrella Verdict':cisco_file_score,'Auto Focus Verdict':af_file_score,'AbuseIPDB Score':abuse_file_score})
+  demisto.executeCommand('setIncident', {'IOC Vendor Verdict':grid}) # Change to the name of the grid
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
