@@ -1,0 +1,167 @@
+args:
+- name: enterpriseID
+- name: domainID
+- name: adminID
+commonfields:
+  id: c546c540-b64f-4b16-8bdd-5bd8370ec5c2
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: localhost/demisto/custompandas:latest
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: AllDomainGroup_Aman2_WIP
+outputs:
+- contextPath: Results
+  description: The result shows if there is any username found that is not part of
+    all domain group member sheet
+  type: string
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  import pandas as pd
+
+  import re
+
+  #alldomaindata=["1054420", "1213596", "1011956", "1131935", "1390573", "270558", "184005", "1011956", "1054420", "1066236", "1066241", "1100277", "1104184", "1131935", "1133098", "1213596", "1272698", "1317367", "1319016", "1390573", "1627603", "1631912", "1685759", "1687963", "1735026", "1838071", "1838314", "1838517", "1838543", "1857613","2006233", "2011140", "2011882", "2016282", "2021992", "2022129", "2124422", "476496", "477020", '479551', "480923", "1083622", '1542627', "1542629", "1542897", "1614345", "1615086", "1620372", "1632132", "1685939", "1838085", "1838552", "1839063", "2030587", "2044922", "2052303", "2088076", "246664", "374315", "473563", "477696", "481056", "481228", "482617", "867270", "879640", "1685759", "1066236", "2011140", "1857613", "477020", "1627603", "1838543", "2006233", "1687963", "1133098", '1319016',"1054420", "1735026", "1838517", "1838314", "1100277", "1272698", "1838071", "1631912", "2022129", "1131935", "1104184", "1066241", "1011956", "1131935", "1390573", "1317367", "480923", "1735176", "1735202", "479551", "476496", "2021992", "2011882","da.india","sa01.lapsadmpwd","sa.cyberark","sa.winteloperations","sa.iammigrator","Domain Admins","sa.glmigrator","da.ultimatix","Sa.msgupgrade","DX.Appsroot","da.apac","sa.cyberarkapac","da.extbod","DI.Intappsroot","sa.cyberark","da.emea","sa.cyberarkemea","tatabdadmin","da.noam","sa.cyberarknoam","Administrator","ea.adcm","da.soam","sa.cyberarksoam","glbbpscyberarkdg","TCSPresident","sa.cyberarktcsacc","sa03.aadconnect","Enterprise Admins"]
+
+  alldomaindata=json.loads(demisto.executeCommand('getList', {'listName':"AllDomainGroupMemberList"})[0]['Contents'])
+  print(alldomaindata)
+  print(type(alldomaindata))
+  alldomaindata=[X.lower().strip() for X in alldomaindata]
+
+
+
+  #Members
+
+  args=demisto.args()
+  enterpriseID=args.get("enterpriseID")
+  domainID=args.get("domainID")
+  adminID=args.get("adminID")
+  #res=demisto.executeCommand("ParseExcel",{"entryId":entryid})
+
+  file_info1 = demisto.getFilePath(enterpriseID)
+  file_path1 = file_info1['path']
+  df1 = pd.read_csv(file_path1)
+
+  file_info2 = demisto.getFilePath(domainID)
+  file_path2 = file_info2['path']
+  df2 = pd.read_csv(file_path2)
+
+  file_info3 = demisto.getFilePath(adminID)
+  file_path3 = file_info3['path']
+  df3 = pd.read_csv(file_path3)
+
+
+  df1=df1.dropna()
+  df2=df2.dropna()
+  df3=df3.dropna()
+
+  entdata=df1['Members'].values.tolist()
+  domdata=df2['Members'].values.tolist()
+  addata=df3['Members'].values.tolist()
+
+  #print(alldomaindata)
+
+  def findAnomaly(data):
+      data=[X.lower().strip() for X in data]
+      data=list(set(data))
+      new=[]
+      for x in data:
+          temp=re.sub("^[^.]*.","",x)
+          if temp.isdigit():
+              new.append(temp)
+          else:
+              new.append(x)
+      #print(new)
+
+      notfound=[]
+      for e in new:
+          if e in alldomaindata:
+              pass
+          else:
+              notfound.append(e)
+
+      #print(notfound)
+      return notfound
+
+  result=""
+
+  entAno=findAnomaly(entdata)
+  if entAno:
+      result=f"Found the mentioned employee {entAno} in Enterprise data sheet which are not present in all domain group member sheet  \n".format(entAno=entAno)
+      #result=entAno
+     # print(entAno)
+
+  domAno=findAnomaly(domdata)
+  if domAno:
+      result+=f"Found the mentioned employee {domAno} in Domain data sheet which are not present in all domain group member sheet  \n".format(domAno=domAno)
+      #result+=domAno
+      #print(domAno)
+
+  adAno=findAnomaly(addata)
+  if adAno:
+      result+=f"Found the mentioned employee {adAno} in Administrators data sheet which are not present in all domain group member sheet  \n".format(adAno=adAno)
+      #result+=adAno
+      #print(adAno)
+
+  if len(entAno)==0 and len(domAno)==0 and len(adAno)==0:
+      result="No Discrepancy found in all the sheets."
+
+  print("The result of checkng is ",result)
+  demisto.setContext('Results',result)
+
+
+  # alldomaindata=list(map(str,alldomaindata))
+  # data=list(map(str,data))
+
+  # alldomaindata=map(lambda X:re.sub("^[^.]*.","",X),alldomaindata)
+  # print(list(alldomaindata))
+
+  # data=map(lambda X:re.sub("^[^.]*.","",X),data)
+  # print(list(data))
+
+
+
+
+
+  # #res=pd.read_excel(file_path,sheet_name=None)
+  # df1 = pd.read_excel(file_path, 'Enterprise Admins Grp Members')
+  # df2 = pd.read_excel(file_path, 'SCCM Admin Grp Members')
+  # df3 = pd.read_excel(file_path, 'Domain Admin Grp Members')
+  # df4 = pd.read_excel(file_path, 'Service Account-DA Grp Members')
+
+  # listofusername=[]
+  # df1=df1.dropna()
+  # df2=df2.dropna()
+  # df3=df3.dropna()
+  # df4=df4.dropna()
+
+
+  # #data=df1[["Employee #"]].values()+df2["Emp ID"].values()
+  # data=df1['Employee #'].values.tolist()
+
+  # print(type(data))
+
+  # #data=data+df2["Emp ID"].values.tolist()+df3["Employee #"].values.tolist()
+
+  # print(df4["Enterprise Admin"].values.tolist(),df4["Domain Admin"].values.tolist(),df4["Enterprise Admin"].values.tolist())
+
+
+  # print(df4.values.tolist())
+  # print(df4)
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
