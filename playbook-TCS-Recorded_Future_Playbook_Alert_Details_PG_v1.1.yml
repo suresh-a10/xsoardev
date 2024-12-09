@@ -1,0 +1,3852 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.5.0
+    itemVersion: 1.6.7
+    packID: ""
+    packName: Recorded Future Intelligence
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: A default playbook to fetch details of Playbook alert that does not yet
+  have mapping made by Recorded Future
+id: efda19ba-557e-4f8d-8b46-c455514100ea
+inputs: []
+name: TCS-Recorded Future Playbook Alert Details_PG_v1.1
+outputs: []
+sourceplaybookid: Recorded Future Playbook Alert Details
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Playbook Triggered
+      id: 0307cd0b-6d4d-4ab5-8cec-6ca8c748ee25
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 0307cd0b-6d4d-4ab5-8cec-6ca8c748ee25
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 500,
+          "y": -1420
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: true
+    quietmode: 0
+    scriptarguments:
+      id:
+        complex:
+          accessor: alertid
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Get detailed information from vulnerability, typosquat and credential
+        alerts.
+      id: f34e763d-e7f6-43ca-8309-93810f16fa5c
+      iscommand: true
+      name: 'Get Alerts Details from Recorded Future '
+      script: Recorded Future v2|||recordedfuture-single-alert
+      tags:
+      - alertdetails
+      type: regular
+      version: -1
+    taskid: f34e763d-e7f6-43ca-8309-93810f16fa5c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": -1000
+        }
+      }
+  "2":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: name
+                root: incident
+                transformers:
+                - operator: toLowerCase
+          operator: inList
+          right:
+            iscontext: true
+            value:
+              complex:
+                accessor: RFAlertsToBeL2Assigned
+                root: lists
+                transformers:
+                - operator: toLowerCase
+      label: "yes"
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "38"
+      "yes":
+      - "1"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c8bb642b-4851-40ca-88c1-e841bf40e210
+      iscommand: false
+      name: Does this Alert need to be assigned to Analyst?
+      type: condition
+      version: -1
+    taskid: c8bb642b-4851-40ca-88c1-e841bf40e210
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 500,
+          "y": -1255
+        }
+      }
+  "8":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      name:
+        simple: AutoAssignment_Lock
+      timeout:
+        simple: "600"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Demisto Lock
+      description: Gets a specific lock. If the lock doesn't exist, it creates one.
+        If the lock is already in use, the command waits until the lock is released
+        or until timeout is reached. If timeout is reached and the lock hasn't been
+        released, the command fails to get the lock.
+      id: 9b23ba8a-699e-4ca5-8df8-d9c178925633
+      iscommand: true
+      name: Locking the Assignment Task
+      script: Demisto Lock|||demisto-lock-get
+      type: regular
+      version: -1
+    taskid: 9b23ba8a-699e-4ca5-8df8-d9c178925633
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 447.5,
+          "y": 215
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      desc:
+        complex:
+          accessor: title
+          root: incident.labels
+      incidentid:
+        complex:
+          accessor: id
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 61cce1b8-a671-496a-8144-0577d9c0504b
+      iscommand: false
+      name: AutoAssign Analyst To Incident
+      script: 0021cb92-321d-4754-81a1-66fc6a41635d
+      type: regular
+      version: -1
+    taskid: 61cce1b8-a671-496a-8144-0577d9c0504b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 447.5,
+          "y": 370
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      name:
+        simple: AutoAssignment_Lock
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Demisto Lock
+      description: Release a lock
+      id: 12f022d7-4bc6-46ff-83e3-82fd66e29be9
+      iscommand: true
+      name: Release the Assignment Task
+      script: Demisto Lock|||demisto-lock-release
+      type: regular
+      version: -1
+    taskid: 12f022d7-4bc6-46ff-83e3-82fd66e29be9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 447.5,
+          "y": 545
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Expose the incident owner into IncidentOwner context key
+      id: 420d89c5-5135-4bdf-8282-7498a024b31a
+      iscommand: false
+      name: Populate Incident Owner Context
+      script: ExposeIncidentOwner
+      type: regular
+      version: -1
+    taskid: 420d89c5-5135-4bdf-8282-7498a024b31a
+    timertriggers:
+    - action: start
+      fieldname: closuresla
+    - action: start
+      fieldname: detectionsla
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 447.5,
+          "y": 705
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      username:
+        complex:
+          accessor: owner
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.get.user.by.username
+      id: 99775399-c8d8-454f-80e4-06650d04569a
+      iscommand: true
+      name: Get Incident Owner Details
+      script: Builtin|||getUserByUsername
+      type: regular
+      version: -1
+    taskid: 99775399-c8d8-454f-80e4-06650d04569a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 430,
+          "y": 915
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "44"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      selectshift:
+        complex:
+          accessor: roles
+          root: UserByUsername
+          transformers:
+          - args:
+              from:
+                value:
+                  simple: '['
+            operator: substringFrom
+          - args:
+              to:
+                value:
+                  simple: ']'
+            operator: substringTo
+          - args:
+              delimiter:
+                value:
+                  simple: ' '
+            operator: splitAndTrim
+          - args:
+              separator:
+                value:
+                  simple: ' '
+            operator: join
+          - args:
+              regex:
+                value:
+                  simple: ' CSOC-XSOAR-Admin'
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              regex:
+                value:
+                  simple: ' Read-Only'
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              regex:
+                value:
+                  simple: ' Operator'
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              delimiter: {}
+            operator: splitAndTrim
+      shift:
+        complex:
+          accessor: roles
+          root: UserByUsername
+          transformers:
+          - args:
+              from:
+                value:
+                  simple: '['
+            operator: substringFrom
+          - args:
+              to:
+                value:
+                  simple: ']'
+            operator: substringTo
+          - args:
+              delimiter: {}
+            operator: splitAndTrim
+          - args:
+              separator:
+                value:
+                  simple: ' '
+            operator: join
+          - args:
+              regex:
+                value:
+                  simple: ' CSOC-XSOAR-Admin'
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              regex:
+                value:
+                  simple: ' Read-Only'
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              regex:
+                value:
+                  simple: ' Operator'
+              replaceWith: {}
+            operator: replaceMatch
+          - args:
+              delimiter: {}
+            operator: splitAndTrim
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 3258bba7-c9b0-409d-8f60-d04af5dc63db
+      iscommand: true
+      name: Set Investigator Role In Context
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 3258bba7-c9b0-409d-8f60-d04af5dc63db
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 417.5,
+          "y": 1100
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: "Is This a True Positive Alert ?\n(Study The IoC Threat Intelligence
+          Report. Are IoCs Part of The XSOAR Block List ? Check if the indicators
+          have block tags and the expiration status. Also check for 'Related Incidents') "
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - 'No, It is False Positive '
+      - No, its a Benign-True Positive
+      - Yes, it is True Positive
+      - No / Not Sure - To Be Determined
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: {}
+    nexttasks:
+      No / Not Sure - To Be Determined:
+      - "48"
+      'No, It is False Positive ':
+      - "101"
+      No, its a Benign-True Positive:
+      - "103"
+      Yes, it is True Positive:
+      - "58"
+    note: true
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 35150929-e1dd-4211-839f-b8cfb89fc5fa
+      iscommand: false
+      name: "Is This a True Positive Alert ? \n(Study The IoC Threat Intelligence
+        Report. Are IoCs Part of The XSOAR Block List ? Check if the indicators have
+        block tags and the expiration status. Also check for 'Related Incidents') "
+      tags:
+      - Note
+      type: condition
+      version: -1
+    taskid: 35150929-e1dd-4211-839f-b8cfb89fc5fa
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 3010
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "75"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6352ee27-73aa-457e-8ed4-8fd4a573a8e0
+      iscommand: false
+      name: 'Close Investigation -Benign True positive '
+      type: title
+      version: -1
+    taskid: 6352ee27-73aa-457e-8ed4-8fd4a573a8e0
+    timertriggers:
+    - action: stop
+      fieldname: detectionsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -120,
+          "y": 4930
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "75"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 94ad965a-08af-494d-8e07-48a0240cd2c7
+      iscommand: false
+      name: Close Investigation- False Positive
+      type: title
+      version: -1
+    taskid: 94ad965a-08af-494d-8e07-48a0240cd2c7
+    timertriggers:
+    - action: stop
+      fieldname: detectionsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -530,
+          "y": 4930
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b57ad617-7651-4e1c-8499-e7d91af29bfd
+      iscommand: false
+      name: 'Sub Playbook: Document & Close'
+      playbookId: 4a46e3dc-82da-4b3a-86ca-eb2f9dfd589f
+      type: playbook
+      version: -1
+    taskid: b57ad617-7651-4e1c-8499-e7d91af29bfd
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 430,
+          "y": 9355
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 82639c1b-c3f9-4a32-8698-9b1e820dbaa6
+      iscommand: false
+      name: End
+      type: title
+      version: -1
+    taskid: 82639c1b-c3f9-4a32-8698-9b1e820dbaa6
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 430,
+          "y": 9570
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: anyimpact
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: 'Was there any Impact ? (service disruption, malware installed,
+            successful C&C communication..etc) '
+        options: []
+        optionsarg:
+        - {}
+        - simple: "No"
+        - simple: "Yes"
+        placeholder: ""
+        readonly: false
+        required: true
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Was there any Impact ? (service disruption, malware installed, successful
+        C&C communication..etc)
+      totalanswers: 0
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: null
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "26"
+    note: true
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 49a0742c-e14a-445b-8c67-6447630c0622
+      iscommand: false
+      name: 'Was there any Impact ? (service disruption, malware installed, successful
+        C&C communication..etc) '
+      type: collection
+      version: -1
+    taskid: 49a0742c-e14a-445b-8c67-6447630c0622
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 5280
+        }
+      }
+  "26":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: "0"
+                root: Was there any Impact ? .Answers
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: "yes"
+      label: "yes"
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "29"
+      "yes":
+      - "27"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9d42c7ab-e9b9-4006-8279-380d0b93ef96
+      iscommand: false
+      name: Does The CSOC Manager Need To Be Notified ? (auto select if impact is
+        'Yes')
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: 9d42c7ab-e9b9-4006-8279-380d0b93ef96
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 5450
+        }
+      }
+  "27":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: emailbody
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Enter Notification Message To CSOC Manager (give a brief about the
+            true positive alert and the impact)
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: true
+        tooltip: ""
+        type: longText
+      sender: ""
+      title: Enter Notification Message To CSOC Manager
+      totalanswers: 0
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: null
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "28"
+    note: true
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 53de6992-51eb-46a9-8672-8ce7a3c42f24
+      iscommand: false
+      name: Enter Notification Message To CSOC Manager (give a brief about the true
+        positive alert and the impact)
+      type: collection
+      version: -1
+    taskid: 53de6992-51eb-46a9-8672-8ce7a3c42f24
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 5650
+        }
+      }
+  "28":
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "29"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      bcc:
+        simple: kunal.krushev@tcs.com
+      body:
+        simple: |-
+          ${incident.emailbody}
+
+          Investigation Link --> https://soar.tcsapps.com/#/Custom/caseinfoid/${incident.id}
+      cc:
+        simple: ${UserByUsername.email}
+      subject:
+        simple: '*True Positive Notification* Recorded Future Investigation - Severity
+          - ${incident.mailerseverity}'
+      to:
+        simple: nimisha.prajapati@tcs.com,yogesh.gholap@tcs.com,
+      using:
+        simple: Mail Sender_instance_CSOC_Mail
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 14ab387d-d952-43ca-8968-73e78fd47f3f
+      iscommand: true
+      name: Notify CSOC Manager & Necessary Stakeholders
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 14ab387d-d952-43ca-8968-73e78fd47f3f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 5840
+        }
+      }
+  "29":
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: 'Do You Need To Mitigate The Threat By Blocking IoCs or Containing
+          Host ? (NOTE: for IP address blocking other than Palo Alto FW, pls connect
+          with location FW owner)'
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - Yes - I Want To Block IOC
+      - Yes - I Want To Contain Host
+      - No - They Are Already Blocked / Contained
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      No - They Are Already Blocked / Contained:
+      - "67"
+      Yes - I Want To Block IOC:
+      - "60"
+      Yes - I Want To Contain Host:
+      - "59"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a34eabf8-3416-4719-83dd-b2268bfc4e7e
+      iscommand: false
+      name: 'Do You Need To Mitigate The Threat By Blocking IoCs or Containing Host
+        ? (NOTE: for IP address blocking other than Palo Alto FW, pls connect with
+        location FW owner)'
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: a34eabf8-3416-4719-83dd-b2268bfc4e7e
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 6030
+        }
+      }
+  "38":
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 0eca6b84-c245-4f75-8922-641fc583b682
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 0eca6b84-c245-4f75-8922-641fc583b682
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -720,
+          "y": 825
+        }
+      }
+  "40":
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "43"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      text:
+        complex:
+          accessor: name
+          root: RecordedFuture.SingleAlert.flat_entities
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 193301b3-0992-476d-8e97-bdef3a27ea1e
+      iscommand: true
+      name: Extract the Indicators from Recorded Future
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 193301b3-0992-476d-8e97-bdef3a27ea1e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 170,
+          "y": -610
+        }
+      }
+  "41":
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "43"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      text:
+        complex:
+          accessor: name
+          root: RecordedFuture.SingleAlert.entities.entity
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: b5415823-2767-4dea-8f8b-3af7e6cf726f
+      iscommand: true
+      name: typosquat Extract the Indicators from Recorded Future
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: b5415823-2767-4dea-8f8b-3af7e6cf726f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 817.5,
+          "y": -610
+        }
+      }
+  "42":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: name
+                root: RecordedFuture.SingleAlert.rule
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: typosquat
+      label: "yes"
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "40"
+      "yes":
+      - "41"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3988c7b0-6be9-42a9-89ac-c538c03170b3
+      iscommand: false
+      name: Select the alert type
+      type: condition
+      version: -1
+    taskid: 3988c7b0-6be9-42a9-89ac-c538c03170b3
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": -830
+        }
+      }
+  "43":
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "109"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domain:
+        complex:
+          root: ExtractedIndicators
+      incidentlink:
+        simple: ${RecordedFuture.SingleAlert.url}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 72c062dd-102f-4df1-8992-706f24520fb2
+      iscommand: true
+      name: Display extracted in layout
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 72c062dd-102f-4df1-8992-706f24520fb2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 447.5,
+          "y": -420
+        }
+      }
+  "44":
+    continueonerrortype: ""
+    id: "44"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "79"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Domain:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+      IP:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+      MD5:
+        complex:
+          accessor: MD5
+          root: File
+          transformers:
+          - operator: uniq
+      SHA1:
+        complex:
+          accessor: SHA1
+          root: File
+          transformers:
+          - operator: uniq
+      SHA256:
+        complex:
+          accessor: SHA256
+          root: File
+          transformers:
+          - operator: uniq
+      URL:
+        complex:
+          accessor: URL
+          root: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Template playbook to incorporate Recorded Future enrichment for
+        IPs, Hashes, Domains, URLs into your current workflows. Playbook also shows
+        how to look up available 'Links' data for IOCs.
+      id: d84376f7-5449-44ac-8a38-831c7381a642
+      iscommand: false
+      name: TCS-Recorded Future Entity Enrichment_v1.0
+      playbookId: 9fd8be93-2567-4996-822b-7042d4e9ee00
+      type: playbook
+      version: -1
+    taskid: d84376f7-5449-44ac-8a38-831c7381a642
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 427.5,
+          "y": 1290
+        }
+      }
+  "48":
+    continueonerrortype: ""
+    id: "48"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "52"
+      - "49"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5f44612b-7d2f-4380-80d8-de58ae8b9413
+      iscommand: false
+      name: Investigate - Not Sure To Be Determined
+      type: title
+      version: -1
+    taskid: 5f44612b-7d2f-4380-80d8-de58ae8b9413
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 3200
+        }
+      }
+  "49":
+    continueonerrortype: ""
+    id: "49"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: "Would You Like To Contain The Host While You Investigate ? \n(NOTE:
+          if the alert looks suspicious its recommended to contain the machine) "
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "52"
+      "Yes":
+      - "50"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 69e13aca-e724-4c08-884d-c9385ac1d418
+      iscommand: false
+      name: "Would You Like To Contain The Host While You Investigate ? \n(NOTE: if
+        the alert looks suspicious its recommended to contain the machine) "
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: 69e13aca-e724-4c08-884d-c9385ac1d418
+    timertriggers:
+    - action: stop
+      fieldname: threatresponsesla
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 417.5,
+          "y": 3320
+        }
+      }
+  "50":
+    continueonerrortype: ""
+    id: "50"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "51"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      containmachine:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 8d6cd4d0-d0b4-4c20-8d1c-43db80f7c693
+      iscommand: true
+      name: Set Contain Machine Context To - YES
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 8d6cd4d0-d0b4-4c20-8d1c-43db80f7c693
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 417.5,
+          "y": 3550
+        }
+      }
+  "51":
+    continueonerrortype: ""
+    id: "51"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "52"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c3f67809-4199-4e1d-8955-35e06737c691
+      iscommand: false
+      name: 'Sub Playbook: Contain Host via CrowdStrike'
+      playbookId: a4d833cf-d2ae-4de1-846a-992f5293b414
+      type: playbook
+      version: -1
+    taskid: c3f67809-4199-4e1d-8955-35e06737c691
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 417.5,
+          "y": 3720
+        }
+      }
+  "52":
+    continueonerrortype: ""
+    formDisplay:
+      bodybackgroundcolor: ""
+      bodyfontcolor: ""
+      headerbackgroundcolor: ""
+      headerfontcolor: ""
+      isexternalrtl: false
+      sender: ""
+      submitbuttonbackgroundcolor: ""
+      submitbuttonfontcolor: ""
+      submittext: ""
+    id: "52"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: 'Study The IoC Threat Intelligence Report. Are IoCs Part of The XSOAR
+          Block List ? (check if the indicators have block tags and the expiration
+          status. Also check for ''Related Incidents'') '
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - Yes - SOME IoCs Are Part of The Block List
+      - Yes - ALL IoCs Are Part of The Block List
+      - No - NONE of The IoCs are Part of The Block List
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      No - NONE of The IoCs are Part of The Block List:
+      - "54"
+      Yes - ALL IoCs Are Part of The Block List:
+      - "55"
+      Yes - SOME IoCs Are Part of The Block List:
+      - "53"
+    note: true
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bc5112e4-01c1-4585-821e-110000174205
+      iscommand: false
+      name: 'Study The IoC Threat Intelligence Report. Are IoCs Part of The XSOAR
+        Block List ? (check if the indicators have block tags and the expiration status.
+        Also check for ''Related Incidents'') '
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: bc5112e4-01c1-4585-821e-110000174205
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 417.5,
+          "y": 3900
+        }
+      }
+  "53":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Review The IoC Intel To Assess The Threat Severity of The IoCs That
+            Are Not Blocked. Once Your Ready - Move To The Next Task
+        options: []
+        optionsarg:
+        - {}
+        - simple: I'm Ready - Move To The Next Task
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Investigation Guide
+      totalanswers: 0
+    id: "53"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Investigation Guide
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - I'm Ready - Procced To Next Task
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "55"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2e1e8ac8-627b-4dcc-8777-912da736c2c6
+      iscommand: false
+      name: Review The IoC Intel To Assess The Threat Severity of The IoCs That Are
+        Not Blocked. Once Your Ready - Move To The Next Task
+      tags:
+      - report
+      type: collection
+      version: -1
+    taskid: 2e1e8ac8-627b-4dcc-8777-912da736c2c6
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 90,
+          "y": 4080
+        }
+      }
+  "54":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Review The IoC Intel To Assess The Threat. Once Your Ready - Move
+            To The Next Task
+        options: []
+        optionsarg:
+        - {}
+        - simple: I'm Ready - Procced To Next Task
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Investigation Guide
+      totalanswers: 0
+    id: "54"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Investigation Guide
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - I'm Ready - Procced To Next Task
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "55"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: fc5d7443-ef23-4bdd-8959-0aa808503797
+      iscommand: false
+      name: Review The IoC Intel To Assess The Threat. Once Your Ready - Move To The
+        Next Task
+      tags:
+      - report
+      type: collection
+      version: -1
+    taskid: fc5d7443-ef23-4bdd-8959-0aa808503797
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 730,
+          "y": 4080
+        }
+      }
+  "55":
+    continueonerrortype: ""
+    id: "55"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Based on The IoC Intel, Do You Need To Change The Alert Severity ?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "57"
+      "Yes":
+      - "56"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5ce11a68-078c-45a5-8a29-e35e5d8217a1
+      iscommand: false
+      name: Based on The IoC Intel, Do You Need To Change The Alert Severity ?
+      tags:
+      - report
+      type: condition
+      version: -1
+    taskid: 5ce11a68-078c-45a5-8a29-e35e5d8217a1
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 417.5,
+          "y": 4270
+        }
+      }
+  "56":
+    continueonerrortype: ""
+    id: "56"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "57"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d047ee3b-40c6-467e-8933-23f462da80e8
+      iscommand: false
+      name: 'Sub Playbook: Triage The Alert'
+      playbookId: b82a6df1-9a17-4fae-889e-c6f7bde37df1
+      type: playbook
+      version: -1
+    taskid: d047ee3b-40c6-467e-8933-23f462da80e8
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 4485
+        }
+      }
+  "57":
+    continueonerrortype: ""
+    id: "57"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Is This a True Positive Alert ?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - No, Its a Confirmed - False Positive
+      - No, Its a Benign-True Positive
+      - Yes, it is True Positive
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to:
+        simple: Analyst
+    nexttasks:
+      No, Its a Benign-True Positive:
+      - "15"
+      No, Its a Confirmed - False Positive:
+      - "16"
+      Yes, it is True Positive:
+      - "58"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 121c9115-ea06-4523-899d-237011b100ae
+      iscommand: false
+      name: Is This a True Positive Alert ?
+      type: condition
+      version: -1
+    taskid: 121c9115-ea06-4523-899d-237011b100ae
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 4710
+        }
+      }
+  "58":
+    continueonerrortype: ""
+    id: "58"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "106"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c33ae60d-7f28-4a51-8273-6704e6aee2a9
+      iscommand: false
+      name: 'Close Investigation -True positive '
+      type: title
+      version: -1
+    taskid: c33ae60d-7f28-4a51-8273-6704e6aee2a9
+    timertriggers:
+    - action: stop
+      fieldname: detectionsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 4930
+        }
+      }
+  "59":
+    continueonerrortype: ""
+    id: "59"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "61"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1deafa4d-617b-49b6-8ff3-5b87d35a81a5
+      iscommand: false
+      name: Start Contain Host SLA\Timer (Inside Sub Playbook)
+      type: title
+      version: -1
+    taskid: 1deafa4d-617b-49b6-8ff3-5b87d35a81a5
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 880,
+          "y": 6250
+        }
+      }
+  "60":
+    continueonerrortype: ""
+    id: "60"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "63"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 68cae9c3-8f16-4ba4-8dee-537027eb0729
+      iscommand: false
+      name: Start Block IOC\Mitigation SLA Timer (Inside Sub Playbook)
+      type: title
+      version: -1
+    taskid: 68cae9c3-8f16-4ba4-8dee-537027eb0729
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1380,
+          "y": 6240
+        }
+      }
+  "61":
+    continueonerrortype: ""
+    id: "61"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "62"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      containmachine:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: dd11f9a9-4fb0-4294-8a65-b6aa97c04a86
+      iscommand: true
+      name: Set Contain Machine Context To - YES
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: dd11f9a9-4fb0-4294-8a65-b6aa97c04a86
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 880,
+          "y": 6490
+        }
+      }
+  "62":
+    continueonerrortype: ""
+    id: "62"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "66"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f2dc5f5c-bea2-46d0-84e4-6cd03160c094
+      iscommand: false
+      name: 'Sub Playbook: Contain Host via CrowdStrike'
+      playbookId: a4d833cf-d2ae-4de1-846a-992f5293b414
+      type: playbook
+      version: -1
+    taskid: f2dc5f5c-bea2-46d0-84e4-6cd03160c094
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 880,
+          "y": 6665
+        }
+      }
+  "63":
+    continueonerrortype: ""
+    id: "63"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "104"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      iocblockrequest:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 788a201b-6169-4b0c-8dd9-57cc2eea3fec
+      iscommand: true
+      name: Set Context IOC Block Request To - Yes
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 788a201b-6169-4b0c-8dd9-57cc2eea3fec
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1380,
+          "y": 6365
+        }
+      }
+  "64":
+    continueonerrortype: ""
+    id: "64"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e10f4807-0573-44db-8f7d-5b39685ddf99
+      iscommand: false
+      name: 'Sub Playbook: Select IOC To Block'
+      playbookId: 9dacaaf8-64e7-4758-822e-694b991ee19c
+      type: playbook
+      version: -1
+    taskid: e10f4807-0573-44db-8f7d-5b39685ddf99
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 2420,
+          "y": 6615
+        }
+      }
+  "65":
+    continueonerrortype: ""
+    id: "65"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 80c143a0-0068-4ed9-884c-371b54e2d236
+      iscommand: false
+      name: 'Sub Playbook: CSOC Submitted IOC Block Process'
+      playbookId: f3a2d756-c0d5-4b32-83a4-0de75ea3765a
+      type: playbook
+      version: -1
+    taskid: 80c143a0-0068-4ed9-884c-371b54e2d236
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 2510,
+          "y": 6740
+        }
+      }
+  "66":
+    continueonerrortype: ""
+    id: "66"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "68"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2235b9da-ad02-4803-80a3-918d9528b96c
+      iscommand: false
+      name: Stop Mitigation SLA (Inside Sub Playbook)
+      type: title
+      version: -1
+    taskid: 2235b9da-ad02-4803-80a3-918d9528b96c
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 7360
+        }
+      }
+  "67":
+    continueonerrortype: ""
+    id: "67"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "68"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      iocblockrequest:
+        simple: "no"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 9577d294-1f07-4344-80bf-8afcec19dd86
+      iscommand: true
+      name: Set Context Block IOC To  - No
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 9577d294-1f07-4344-80bf-8afcec19dd86
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 7120
+        }
+      }
+  "68":
+    continueonerrortype: ""
+    id: "68"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "69"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9187aa95-65c3-493d-81f0-9ecb3515d252
+      iscommand: false
+      name: Stop Threat Response SLA
+      type: title
+      version: -1
+    taskid: 9187aa95-65c3-493d-81f0-9ecb3515d252
+    timertriggers:
+    - action: stop
+      fieldname: threatresponsesla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 7500
+        }
+      }
+  "69":
+    continueonerrortype: ""
+    id: "69"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Review The Alert - Check If You Need To Raise an IMT ?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - No -  IMT Not Required
+      - Yes - I Have Raised an IMT
+      - I'm Not Sure - Will Do It later
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      I'm Not Sure - Will Do It later:
+      - "74"
+      No -  IMT Not Required:
+      - "70"
+      Yes - I Have Raised an IMT:
+      - "71"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1b2d1430-92ca-41d4-850b-5a956344c940
+      iscommand: false
+      name: Review The Alert - Check If You Need To Raise an IMT ?
+      type: condition
+      version: -1
+    taskid: 1b2d1430-92ca-41d4-850b-5a956344c940
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 7740
+        }
+      }
+  "70":
+    continueonerrortype: ""
+    id: "70"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "74"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      imtraised:
+        simple: "no"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 3a8e79c1-315d-40f2-81a9-85f13864fe56
+      iscommand: true
+      name: Update IMT Context To - No
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 3a8e79c1-315d-40f2-81a9-85f13864fe56
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 8070
+        }
+      }
+  "71":
+    continueonerrortype: ""
+    id: "71"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "72"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      imtraised:
+        simple: "Yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 4baf431f-99ad-41af-8275-78d368653eb7
+      iscommand: true
+      name: Update IMT Context To - Yes
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 4baf431f-99ad-41af-8275-78d368653eb7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1540,
+          "y": 8060
+        }
+      }
+  "72":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: imtnumber
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Enter The IMT Number
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: true
+        tooltip: ""
+        type: shortText
+      sender: ""
+      title: Enter The IMT Number
+      totalanswers: 0
+    id: "72"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: null
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "73"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 94b4a37b-8af7-49bd-8365-2bf9790637c1
+      iscommand: false
+      name: Enter The IMT Number
+      type: collection
+      version: -1
+    taskid: 94b4a37b-8af7-49bd-8365-2bf9790637c1
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1540,
+          "y": 8220
+        }
+      }
+  "73":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: imtlocation
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Enter The IMT Location
+        options: []
+        optionsarg: []
+        placeholder: 'Enter Branch and Location.  Eg: TCS-Mumbai-Olympus'
+        readonly: false
+        required: true
+        tooltip: ""
+        type: shortText
+      sender: Your SOC team
+      title: Enter The IMT Location
+      totalanswers: 0
+    formDisplay:
+      bodybackgroundcolor: ""
+      bodyfontcolor: ""
+      headerbackgroundcolor: ""
+      headerfontcolor: ""
+      isexternalrtl: false
+      sender: ""
+      submitbuttonbackgroundcolor: ""
+      submitbuttonfontcolor: ""
+      submittext: ""
+    id: "73"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: null
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "74"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 55dbc89f-2aae-421c-8cfa-26f0740eb20d
+      iscommand: false
+      name: Enter The IMT Location
+      type: collection
+      version: -1
+    taskid: 55dbc89f-2aae-421c-8cfa-26f0740eb20d
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1540,
+          "y": 8370
+        }
+      }
+  "74":
+    continueonerrortype: ""
+    id: "74"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "81"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 925608d4-d119-40b3-8874-2290b4f594a4
+      iscommand: false
+      name: 'Sub Playbook: Check With Investigator for Lift Containment'
+      playbookId: 67fdcc7f-387d-4349-825a-597ed003e264
+      type: playbook
+      version: -1
+    taskid: 925608d4-d119-40b3-8874-2290b4f594a4
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 8540
+        }
+      }
+  "75":
+    continueonerrortype: ""
+    id: "75"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 207b3e8b-0b90-4ec6-8ec5-d31de3ea0110
+      iscommand: false
+      name: Document & Close Investigation
+      type: title
+      version: -1
+    taskid: 207b3e8b-0b90-4ec6-8ec5-d31de3ea0110
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 430,
+          "y": 9210
+        }
+      }
+  "77":
+    continueonerrortype: ""
+    externalFormUseAuth: true
+    id: "77"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Is Approved taken by Nimisha/Yogesh
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - Yes - Block Them All
+      - None of The IoC(s) Are Approved
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      Yes - Block Them All:
+      - "95"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4e2d88f5-7b35-47f2-8a90-35eb65189fcc
+      iscommand: false
+      name: Is Approved taken by Nimisha/Yogesh
+      type: condition
+      version: -1
+    taskid: 4e2d88f5-7b35-47f2-8a90-35eb65189fcc
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2390,
+          "y": 6220
+        }
+      }
+  "79":
+    continueonerrortype: ""
+    id: "79"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "93"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Domain:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+      IP:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+      URL:
+        complex:
+          accessor: URL
+          root: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d141b759-95ca-4b52-8377-1371f38645c2
+      iscommand: false
+      name: TCS-Verified Trusted IOC v1.0
+      playbookId: 48c8248a-1e20-4815-8307-baba830f96db
+      type: playbook
+      version: -1
+    taskid: d141b759-95ca-4b52-8377-1371f38645c2
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 427.5,
+          "y": 1460
+        }
+      }
+  "80":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.owner
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "80"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "8"
+      "yes":
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5a002ce1-0452-410f-819c-d8f309b68a0b
+      iscommand: false
+      name: Is Owner assigned?
+      type: condition
+      version: -1
+    taskid: 5a002ce1-0452-410f-819c-d8f309b68a0b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 447.5,
+          "y": 45
+        }
+      }
+  "81":
+    continueonerrortype: ""
+    id: "81"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Taken Down is required?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "75"
+      "Yes":
+      - "82"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5a6b2eac-0603-4586-8965-8ff02121c150
+      iscommand: false
+      name: Take down is required?
+      type: condition
+      version: -1
+    taskid: 5a6b2eac-0603-4586-8965-8ff02121c150
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 8705
+        }
+      }
+  "82":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Please provide the Incident ID
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: true
+        tooltip: ""
+        type: shortText
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "1"
+        label: ""
+        labelarg:
+          simple: Please mention the domain which is required for take down
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: true
+        tooltip: ""
+        type: longText
+      sender: ""
+      title: Please provide the Incident ID
+      totalanswers: 0
+    id: "82"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: null
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "108"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: dfa2a7ce-87d7-47e4-8c0b-98ea786f7f87
+      iscommand: false
+      name: Please provide the Incident ID
+      type: collection
+      version: -1
+    taskid: dfa2a7ce-87d7-47e4-8c0b-98ea786f7f87
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 8880
+        }
+      }
+  "83":
+    continueonerrortype: ""
+    id: "83"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "75"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      bcc:
+        simple: porkodi.g@tcs.com
+      body:
+        simple: "Hi ,\n\nThis IOC required for take down \n${Please provide the Incident
+          ID.Answers.1}\n\nPlease find the incident  ID ${Please provide the Incident
+          ID.Answers.0}\n\nThanks and Regards,\nCyberautobot  \n"
+      cc:
+        simple: yogesh.gholap@tcs.com ,nimisha.prajapati@tcs.com,kunal.krushev@tcs.com
+      subject:
+        simple: Recorded Future Taken Down -${incident.id}
+      to:
+        simple: csocanalyst@tcscomprod.onmicrosoft.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: b12d510d-ed28-4081-80b0-4a7353d1bff8
+      iscommand: true
+      name: Notify to L3
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: b12d510d-ed28-4081-80b0-4a7353d1bff8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 9340
+        }
+      }
+  "84":
+    continueonerrortype: ""
+    id: "84"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 0
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 48251be4-f768-4cfe-8aa7-973438b2ae3f
+      iscommand: false
+      name: TCS-Triage-Case Management v3_KK
+      playbookId: b82a6df1-9a17-4fae-889e-c6f7bde37df1
+      type: playbook
+      version: -1
+    taskid: 48251be4-f768-4cfe-8aa7-973438b2ae3f
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 2745
+        }
+      }
+  "87":
+    continueonerrortype: ""
+    id: "87"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "80"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1c65db84-4cf6-4928-8adb-b5eb44864568
+      iscommand: false
+      name: Start Acknowledgement SLA
+      type: title
+      version: -1
+    taskid: 1c65db84-4cf6-4928-8adb-b5eb44864568
+    timertriggers:
+    - action: start
+      fieldname: acknowledgementsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 447.5,
+          "y": -90
+        }
+      }
+  "88":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: runStatus
+                root: incident.acknowledgementsla
+          operator: isEqualString
+          right:
+            value:
+              simple: running
+      label: "yes"
+    continueonerrortype: ""
+    id: "88"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "90"
+      "yes":
+      - "89"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7209630a-caf9-4981-8f7f-d5dbd981986e
+      iscommand: false
+      name: Is Acknowledgement SLA Still Running ?
+      type: condition
+      version: -1
+    taskid: 7209630a-caf9-4981-8f7f-d5dbd981986e
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 1820
+        }
+      }
+  "89":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Have You Completed This Task
+        options: []
+        optionsarg:
+        - {}
+        - simple: Yes - Move To The Next Task
+        placeholder: ""
+        readonly: false
+        required: true
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Please Click The 'Lets Get Started!' Button
+      totalanswers: 0
+    id: "89"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: null
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "90"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 85bd6189-f3ce-4486-827d-d7c6753a6a05
+      iscommand: false
+      name: Please Click The 'Lets Get Started!' Button
+      type: collection
+      version: -1
+    taskid: 85bd6189-f3ce-4486-827d-d7c6753a6a05
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 1995
+        }
+      }
+  "90":
+    continueonerrortype: ""
+    id: "90"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "91"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b4ace639-0500-49fc-89f9-2ad4f8f12009
+      iscommand: false
+      name: Stop Acknowledgement SLA
+      type: title
+      version: -1
+    taskid: b4ace639-0500-49fc-89f9-2ad4f8f12009
+    timertriggers:
+    - action: stop
+      fieldname: responsesla
+    - action: stop
+      fieldname: acknowledgementsla
+    - action: start
+      fieldname: detectionsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 2185
+        }
+      }
+  "91":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: whichslabreached
+                root: incident
+          operator: isEqualString
+          right:
+            value:
+              simple: acknowledgementsla
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: whichslabreached
+                root: incident
+          operator: containsGeneral
+          right:
+            value:
+              simple: acknowledgementsla
+      label: "yes"
+    continueonerrortype: ""
+    id: "91"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "84"
+      "yes":
+      - "92"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a8c842a3-7d10-48b6-86a5-4084786db35f
+      iscommand: false
+      name: Is response sla breached?
+      type: condition
+      version: -1
+    taskid: a8c842a3-7d10-48b6-86a5-4084786db35f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 2320
+        }
+      }
+  "92":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: justificationforacknowledgementslabreached
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Provide justification for response sla violated
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: true
+        tooltip: ""
+        type: longText
+      sender: Your SOC team
+      title: Provide justification for response sla violated
+      totalanswers: 0
+    id: "92"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Provide justification for acknowledgement sla violated
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "84"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 83e4afae-b770-4ca7-8866-a9a1ceafb77b
+      iscommand: false
+      name: Provide justification for acknowledgement sla violated
+      type: collection
+      version: -1
+    taskid: 83e4afae-b770-4ca7-8866-a9a1ceafb77b
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 417.5,
+          "y": 2485
+        }
+      }
+  "93":
+    continueonerrortype: ""
+    id: "93"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "88"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3791af32-65ef-4859-8315-6ada4cae5440
+      iscommand: false
+      name: TCS-Severity for Recorded Future_v1.0_PG
+      playbookId: 3be56ef2-6a1c-4bd1-8bf9-af3616313baa
+      type: playbook
+      version: -1
+    taskid: 3791af32-65ef-4859-8315-6ada4cae5440
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 417.5,
+          "y": 1640
+        }
+      }
+  "94":
+    continueonerrortype: ""
+    id: "94"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b088ef53-fcfa-45c8-8c97-8ef42c061601
+      iscommand: false
+      name: TCS-Select IOC To Block_RF Playbook v1_KK_copy
+      playbookId: 6c213154-0865-4c41-8f80-9f61b6935919
+      type: playbook
+      version: -1
+    taskid: b088ef53-fcfa-45c8-8c97-8ef42c061601
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1160,
+          "y": 3040
+        }
+      }
+  "95":
+    continueonerrortype: ""
+    id: "95"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "96"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-2/cortex-xsoar-admin/playbooks/automations.html
+      id: 28d88c2e-963e-4793-81c1-41fd421ebe44
+      iscommand: false
+      name: Delete Extracted Indicators Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 28d88c2e-963e-4793-81c1-41fd421ebe44
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2380,
+          "y": 6390
+        }
+      }
+  "96":
+    continueonerrortype: ""
+    id: "96"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "99"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      text:
+        simple: ${IOC}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: e9213572-d261-4418-85de-7826f38521cb
+      iscommand: true
+      name: 'Extract New User Selection '
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: e9213572-d261-4418-85de-7826f38521cb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2380,
+          "y": 6550
+        }
+      }
+  "97":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Please Confirm whether these IOC need to be block
+        options: []
+        optionsarg:
+        - simple: ${ExtractedIndicators.IP}
+        - simple: ${ExtractedIndicators.Domain}
+        - simple: ${ExtractedIndicators.URL}
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: multiSelect
+      sender: ""
+      title: Approved
+      totalanswers: 0
+    id: "97"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: null
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "98"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2b30efe3-82f7-43f0-85d7-c6e5d43ae62f
+      iscommand: false
+      name: Please Confirm whether these IOC need to be block
+      type: collection
+      version: -1
+    taskid: 2b30efe3-82f7-43f0-85d7-c6e5d43ae62f
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1910,
+          "y": 6930
+        }
+      }
+  "98":
+    continueonerrortype: ""
+    id: "98"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d98634f9-d7a8-4083-8e0f-05660d7c66d3
+      iscommand: false
+      name: Untitled Task
+      type: regular
+      version: -1
+    taskid: d98634f9-d7a8-4083-8e0f-05660d7c66d3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1910,
+          "y": 7090
+        }
+      }
+  "99":
+    continueonerrortype: ""
+    id: "99"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Domain:
+        simple: ${ExtractedIndicators.Domain}
+      File:
+        simple: ${ExtractedIndicators.File}
+      IP:
+        simple: ${ExtractedIndicators.IP}
+      URL:
+        simple: ${ExtractedIndicators.URL}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ef5e69f5-c2bf-4d3e-8fab-dbf290f35351
+      iscommand: false
+      name: TCS-Block IOC_Analyst Reviewed_RF Playbook Trigger _v1.0
+      playbookId: dd37609b-7be6-4fb9-8bd6-bc2c59df433d
+      type: playbook
+      version: -1
+    taskid: ef5e69f5-c2bf-4d3e-8fab-dbf290f35351
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 2500,
+          "y": 6705
+        }
+      }
+  "100":
+    continueonerrortype: ""
+    id: "100"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "102"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: afd6fcaf-d5ed-4e86-896f-01c69be329f9
+      iscommand: false
+      name: TCS-Select IOC To Block_RF Playbook v1_KK_copy
+      playbookId: 6c213154-0865-4c41-8f80-9f61b6935919
+      type: playbook
+      version: -1
+    taskid: afd6fcaf-d5ed-4e86-896f-01c69be329f9
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 330,
+          "y": 5080
+        }
+      }
+  "101":
+    continueonerrortype: ""
+    id: "101"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "110"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      investigationconclusion:
+        simple: False Positive
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 06801dc3-8443-44cf-8322-eb9e45b3d907
+      iscommand: true
+      name: Set 'False Positive'
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 06801dc3-8443-44cf-8322-eb9e45b3d907
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -520,
+          "y": 4080
+        }
+      }
+  "102":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: False Positive
+          operator: isExists
+        - left:
+            iscontext: true
+            value:
+              complex:
+                root: Benign-True Positive
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "102"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3ffff952-88a2-4414-84c3-2eda3b0c51d4
+      iscommand: false
+      name: Check verdict of the case
+      type: condition
+      version: -1
+    taskid: 3ffff952-88a2-4414-84c3-2eda3b0c51d4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 330,
+          "y": 5260
+        }
+      }
+  "103":
+    continueonerrortype: ""
+    id: "103"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "111"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      investigationconclusion:
+        simple: Benign-True Positive
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 2c9040d5-1b44-4179-8b07-92fb0b36fae1
+      iscommand: true
+      name: Set 'Benign-True Positive'
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 2c9040d5-1b44-4179-8b07-92fb0b36fae1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -200,
+          "y": 3840
+        }
+      }
+  "104":
+    continueonerrortype: ""
+    id: "104"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "66"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 01817f19-0b91-41fa-83c2-640e40505947
+      iscommand: false
+      name: TCS-Select IOC To Block_RF Playbook v1.0_PG_WIP
+      playbookId: 53aac6f0-1166-4697-8ab3-ec16faab7575
+      type: playbook
+      version: -1
+    taskid: 01817f19-0b91-41fa-83c2-640e40505947
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1380,
+          "y": 6550
+        }
+      }
+  "105":
+    continueonerrortype: ""
+    id: "105"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 04a0b437-5a43-408f-8e4a-4e6f4318990d
+      iscommand: false
+      name: TCS-Select IOC To Block_RF Playbook v1.0_PG_WIP
+      playbookId: 53aac6f0-1166-4697-8ab3-ec16faab7575
+      type: playbook
+      version: -1
+    taskid: 04a0b437-5a43-408f-8e4a-4e6f4318990d
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 2060,
+          "y": 6090
+        }
+      }
+  "106":
+    continueonerrortype: ""
+    id: "106"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "112"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      investigationconclusion:
+        simple: True Positive
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 945aaa4c-ffd1-4a27-854f-2b0224f63c92
+      iscommand: true
+      name: Set 'True Positive'
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 945aaa4c-ffd1-4a27-854f-2b0224f63c92
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1140,
+          "y": 5100
+        }
+      }
+  "107":
+    continueonerrortype: ""
+    id: "107"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "83"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ioc:
+        complex:
+          accessor: "0"
+          root: provide url for takedown.Answers
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: PhishFort test
+      id: 5eb70de9-c733-48b3-8c6b-669f3d3c5caa
+      iscommand: true
+      name: Update takedown on Phishfort
+      script: PhishFort test|||takedown-request
+      type: regular
+      version: -1
+    taskid: 5eb70de9-c733-48b3-8c6b-669f3d3c5caa
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 9195
+        }
+      }
+  "108":
+    continueonerrortype: ""
+    form:
+      description: provide url for takedown
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Provide url for takedown
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: shortText
+      sender: ""
+      title: provide url for takedown
+      totalanswers: 0
+    id: "108"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: provide url for takedown
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "107"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8dd38a5b-48db-4301-858a-79814cdc13eb
+      iscommand: false
+      name: Input url for takedown
+      type: collection
+      version: -1
+    taskid: 8dd38a5b-48db-4301-858a-79814cdc13eb
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 9040
+        }
+      }
+  "109":
+    continueonerrortype: ""
+    id: "109"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "87"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alert_id:
+        simple: ${incident.alertid}
+      status:
+        simple: assigned
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Set alert into predefined status.
+      id: 5b96a9d7-2ac4-4ca6-89c6-6d8e0311bd8a
+      iscommand: true
+      name: Set status as 'Assigned ' In RF console
+      script: Recorded Future v2|||recordedfuture-alert-set-status
+      type: regular
+      version: -1
+    taskid: 5b96a9d7-2ac4-4ca6-89c6-6d8e0311bd8a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 447.5,
+          "y": -245
+        }
+      }
+  "110":
+    continueonerrortype: ""
+    id: "110"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alert_id:
+        simple: ${incident.alertid}
+      status:
+        simple: dismiss
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Set alert into predefined status.
+      id: 7b0b9e80-9ed2-4814-8e74-667e953d4b95
+      iscommand: true
+      name: Set status as '' Dismiss in  RF console
+      script: Recorded Future v2|||recordedfuture-alert-set-status
+      type: regular
+      version: -1
+    taskid: 7b0b9e80-9ed2-4814-8e74-667e953d4b95
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -520,
+          "y": 4330
+        }
+      }
+  "111":
+    continueonerrortype: ""
+    id: "111"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alert_id:
+        simple: ${incident.alertid}
+      status:
+        simple: actionable
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Set alert into predefined status.
+      id: b0e3d402-0151-4219-8eba-9f3539d22c05
+      iscommand: true
+      name: Set status as '' actionable in  RF console
+      script: Recorded Future v2|||recordedfuture-alert-set-status
+      type: regular
+      version: -1
+    taskid: b0e3d402-0151-4219-8eba-9f3539d22c05
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -40,
+          "y": 4380
+        }
+      }
+  "112":
+    continueonerrortype: ""
+    id: "112"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "25"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alert_id:
+        simple: ${incident.alertid}
+      status:
+        simple: actionable
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Set alert into predefined status.
+      id: d61c54a4-600d-4d46-8449-8654ba6266e6
+      iscommand: true
+      name: Set status as '' actionable in  RF console
+      script: Recorded Future v2|||recordedfuture-alert-set-status
+      type: regular
+      version: -1
+    taskid: d61c54a4-600d-4d46-8449-8654ba6266e6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1580,
+          "y": 5140
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "52_53_Yes - SOME IoCs Are Part of The Block List": 0.6
+    },
+    "paper": {
+      "dimensions": {
+        "height": 11055,
+        "width": 3610,
+        "x": -720,
+        "y": -1420
+      }
+    }
+  }
