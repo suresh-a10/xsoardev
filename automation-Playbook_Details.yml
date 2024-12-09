@@ -1,0 +1,113 @@
+commonfields:
+  id: f0326acc-3394-4a40-815d-7ae0b8dfb02f
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Playbook_Details
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  def get_task_counts(tasks):
+      """
+      Helper function to count different types of tasks within a playbook.
+      """
+      auto_counter = 0
+      man_counter = 0
+      cond_counter = 0
+      subpb_counter = 0
+
+      for k, v in tasks.items():
+          task_type = demisto.get(v, "type")
+          is_command = demisto.get(v, "task.isCommand")
+          script_id = demisto.get(v, "task.scriptId")
+
+          if task_type == "regular":
+              if is_command or script_id:
+                  auto_counter += 1
+              else:
+                  man_counter += 1
+          elif task_type == "condition":
+              cond_counter += 1
+          elif task_type == "playbook":
+              subpb_counter += 1
+
+      return auto_counter, man_counter, cond_counter, subpb_counter
+
+  def fetch_playbook_details():
+      res = demisto.executeCommand("demisto-api-post", {"uri": "/playbook/search", "body": "{\"query\":\"system:F\"}"})
+      playbooks_table = []
+
+      try:
+          playbooks = demisto.get(res[0], "Contents.response.playbooks")
+          if isinstance(playbooks, dict):
+              playbooks = [playbooks]
+
+          for playbook in playbooks:
+              tasks = demisto.get(playbook, "tasks")
+              if isinstance(tasks, dict):
+                  auto_count, man_count, cond_count, subpb_count = get_task_counts(tasks)
+                  playbooks_table.append(
+                      {
+                          "Parent Playbook": playbook["name"],
+                          "Subplaybook": "",
+                          "Automation": auto_count,
+                          "Manual": man_count,
+                          "Conditional": cond_count,
+                          "Subplaybook Tasks": subpb_count,
+                      }
+                  )
+
+                  # Fetch subplaybook details
+                  subplaybooks = demisto.get(playbook, "task.subplaybook")
+                  if isinstance(subplaybooks, list):
+                      for subpb in subplaybooks:
+                          subpb_name = demisto.get(subpb, "name")
+                          subpb_auto_count, subpb_man_count, subpb_cond_count, subpb_subpb_count = get_task_counts(
+                              demisto.get(subpb, "tasks")
+                          )
+                          playbooks_table.append(
+                              {
+                                  "Parent Playbook": playbook["name"],
+                                  "Subplaybook": subpb_name,
+                                  "Automation": subpb_auto_count,
+                                  "Manual": subpb_man_count,
+                                  "Conditional": subpb_cond_count,
+                                  "Subplaybook Tasks": subpb_subpb_count,
+                              }
+                          )
+
+      except Exception as e:
+          demisto.error(f"Error fetching playbook details: {str(e)}")
+
+      return playbooks_table
+
+  def sort_by_name(val):
+      return val["Parent Playbook"]
+
+  # Fetch playbook details
+  playbooks_data = fetch_playbook_details()
+
+  # Sort by parent playbook name
+  playbooks_data.sort(key=sort_by_name)
+
+  # Output results
+  demisto.results({"total": len(playbooks_data), "data": playbooks_data})
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
