@@ -1,0 +1,51 @@
+args:
+- name: to
+- name: from
+commonfields:
+  id: 56d637ef-8631-4f53-8ae8-dc8e987a374e
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.6.22912
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: TrendChartIOCS_WAF
+outputs:
+- {}
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  to_arg = demisto.args().get('to')
+  from_arg = demisto.args().get('from')
+  timeline = json.loads(demisto.executeCommand('getList', {'listName':'WAFIOCTimeline'})[0]['Contents'])
+
+  bar_widget = BarColumnPieWidget()
+
+  for k,v in timeline.items():
+      k_formatted=datetime.strptime(k, '%Y-%m-%d').strftime('%d %b %Y')
+      # Checking if 'To' is not set in the widget
+      if to_arg == '0001-01-01T00:00:00Z':
+          if k >= from_arg[0:10]:
+              bar_widget.add_category(name=k_formatted, number=int(v))
+      else:
+          if k > from_arg[0:10] and k <= to_arg[0:10]:
+              bar_widget.add_category(name=k_formatted, number=int(v))
+
+
+  return_results(bar_widget)
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
