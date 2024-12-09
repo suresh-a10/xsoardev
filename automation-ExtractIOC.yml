@@ -1,0 +1,92 @@
+args:
+- name: entryID
+  required: true
+commonfields:
+  id: 8ce879aa-e1fe-49a5-85f7-10a0eec2271b
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ExtractIOC
+outputs:
+- contextPath: IOC
+  description: IOC Counts
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  entryID=demisto.args().get('entryID')
+  text=''
+  limit=1000
+  context={}
+  domain=[]
+  domaintest=[]
+  url=[]
+  ip=[]
+  hashes=[]
+  file_info = {}  # type: dict
+  try:
+  # if True:
+      file_info = demisto.getFilePath(entryID)
+      counter=0
+      file_path = file_info['path']
+      with open(file_path) as openfileobject:
+          for line in openfileobject:
+              counter+=1
+              text=text+line
+              if counter==limit:
+                  # demisto.results(demisto.executeCommand("extractIndicators", { 'text': text}))
+                  res = json.loads(demisto.executeCommand("extractIndicators", {'text': text})[0]['Contents'])
+                  counter=0
+                  text=''
+                  # demisto.results(res.get('Domain'))
+                  if res.get('Domain'):
+                      for i in res.get('Domain'):domain.append(i)
+                  if res.get('Domain_Test_'):
+                      for i in res.get('Domain_Test_'):domaintest.append(i)
+                  if res.get('URL'):
+                      for i in res['URL']:url.append(i)
+                  if res.get("IP"):
+                      for i in res["IP"]:ip.append(i)
+                  if res.get("File"):
+                      for i in res["File"]:hashes.append(i)
+
+          if text:
+              # demisto.results(demisto.executeCommand("extractIndicators", { 'text': text}))
+              res = json.loads(demisto.executeCommand("extractIndicators", {'text': text})[0]['Contents'])
+              if res.get('Domain'):
+                  for i in res.get('Domain'):domain.append(i)
+              if res.get('Domain_Test_'):
+                  for i in res.get('Domain_Test_'):domaintest.append(i)
+              if res.get('URL'):
+                  for i in res['URL']:url.append(i)
+              if res.get("IP"):
+                  for i in res["IP"]:ip.append(i)
+              if res.get("File"):
+                  for i in res["File"]:hashes.append(i)
+          context['Domain']=domain
+          context['Domain_Test_']=domaintest
+          context['URL']=url
+          context['IP']=ip
+          context['Hash']=hashes
+          demisto.setContext('IOC',context)
+
+  except Exception as e:
+      return_error('Failed to get the file path for entry: {} the error message was {}'.format(entryID, str(e)))
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
