@@ -1,0 +1,79 @@
+args:
+- auto: PREDEFINED
+  description: The new value of the field that was changed.
+  name: new
+  predefined:
+  - Low
+  - Medium
+  - High
+  - Critical
+comment: |-
+  Changes the remediation SLA once a change in incident severity occurs.
+  This is done automatically and the changes can be configured to your needs.
+commonfields:
+  id: dc6e5fa3-795b-45cc-8d03-8959cabac9e4
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: updateResponseSLAOnSevChange_copy
+pswd: ""
+runas: DBotRole
+runonce: false
+script: |+
+  import datetime
+
+  # ##### Response Configuration #####
+  CRITICAL_SLA = 15  # In minutes
+  High_SLA = 30 # In minutes
+  Medium_SLA = 60 # In minutes
+  Low_SLA = 120 # In minutes
+  Informational_SLA = 2 # In days
+
+  # ##### Remediation Configuration #####
+  #CRITICAL_RSLA = 15  # In minutes
+  #High_RSLA = 30 # In minutes
+  #Medium_RSLA = 60 # In minutes
+  #Low_RSLA = 120 # In minutes
+  #Informational_RSLA = 2 # In days
+
+
+  # ##### Logic #####
+  args_sev =  demisto.args().get('new')
+  now = datetime.datetime.utcnow()
+
+  if args_sev == 'High' :
+      demisto.log('Severity changed to High')
+      demisto.executeCommand("setIncident",{'sla': CRITICAL_SLA, "slaField":"detectionsla"})
+      ## demisto.executeCommand("setIncident",{'sla': CRITICAL_RSLA, "slaField":"remediationsla"}) ##
+
+
+  if args_sev == 'Medium' :
+      demisto.log('Severity changed to Medium')
+      demisto.executeCommand("setIncident",{'sla': High_SLA, "slaField":"detectionsla"})
+      ##demisto.executeCommand("setIncident",{'sla': High_RSLA, "slaField":"remediationsla"})##
+
+  if args_sev == 'Low' :
+      demisto.log('Severity changed to Low')
+      demisto.executeCommand("setIncident",{'sla': Medium_SLA, "slaField":"detectionsla"})
+      ### demisto.executeCommand("setIncident",{'sla': Medium_RSLA, "slaField":"remediationsla"}) ###
+
+
+
+
+scripttarget: 0
+subtype: python2
+tags:
+- field-change-triggered
+type: python
