@@ -1,0 +1,661 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: |-
+  Detonate one or more files using the Wildfire integration. This playbook
+  returns relevant reports to the War Room and file reputations to the context data.
+  The detonation supports the following file types -
+  APK, JAR, DOC, DOCX, RTF, XLS, XLSX, PPT, PPTX, OOXML, PE32, PDF, DMG, PKG, RAR, 7Z
+id: fae7a4d9-5eec-4bcb-8d7f-5a7a7f672fac
+inputs:
+- description: File object of the file to detonate. The File is taken from the context.
+  key: File
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      root: File
+- description: Duration for executing the pooling (in minutes)
+  key: Interval
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "1"
+- description: The duration after which to stop pooling and to resume the playbook
+    (in minutes)
+  key: Timeout
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "15"
+- description: The resource type to download. Default is pdf. xml is also possible.
+  key: ReportFileType
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: TCS-Detonate File Case Management  v2.1_Kunal
+outputs:
+- contextPath: DBotScore.Score
+  description: The actual score
+  type: string
+- contextPath: DBotScore.Type
+  description: The type of the indicator
+  type: string
+- contextPath: File.Type
+  description: File type e.g. "PE"
+  type: string
+- contextPath: File.Size
+  description: File size
+  type: number
+- contextPath: File.MD5
+  description: MD5 hash of the file
+  type: string
+- contextPath: File.Name
+  description: Filename
+  type: string
+- contextPath: File.SHA1
+  description: SHA1 hash of the file
+  type: string
+- contextPath: File
+  description: The File object
+  type: unknown
+- contextPath: File.SHA256
+  description: SHA256 hash of the file
+  type: string
+- contextPath: File.Malicious
+  description: The Malicious object
+  type: unknown
+- contextPath: File.Malicious.Vendor
+  description: For malicious files, the vendor that made the decision
+  type: string
+- contextPath: DBotScore
+  description: The DBot object
+  type: unknown
+- contextPath: DBotScore.Indicator
+  description: The indicator we tested
+  type: string
+- contextPath: DBotScore.Vendor
+  description: Vendor used to calculate the score
+  type: string
+- contextPath: WildFire.Report
+  description: The submission object
+  type: unknown
+- contextPath: WildFire.Report.Status
+  description: The status of the submission
+  type: string
+- contextPath: WildFire.Report.SHA256
+  description: SHA256 of the submission
+  type: string
+- contextPath: InfoFile
+  description: The report file object
+  type: unknown
+- contextPath: InfoFile.EntryID
+  description: The EntryID of the report file
+  type: string
+- contextPath: InfoFile.Extension
+  description: The extension of the report file
+  type: string
+- contextPath: InfoFile.Name
+  description: The name of the report file
+  type: string
+- contextPath: InfoFile.Info
+  description: The info of the report file
+  type: string
+- contextPath: InfoFile.Size
+  description: The size of the report file
+  type: number
+- contextPath: InfoFile.Type
+  description: The type of the report file
+  type: string
+- contextPath: WildFire.Report.MD5
+  description: MD5 of the submission
+  type: string
+- contextPath: WildFire.Report.FileType
+  description: The type of the submission
+  type: string
+- contextPath: WildFire.Report.Size
+  description: The size of the submission
+  type: number
+sourceplaybookid: WildFire - Detonate file
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8e790e29-909b-4bd3-86b0-1acf52bb89e5
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 8e790e29-909b-4bd3-86b0-1acf52bb89e5
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 0
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Ids:
+        complex:
+          accessor: Report.SHA256
+          root: WildFire
+      Interval:
+        complex:
+          root: inputs.Interval
+      PollingCommandArgName:
+        simple: hash
+      PollingCommandName:
+        simple: wildfire-report
+      Timeout:
+        complex:
+          root: inputs.Timeout
+      dt:
+        simple: WildFire.Report(val.Status != 'Success').SHA256
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Use as a sub-playbook to block execution of the master playbook until a remote action is complete.
+        This playbook implements polling by continually running the command in Step #2 until the operation completes.
+        The remote action should have the following structure:
+
+        1. Initiate the operation.
+        2. Poll to check if the operation completed.
+        3. (optional) Get the results of the operation.
+      id: 6b0506f4-f922-4d0a-89f2-e66a3a25a450
+      iscommand: false
+      name: GenericPolling
+      playbookId: GenericPolling
+      type: playbook
+      version: -1
+    taskid: 6b0506f4-f922-4d0a-89f2-e66a3a25a450
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 1245
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      format:
+        complex:
+          root: inputs.ReportFileType
+      hash:
+        complex:
+          accessor: Report.SHA256
+          root: WildFire
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: WildFire-v2
+      description: Retrieves results for a file hash using WildFire.
+      id: 8423a5a2-35a3-4782-80e2-bf7b4188ea29
+      iscommand: true
+      name: Get The Sandbox Report
+      script: WildFire-v2|||wildfire-report
+      type: regular
+      version: -1
+    taskid: 8423a5a2-35a3-4782-80e2-bf7b4188ea29
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 1420
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b3e9e3d2-751d-4a7a-8405-8581e155b7d0
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: b3e9e3d2-751d-4a7a-8405-8581e155b7d0
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1595
+        }
+      }
+  "6":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: EntryID
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: File.Info
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: zip
+                  - left:
+                      iscontext: true
+                      value:
+                        simple: File.Info
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: 7z
+                root: File
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      "yes":
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 08e82b88-9caf-4d7f-8f33-6c1b80f62ff8
+      iscommand: false
+      name: 'Is There a File To Detonate? '
+      type: condition
+      version: -1
+    taskid: 08e82b88-9caf-4d7f-8f33-6c1b80f62ff8
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 150,
+          "y": 370
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: brand
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: WildFire
+                  - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: WildFire-v2
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      "yes":
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if integration instance is enabled.
+      id: eceb517a-efb0-49fd-8331-e01ab2088074
+      iscommand: false
+      name: Is WildFire sandbox enabled?
+      type: condition
+      version: -1
+    taskid: eceb517a-efb0-49fd-8331-e01ab2088074
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 195
+        }
+      }
+  "10":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: EntryID
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: File.Type
+                    operator: match
+                    right:
+                      value:
+                        simple: .*(?:APK|JAR|DOC|DOCX|RTF|XLS|XLSX|PPT|PPTX|OOXML|PE32|PDF|DMG|PKG|RAR|7Z)\b
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: File.Info
+                    operator: match
+                    right:
+                      value:
+                        simple: .*(?:APK|JAR|DOC|DOCX|RTF|XLS|XLSX|PPT|PPTX|OOXML|PE32|PDF|DMG|PKG|RAR|7Z|ZIP)\b
+                root: File
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      "yes":
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c14413fb-2ca7-407a-87d3-e9d83f63dd53
+      iscommand: false
+      name: Is The File in Supported Format ?
+      type: condition
+      version: -1
+    taskid: c14413fb-2ca7-407a-87d3-e9d83f63dd53
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 275,
+          "y": 720
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      upload:
+        complex:
+          accessor: EntryID
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: inputs.File.Info
+              operator: match
+              right:
+                value:
+                  simple: .*(?:APK|JAR|DOC|DOCX|RTF|XLS|XLSX|PPT|PPTX|OOXML|PE32|PDF|DMG|PKG|RAR|7Z|ZIP)\b
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: inputs.File.Type
+              operator: match
+              right:
+                value:
+                  simple: .*(?:APK|JAR|DOC|DOCX|RTF|XLS|XLSX|PPT|PPTX|OOXML|PE32|PDF|DMG|PKG|RAR|7Z|ZIP)\b
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: inputs.File.Extension
+              operator: match
+              right:
+                value:
+                  simple: .*(?:APK|JAR|DOC|DOCX|RTF|XLS|XLSX|PPT|PPTX|OOXML|PE32|PDF|DMG|PKG|RAR|7Z|ZIP)\b
+          root: inputs.File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: WildFire-v2
+      description: Uploads a file to WildFire for analysis.
+      id: d78b1eb7-e9ad-4f11-84dd-b8c14b3bd86f
+      iscommand: true
+      name: Upload File To Wild Fire
+      script: WildFire-v2|||wildfire-upload
+      type: regular
+      version: -1
+    taskid: d78b1eb7-e9ad-4f11-84dd-b8c14b3bd86f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 895
+        }
+      }
+  "13":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Report.SHA256
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: WildFire.Report.Status
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Pending
+                root: WildFire
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 77d0ce08-3658-48dd-83ca-68cbea901d32
+      iscommand: false
+      name: Was upload finished successfully?
+      type: condition
+      version: -1
+    taskid: 77d0ce08-3658-48dd-83ca-68cbea901d32
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 1070
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Extension
+              operator: isEqualString
+              right:
+                value:
+                  simple: zip
+            - left:
+                iscontext: true
+                value:
+                  simple: File.Extension
+              operator: isEqualString
+              right:
+                value:
+                  simple: 7z
+          root: File
+      password:
+        simple: '{TOMMED}cRR2QP8KPICOYTe6v83pAO7qxMycN/9PB+Bkpe2TcnqzXpauSYqBgzCOTHGhw/c8HPEt2818we6ulPG0ZvA6RQ=='
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Unzip a file using fileName or entryID to specify a file. Unzipped
+        files will be loaded to the War Room and names will be put into the context.
+      id: 3489a54c-5414-4a80-8bd2-960b4f1caf9d
+      iscommand: false
+      name: Unzip File
+      script: UnzipFile
+      type: regular
+      version: -1
+    taskid: 3489a54c-5414-4a80-8bd2-960b4f1caf9d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 275,
+          "y": 570
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1610,
+        "width": 717.5,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
