@@ -104,7 +104,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 1.6.36
+    itemVersion: 1.6.41
     packID: Active_Directory_Query
     packName: Active Directory Query
     packPropagationLabels:
@@ -894,13 +894,13 @@ script:
     outputs:
     - contextPath: ActiveDirectory.ValidCredentials
       description: List of usernames that successfully logged in.
-  dockerimage: demisto/ldap:2.9.1.98188
+  dockerimage: demisto/ldap:2.9.1.115352
   ismappable: true
   isremotesyncout: true
   runonce: false
   script: |
     register_module_line('Active Directory Query v2', 'start', __line__())
-    ### pack version: 1.6.36
+    demisto.debug('pack name = Active Directory Query, pack version = 1.6.41')
 
 
 
@@ -1093,6 +1093,18 @@ script:
             'PASSWORD_EXPIRED': bool(user_account_control & 0x800000),
             'TRUSTED_TO_AUTH_FOR_DELEGATION': bool(user_account_control & 0x1000000),
             'PARTIAL_SECRETS_ACCOUNT': bool(user_account_control & 0x04000000),
+        }
+
+
+    def user_account_to_boolean_fields_msDS_user_account_control_computed(user_account_control):
+        """
+        parse the msDS-User-Account-Control-Computed into boolean values.
+        following the values from:
+        https://learn.microsoft.com/en-us/windows/win32/adschema/a-msds-user-account-control-computed
+        """
+        return {
+            'PASSWORD_EXPIRED': bool(user_account_control & 0x800000),
+            'LOCKOUT': bool(user_account_control & 0x0010),
         }
 
 
@@ -1569,7 +1581,8 @@ script:
 
         attributes = list(set(custom_attributes + DEFAULT_PERSON_ATTRIBUTES)
                           - set(argToList(args.get('attributes-to-exclude'))))
-
+        if 'userAccountControl' in attributes:
+            attributes.append('msDS-User-Account-Control-Computed')
         entries = search_with_paging(
             query,
             default_base_dn,
@@ -1590,6 +1603,13 @@ script:
                     if args.get('user-account-control-out', '') == 'true':
                         user['userAccountControl'] = COMMON_ACCOUNT_CONTROL_FLAGS.get(
                             user_account_control) or user_account_control
+
+                if user.get("msDS-User-Account-Control-Computed"):
+                    user_account_control_msDS = user.get("msDS-User-Account-Control-Computed")[0]
+                    user_account_to_boolean_dict = user_account_to_boolean_fields_msDS_user_account_control_computed(
+                        user_account_control_msDS)
+                    user.setdefault("userAccountControlFields", {}).update(user_account_to_boolean_dict)
+
         entry_context = {
             'ActiveDirectory.Users(obj.dn == val.dn)': entries['flat'],
             # 'backward compatability' with ADGetUser script
@@ -2676,10 +2696,9 @@ script:
             raise DemistoException(f"Unable to fetch attribute 'userAccountControl' for user {sam_account_name}.")
 
 
-    def test_credentials_command(server_ip, ntlm_connection):
+    def test_credentials_command(server_ip, server, ntlm_connection, auto_bind):
         args = demisto.args()
         username = args.get('username')
-        server = Server(server_ip, get_info='ALL')
         try:
             connection = create_connection(
                 server=server,
@@ -2687,7 +2706,7 @@ script:
                 username=username,
                 password=args.get('password'),
                 ntlm_connection=argToBoolean(ntlm_connection),
-                auto_bind=True,
+                auto_bind=auto_bind,
             )
             connection.unbind()
         except LDAPBindError:
@@ -2887,7 +2906,7 @@ script:
                 delete_group()
 
             elif command == 'ad-test-credentials':
-                return return_results(test_credentials_command(server_ip, ntlm_connection=ntlm_auth))
+                return return_results(test_credentials_command(server_ip, server, ntlm_connection=ntlm_auth, auto_bind=auto_bind))
 
             # IAM commands
             elif command == 'iam-get-user':
