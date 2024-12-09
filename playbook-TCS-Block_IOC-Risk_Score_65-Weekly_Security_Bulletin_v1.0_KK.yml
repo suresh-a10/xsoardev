@@ -1,0 +1,2196 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: This playbook will block only IOC that have riskscore 65 and above from
+  the weekly security bulletin and notify the team after blocking.
+id: 43e2f33c-e29d-4927-85e9-f854210229bf
+inputs: []
+name: TCS-Block IOC-Risk Score 65-Weekly Security Bulletin v1.0_KK
+outputs: []
+sourceplaybookid: 0a608f75-4154-430b-81e0-3a7bc08ad2e0
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "83"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: de5f25a6-62a1-4547-8da6-7665cda34b73
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: de5f25a6-62a1-4547-8da6-7665cda34b73
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": -1700
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "78"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c7f11ed9-3dd7-4257-8c78-f2d6103e1db9
+      iscommand: false
+      name: Notify IoC(s) Blocked
+      type: title
+      version: -1
+    taskid: c7f11ed9-3dd7-4257-8c78-f2d6103e1db9
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 950,
+          "y": 530
+        }
+      }
+  "33":
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "93"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      reputation:
+        simple: Bad
+      source:
+        simple: ${incident.id}
+      tags:
+        simple: COSCBlockURL
+      type:
+        simple: URL
+      value:
+        simple: ${SIXFIVE.URL}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Change the properties of an indicator
+      id: b48e29c5-9a06-40b1-8b9d-13483dc0801f
+      iscommand: true
+      name: Tag 'CSOC' Bad URL Indicator
+      script: Builtin|||createNewIndicator
+      tags:
+      - ProxyBlockDomain
+      type: regular
+      version: -1
+    taskid: b48e29c5-9a06-40b1-8b9d-13483dc0801f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": -110
+        }
+      }
+  "39":
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "88"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_126
+      execution-timeout:
+        simple: "1000000"
+      retry-count:
+        simple: "6"
+      url:
+        complex:
+          accessor: Domain
+          root: SIXFIVE
+          transformers:
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      using:
+        simple: Zscaler_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds URLs to the specified category.
+      id: 3817aca5-c2f3-4ebe-823c-87e3c0857439
+      iscommand: true
+      name: Blacklist Domain on ZScalar Proxy - Corp
+      script: Zscaler|||zscaler-category-add-url
+      type: regular
+      version: -1
+    taskid: 3817aca5-c2f3-4ebe-823c-87e3c0857439
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 270,
+          "y": -395
+        }
+      }
+  "40":
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+      - "33"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_126
+      execution-timeout:
+        simple: "1000000"
+      retry-count:
+        simple: "6"
+      url:
+        complex:
+          accessor: URL
+          root: SIXFIVE
+          transformers:
+          - args:
+              from:
+                value:
+                  simple: //
+            operator: substringFrom
+          - args:
+              delimiter:
+                value:
+                  simple: ' '
+            operator: splitAndTrim
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      using:
+        simple: Zscaler_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds URLs to the specified category.
+      id: c608f059-41aa-4d63-8302-fb870f23bfde
+      iscommand: true
+      name: Blacklist CSOC Shared URL on ZScalar Proxy - Corp
+      script: Zscaler|||zscaler-category-add-url
+      type: regular
+      version: -1
+    taskid: c608f059-41aa-4d63-8302-fb870f23bfde
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": -300
+        }
+      }
+  "43":
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "85"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      IP:
+        simple: ${SIXFIVE.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7418d133-823f-4fa1-81fc-8536ba6ecd10
+      iscommand: false
+      name: TCS-Add New CSOC IP Indicator v1.0_Kunal
+      playbookId: e653e5ab-6658-4f7a-806d-6a79d92d5d98
+      type: playbook
+      version: -1
+    taskid: 7418d133-823f-4fa1-81fc-8536ba6ecd10
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -170,
+          "y": -410
+        }
+      }
+  "58":
+    continueonerrortype: ""
+    id: "58"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 5
+    nexttasks:
+      '#none#':
+      - "94"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      file:
+        complex:
+          accessor: File
+          root: SIXFIVE
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3e456d82-58b4-4db9-8072-019a34386200
+      iscommand: false
+      name: TCS-CSOC Block Malicious Hash on CS v1.0_Kunal
+      playbookId: 9d6b9cb3-059d-4b12-865c-f73bed1daa8a
+      type: playbook
+      version: -1
+    taskid: 3e456d82-58b4-4db9-8072-019a34386200
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1990,
+          "y": -300
+        }
+      }
+  "65":
+    continueonerrortype: ""
+    id: "65"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "95"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_240
+      execution-timeout:
+        simple: "1000000"
+      retry-count:
+        simple: "6"
+      url:
+        complex:
+          accessor: Domain
+          root: SIXFIVE
+          transformers:
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      using:
+        simple: Zscaler_instance_BPS
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds URLs to the specified category.
+      id: e0c3056e-e2d0-40c9-8b91-1395bb1c27c7
+      iscommand: true
+      name: Blacklist Domain on ZScalar Proxy - BPS
+      script: Zscaler|||zscaler-category-add-url
+      type: regular
+      version: -1
+    taskid: e0c3056e-e2d0-40c9-8b91-1395bb1c27c7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 710,
+          "y": -300
+        }
+      }
+  "67":
+    continueonerrortype: ""
+    id: "67"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "90"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_240
+      execution-timeout:
+        simple: "1000000"
+      retry-count:
+        simple: "6"
+      url:
+        complex:
+          accessor: URL
+          root: SIXFIVE
+          transformers:
+          - args:
+              from:
+                value:
+                  simple: //
+            operator: substringFrom
+          - args:
+              delimiter:
+                value:
+                  simple: ' '
+            operator: splitAndTrim
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      using:
+        simple: Zscaler_instance_BPS
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds URLs to the specified category.
+      id: fafbd5d2-bc30-4664-8f63-6a1f65ce562d
+      iscommand: true
+      name: Blacklist CSOC Shared URL on ZScalar Proxy - BPS
+      script: Zscaler|||zscaler-category-add-url
+      type: regular
+      version: -1
+    taskid: fafbd5d2-bc30-4664-8f63-6a1f65ce562d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1560,
+          "y": -330
+        }
+      }
+  "69":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.IP
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "65"
+      label: "yes"
+    continueonerrortype: ""
+    id: "69"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "79"
+      "yes":
+      - "76"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c54f2379-40ea-4833-8f18-49d5c50ee18c
+      iscommand: false
+      name: Are There Any IPs  With Risk Score > 65
+      type: condition
+      version: -1
+    taskid: c54f2379-40ea-4833-8f18-49d5c50ee18c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -170,
+          "y": -740
+        }
+      }
+  "70":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.Domain
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "65"
+      label: "yes"
+    continueonerrortype: ""
+    id: "70"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "79"
+      "yes":
+      - "75"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 48c10e8b-4dd7-49b7-8440-ae0ceebdda0c
+      iscommand: false
+      name: Are There Any Domains With Risk Score > 65
+      type: condition
+      version: -1
+    taskid: 48c10e8b-4dd7-49b7-8440-ae0ceebdda0c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 490,
+          "y": -740
+        }
+      }
+  "71":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.URL
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "65"
+      label: "yes"
+    continueonerrortype: ""
+    id: "71"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "79"
+      "yes":
+      - "73"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 51a3f5c1-9b96-4dd6-892f-07b435826291
+      iscommand: false
+      name: Are There Any URLs With Risk Score > 65
+      type: condition
+      version: -1
+    taskid: 51a3f5c1-9b96-4dd6-892f-07b435826291
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1340,
+          "y": -730
+        }
+      }
+  "72":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.File
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "65"
+      label: "yes"
+    continueonerrortype: ""
+    id: "72"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "79"
+      "yes":
+      - "74"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b650aadc-4c0d-473f-81ba-1cc3fa6ed1e9
+      iscommand: false
+      name: Are There Any Hashs With Risk Score > 65
+      type: condition
+      version: -1
+    taskid: b650aadc-4c0d-473f-81ba-1cc3fa6ed1e9
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1990,
+          "y": -730
+        }
+      }
+  "73":
+    continueonerrortype: ""
+    id: "73"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "40"
+      - "67"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: SIXFIVE.URL
+      value:
+        complex:
+          accessor: name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: RecordedFuture.URL.riskScore
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "65"
+          root: RecordedFuture.URL
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: cc48c65b-c28b-4703-8bae-c4dfd1d0b4fc
+      iscommand: false
+      name: 'Set URL65 To Context '
+      script: Set
+      type: regular
+      version: -1
+    taskid: cc48c65b-c28b-4703-8bae-c4dfd1d0b4fc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": -520
+        }
+      }
+  "74":
+    continueonerrortype: ""
+    id: "74"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "58"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: SIXFIVE.File
+      value:
+        complex:
+          accessor: name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: RecordedFuture.File.riskScore
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "65"
+          root: RecordedFuture.File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: c38bd8e9-710f-4eaf-8135-81363d1f2357
+      iscommand: false
+      name: 'Set HASH65 To Context '
+      script: Set
+      type: regular
+      version: -1
+    taskid: c38bd8e9-710f-4eaf-8135-81363d1f2357
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1990,
+          "y": -520
+        }
+      }
+  "75":
+    continueonerrortype: ""
+    id: "75"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "39"
+      - "65"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: SIXFIVE.Domain
+      value:
+        complex:
+          accessor: name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: RecordedFuture.Domain.riskScore
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "65"
+          root: RecordedFuture.Domain
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: d1d5d4eb-77e1-4611-8373-307c5eac0ea2
+      iscommand: false
+      name: 'Set Domain65 To Context '
+      script: Set
+      type: regular
+      version: -1
+    taskid: d1d5d4eb-77e1-4611-8373-307c5eac0ea2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 710,
+          "y": -520
+        }
+      }
+  "76":
+    continueonerrortype: ""
+    id: "76"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "43"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: SIXFIVE.IP
+      value:
+        complex:
+          accessor: name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: RecordedFuture.IP.riskScore
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "65"
+          root: RecordedFuture.IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 21394b12-3d22-46ba-862d-196992015eb3
+      iscommand: false
+      name: 'Set IP65 To Context '
+      script: Set
+      type: regular
+      version: -1
+    taskid: 21394b12-3d22-46ba-862d-196992015eb3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -170,
+          "y": -550
+        }
+      }
+  "78":
+    continueonerrortype: ""
+    id: "78"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "96"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      actionnotification:
+        simple: '<h2 style="text-align: center;"><em><span style="color: #ff00ff;">IoC
+          65 &amp; Above Have Been Blocked</span><br /></em></h2>'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 342e20f4-2a42-419f-8dd0-3c5688ef8763
+      iscommand: true
+      name: Set Action Notification - IoCs Blocked
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 342e20f4-2a42-419f-8dd0-3c5688ef8763
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 950,
+          "y": 660
+        }
+      }
+  "79":
+    continueonerrortype: ""
+    id: "79"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a2fd2188-8901-4f6b-8050-95d18f8e23a2
+      iscommand: false
+      name: The End
+      type: title
+      version: -1
+    taskid: a2fd2188-8901-4f6b-8050-95d18f8e23a2
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 960,
+          "y": 2305
+        }
+      }
+  "80":
+    continueonerrortype: ""
+    id: "80"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "82"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      actionnotification:
+        simple: '<h2 style="text-align: center;"><em><span style="color: #008000;">Processing
+          IoC(s) For Blocking</span><br /></em></h2>'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 1f9a3104-22bd-48dc-8848-bb3259d32929
+      iscommand: true
+      name: Set Action Notification - Processing IoC(s) For Blocking
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 1f9a3104-22bd-48dc-8848-bb3259d32929
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": -1085
+        }
+      }
+  "81":
+    continueonerrortype: ""
+    id: "81"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "80"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c1cb30ce-b5a9-478d-869e-549b1d76bd6f
+      iscommand: false
+      name: Notify Processing IoCs For Blocking
+      type: title
+      version: -1
+    taskid: c1cb30ce-b5a9-478d-869e-549b1d76bd6f
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": -1260
+        }
+      }
+  "82":
+    continueonerrortype: ""
+    id: "82"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "69"
+      - "70"
+      - "71"
+      - "72"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8e65cccf-f94c-4b91-824b-185bed5900c1
+      iscommand: false
+      name: Check Which IoC(s) 65 & Above
+      type: title
+      version: -1
+    taskid: 8e65cccf-f94c-4b91-824b-185bed5900c1
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": -900
+        }
+      }
+  "83":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.Domain
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "65"
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.IP
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "65"
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.File
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "65"
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.URL
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "65"
+      label: "yes"
+    continueonerrortype: ""
+    id: "83"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "84"
+      "yes":
+      - "81"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6aae980d-23c4-4fc3-8fe3-9220a56d5a35
+      iscommand: false
+      name: Are There Any IoCs With Risk Score > 65
+      type: condition
+      version: -1
+    taskid: 6aae980d-23c4-4fc3-8fe3-9220a56d5a35
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 920,
+          "y": -1495
+        }
+      }
+  "84":
+    continueonerrortype: ""
+    id: "84"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "113"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      noioc:
+        simple: '<h2 style="text-align: center;"><em><span style="color: #008000;">No
+          IoCs Found For Auto Blocking</span><br /></em></h2>'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 31698b2d-91eb-4413-800c-dc912ddb298a
+      iscommand: true
+      name: Set Action Notification - No IoCs Found For Auto Blocking
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 31698b2d-91eb-4413-800c-dc912ddb298a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 490,
+          "y": 1385
+        }
+      }
+  "85":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "85"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "86"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_132
+      ip:
+        simple: ${SIXFIVE.IP}
+      retry-count:
+        simple: "6"
+      using:
+        simple: Zscaler_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds IP address to the specified category.
+      id: 28b873d7-3836-420c-8039-15892a359195
+      iscommand: true
+      name: block IP on Zscaler Corporate tenant
+      script: Zscaler|||zscaler-category-add-ip
+      type: regular
+      version: -1
+    taskid: 28b873d7-3836-420c-8039-15892a359195
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -170,
+          "y": -260
+        }
+      }
+  "86":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "86"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "87"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_241
+      ip:
+        simple: ${SIXFIVE.IP}
+      using:
+        simple: Zscaler_instance_BPS
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds IP address to the specified category.
+      id: eb492e66-e22d-4c9d-875c-73f0c6bca4c0
+      iscommand: true
+      name: Block IP on Zscaler BPS tenant
+      script: Zscaler|||zscaler-category-add-ip
+      type: regular
+      version: -1
+    taskid: eb492e66-e22d-4c9d-875c-73f0c6bca4c0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -170,
+          "y": -110
+        }
+      }
+  "87":
+    continueonerrortype: ""
+    id: "87"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "91"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_57
+      ip:
+        simple: ${SIXFIVE.IP}
+      retry-count:
+        simple: "6"
+      using:
+        simple: Zscaler_instance_GNDM
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds IP address to the specified category.
+      id: 3596fb2d-f32d-4756-8e3f-233feb2d8973
+      iscommand: true
+      name: Block IP on Zscaler GNDM tenant
+      script: Zscaler|||zscaler-category-add-ip
+      type: regular
+      version: -1
+    taskid: 3596fb2d-f32d-4756-8e3f-233feb2d8973
+    timertriggers:
+    - action: stop
+      fieldname: mitigationsla
+    - action: stop
+      fieldname: blockioctimer
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -170,
+          "y": 35
+        }
+      }
+  "88":
+    continueonerrortype: ""
+    id: "88"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "89"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_09
+      execution-timeout:
+        simple: "1000000"
+      retry-count:
+        simple: "6"
+      url:
+        complex:
+          accessor: Domain
+          root: SIXFIVE
+          transformers:
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      using:
+        simple: Zscaler_instance_GNDM
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds URLs to the specified category.
+      id: e7a0ee42-10cd-4c48-8db3-158282533681
+      iscommand: true
+      name: Blacklist Domain on ZScalar Proxy - GNDM
+      script: Zscaler|||zscaler-category-add-url
+      type: regular
+      version: -1
+    taskid: e7a0ee42-10cd-4c48-8db3-158282533681
+    timertriggers:
+    - action: stop
+      fieldname: mitigationsla
+    - action: stop
+      fieldname: blockioctimer
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 270,
+          "y": -250
+        }
+      }
+  "89":
+    continueonerrortype: ""
+    id: "89"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "92"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alert_time:
+        complex:
+          accessor: created
+          root: incident
+          transformers:
+          - operator: 8726aa62-638b-41b0-8fd7-8d8892145289
+          - args:
+              delimiter:
+                value:
+                  simple: .
+              fields:
+                value:
+                  simple: "1"
+            operator: Cut
+          - args:
+              prefix: {}
+              suffix:
+                value:
+                  simple: .0Z
+            operator: concat
+      destination_domain:
+        complex:
+          accessor: Domain
+          root: SIXFIVE
+      destination_url:
+        simple: http://abc.com
+      device_id:
+        simple: abcdefghij
+      device_version:
+        simple: "1.0"
+      retry-count:
+        simple: "6"
+      using:
+        simple: Cisco Umbrella Enforcement Block Domain_instance,Cisco Umbrella Enforcement
+          Block Domain GNDM
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cisco Umbrella Enforcement Block Domain
+      description: Posts a malware event to the API for processing and optionally
+        adding to a customer's domain lists.
+      id: 28ba6137-a495-4831-81c3-e80c435f440e
+      iscommand: true
+      name: Block Domain on Cisco Umbrella (opendns)
+      script: Cisco Umbrella Enforcement Block Domain|||umbrella-domain-event-add
+      type: regular
+      version: -1
+    taskid: 28ba6137-a495-4831-81c3-e80c435f440e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 270,
+          "y": -110
+        }
+      }
+  "90":
+    continueonerrortype: ""
+    id: "90"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_09
+      execution-timeout:
+        simple: "1000000"
+      retry-count:
+        simple: "6"
+      url:
+        complex:
+          accessor: URL
+          root: SIXFIVE
+          transformers:
+          - args:
+              from:
+                value:
+                  simple: //
+            operator: substringFrom
+          - args:
+              delimiter:
+                value:
+                  simple: ' '
+            operator: splitAndTrim
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      using:
+        simple: Zscaler_instance_GNDM
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Adds URLs to the specified category.
+      id: 7ec5ba3e-3a72-4e26-8d99-3e3832cd6827
+      iscommand: true
+      name: Blacklist CSOC Shared URL on ZScalar Proxy - GNDM
+      script: Zscaler|||zscaler-category-add-url
+      type: regular
+      version: -1
+    taskid: 7ec5ba3e-3a72-4e26-8d99-3e3832cd6827
+    timertriggers:
+    - action: stop
+      fieldname: mitigationsla
+    - action: stop
+      fieldname: blockioctimer
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1560,
+          "y": -190
+        }
+      }
+  "91":
+    continueonerrortype: ""
+    id: "91"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "106"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      ref_name:
+        simple: TCS_StandardRiskScore_IP
+      using:
+        simple: QRadar v3_Typosquat Offences
+      value:
+        simple: ${SIXFIVE.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Adds or updates an element in a reference set.
+      id: 2f33f439-e0d7-4d31-89dc-936da0a7003f
+      iscommand: true
+      name: Update IP address Reference set "TCS_IOC_StandardRiskScore_IP"
+      script: QRadar v3|||qradar-reference-set-value-upsert
+      type: regular
+      version: -1
+    taskid: 2f33f439-e0d7-4d31-89dc-936da0a7003f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -170,
+          "y": 190
+        }
+      }
+  "92":
+    continueonerrortype: ""
+    id: "92"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "107"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      ref_name:
+        simple: TCS_StandardRiskScore_Domain
+      using:
+        simple: QRadar v3_Typosquat Offences
+      value:
+        simple: ${SIXFIVE.Domain}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Adds or updates an element in a reference set.
+      id: a809d4b2-e03d-462a-8c46-ad5cbdf0c991
+      iscommand: true
+      name: Update IP address Reference set "TCS_StandardRiskScore_Domain"
+      script: QRadar v3|||qradar-reference-set-value-upsert
+      type: regular
+      version: -1
+    taskid: a809d4b2-e03d-462a-8c46-ad5cbdf0c991
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 270,
+          "y": 70
+        }
+      }
+  "93":
+    continueonerrortype: ""
+    id: "93"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      ref_name:
+        simple: TCS_StandardRiskScore_Domain
+      using:
+        simple: QRadar v3_Typosquat Offences
+      value:
+        simple: ${SIXFIVE.URL}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Adds or updates an element in a reference set.
+      id: 403c9edc-30fb-415d-8970-d626b511b720
+      iscommand: true
+      name: Update IP address Reference set "TCS_StandardRiskScore_Domain"
+      script: QRadar v3|||qradar-reference-set-value-upsert
+      type: regular
+      version: -1
+    taskid: 403c9edc-30fb-415d-8970-d626b511b720
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": 35
+        }
+      }
+  "94":
+    continueonerrortype: ""
+    id: "94"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "108"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      ref_name:
+        simple: TCS_StandardRiskScore_Hash
+      using:
+        simple: QRadar v3_Typosquat Offences
+      value:
+        simple: ${SIXFIVE.File}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar v3
+      description: Adds or updates an element in a reference set.
+      id: a7866417-ff32-4781-8fc5-efd2908786b0
+      iscommand: true
+      name: Update IP address Reference set "TCS_StandardRiskScore_Hash"
+      script: QRadar v3|||qradar-reference-set-value-upsert
+      type: regular
+      version: -1
+    taskid: a7866417-ff32-4781-8fc5-efd2908786b0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1990,
+          "y": -110
+        }
+      }
+  "95":
+    continueonerrortype: ""
+    id: "95"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "92"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      creationdate:
+        simple: ${ISOTimeNow}
+      reputation:
+        simple: Bad
+      source:
+        simple: ${incident.id}
+      tags:
+        simple: COSCBlockDomain,emailblock
+      type:
+        simple: Domain
+      value:
+        simple: ${SIXFIVE.Domain}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Change the properties of an indicator
+      id: 07117663-75e4-4c0c-8d76-bc2de073c5d1
+      iscommand: true
+      name: Tag 'CSOC' and 'emailblock' Bad Domain Indicator
+      script: Builtin|||createNewIndicator
+      tags:
+      - ProxyBlockDomain
+      type: regular
+      version: -1
+    taskid: 07117663-75e4-4c0c-8d76-bc2de073c5d1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 710,
+          "y": -95
+        }
+      }
+  "96":
+    continueonerrortype: ""
+    id: "96"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "111"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d64beb07-c98b-49c0-8f70-fae95e402cac
+      iscommand: false
+      name: Report & Notify
+      type: title
+      version: -1
+    taskid: d64beb07-c98b-49c0-8f70-fae95e402cac
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 950,
+          "y": 810
+        }
+      }
+  "97":
+    continueonerrortype: ""
+    id: "97"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "98"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      csvArray:
+        simple: ${SIXFIVE}
+      fileName:
+        simple: IOC_RiskScore.csv
+      headers:
+        simple: name,riskScore
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Export given array to csv file
+      id: 9fa5fbc4-8723-428e-873a-b943c22688d2
+      iscommand: false
+      name: Create Risk Score Report
+      script: ExportToCSV
+      type: regular
+      version: -1
+    taskid: 9fa5fbc4-8723-428e-873a-b943c22688d2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1620,
+          "y": 970
+        }
+      }
+  "98":
+    continueonerrortype: ""
+    id: "98"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: Report
+      value:
+        simple: '${.=(val.File instanceof Array ? val.File[val.File.length-1].EntryID
+          : val.File.EntryID)}'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 5f441da6-9e8f-4fea-8cbc-865de0268c00
+      iscommand: false
+      name: Set IOC Report To Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 5f441da6-9e8f-4fea-8cbc-865de0268c00
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1620,
+          "y": 1140
+        }
+      }
+  "103":
+    continueonerrortype: ""
+    id: "103"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "104"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f98e8424-30a8-4e8f-805a-614f573302a2
+      iscommand: false
+      name: Email Report / Notify
+      type: title
+      version: -1
+    taskid: f98e8424-30a8-4e8f-805a-614f573302a2
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 950,
+          "y": 1480
+        }
+      }
+  "104":
+    continueonerrortype: ""
+    id: "104"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "79"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        complex:
+          root: Report
+      cc:
+        simple: yogesh.gholap@tcs.com,nimisha.prajapati@tcs.com
+      htmlBody:
+        simple: |-
+          <p>Hello Human,</p>
+
+          <p>PFA the IOCs with risk score above 64 blocked on respective security controls from the Weekly Security Bulletin.</p>
+
+          <b>Please check for presence for all these IOC's in TCS environment.</b>
+
+          <p>XSOAR Investigation id - ${incident.id}</p>
+
+          <p><br />Regards,<br />CSOC Cyber AutoBot<br />Internal IT IS - Cybersec</p>
+      retry-count:
+        simple: "1"
+      retry-interval:
+        simple: "30"
+      subject:
+        simple: Notify IOC Blocking Done for Above 64 Risk score -- Weekly Security
+          Bulletin
+      to:
+        simple: ${incident.labels.Email/from},csocsenioroperator@tcscomprod.onmicrosoft.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: e9547b93-6194-4822-869d-6dd6ea0f7a35
+      iscommand: true
+      name: Email Above 64 Blocked IOC Report Summary
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: e9547b93-6194-4822-869d-6dd6ea0f7a35
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 950,
+          "y": 1610
+        }
+      }
+  "106":
+    continueonerrortype: ""
+    id: "106"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: RiskScore.Result
+      value:
+        complex:
+          accessor: IP
+          root: RecordedFuture
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 11f46f8a-037a-46de-8402-69b7529f10aa
+      iscommand: false
+      name: 'Set RF IP Address In Context '
+      script: Set
+      type: regular
+      version: -1
+    taskid: 11f46f8a-037a-46de-8402-69b7529f10aa
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -160,
+          "y": 380
+        }
+      }
+  "107":
+    continueonerrortype: ""
+    id: "107"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: RiskScore.Result
+      value:
+        complex:
+          accessor: Domain
+          root: RecordedFuture
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: cb7c6d14-05e7-42e2-8502-a439ae165d75
+      iscommand: false
+      name: 'Set RF Domain In Context '
+      script: Set
+      type: regular
+      version: -1
+    taskid: cb7c6d14-05e7-42e2-8502-a439ae165d75
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 280,
+          "y": 270
+        }
+      }
+  "108":
+    continueonerrortype: ""
+    id: "108"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: RiskScore.Result
+      value:
+        complex:
+          accessor: File
+          root: RecordedFuture
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: c8fc69cf-d501-4be5-8d52-9e1ec6a33907
+      iscommand: false
+      name: 'Set RF File In Context '
+      script: Set
+      type: regular
+      version: -1
+    taskid: c8fc69cf-d501-4be5-8d52-9e1ec6a33907
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1970,
+          "y": 80
+        }
+      }
+  "109":
+    continueonerrortype: ""
+    id: "109"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "103"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: Report
+      value:
+        simple: '${.=(val.File instanceof Array ? val.File[val.File.length-1].EntryID
+          : val.File.EntryID)}'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: a0920b8c-9d4d-40ea-8dcf-0e7f735c254d
+      iscommand: false
+      name: Set 64 Above Report To Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: a0920b8c-9d4d-40ea-8dcf-0e7f735c254d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 950,
+          "y": 1300
+        }
+      }
+  "110":
+    continueonerrortype: ""
+    id: "110"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "109"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      csvArray:
+        simple: ${RiskScore65}
+      fileName:
+        simple: Blocked_IOC_Above_64_RiskScore.csv
+      headers:
+        simple: name,riskScore
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Export given array to csv file
+      id: 98ca3dff-12b5-41c9-8e8e-0e934dbfac4a
+      iscommand: false
+      name: Create Risk Score Report Above 64
+      script: ExportToCSV
+      type: regular
+      version: -1
+    taskid: 98ca3dff-12b5-41c9-8e8e-0e934dbfac4a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 950,
+          "y": 1110
+        }
+      }
+  "111":
+    continueonerrortype: ""
+    id: "111"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "110"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: RiskScore65
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: RiskScore.Result.riskScore
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "65"
+          root: RiskScore.Result
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 117dc4b4-1074-4316-8713-a3a45158edfc
+      iscommand: false
+      name: Set IOC Greater Than 65 To Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 117dc4b4-1074-4316-8713-a3a45158edfc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 950,
+          "y": 950
+        }
+      }
+  "113":
+    continueonerrortype: ""
+    id: "113"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "79"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        complex:
+          root: Report
+      cc:
+        simple: yogesh.gholap@tcs.com,nimisha.prajapati@tcs.com
+      htmlBody:
+        simple: |-
+          <p>Hello Human,</p>
+
+          <p>No IOCs with risk score above 64 were found in the Weekly Security Bulletin.</p>
+
+          <p>XSOAR Investigation id - ${incident.id}</p>
+
+          <p><br />Regards,<br />CSOC Cyber AutoBot<br />Internal IT IS - Cybersec</p>
+      retry-count:
+        simple: "1"
+      retry-interval:
+        simple: "30"
+      subject:
+        simple: No Above 64 IOC Found -- Weekly Security Bulletin
+      to:
+        simple: ${incident.labels.Email/from},csocsenioroperator@tcscomprod.onmicrosoft.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: c7876de5-e70c-4f00-8bdf-5735711b0c09
+      iscommand: true
+      name: Email No Above 64 IOC Found -- Weekly Security Bulletin
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: c7876de5-e70c-4f00-8bdf-5735711b0c09
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 490,
+          "y": 1630
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "69_79_#default#": 0.14,
+      "70_79_#default#": 0.1,
+      "71_79_#default#": 0.1,
+      "72_79_#default#": 0.17,
+      "83_81_yes": 0.52,
+      "83_84_#default#": 0.1
+    },
+    "paper": {
+      "dimensions": {
+        "height": 4070,
+        "width": 2540,
+        "x": -170,
+        "y": -1700
+      }
+    }
+  }
