@@ -1,0 +1,83 @@
+args:
+- name: data
+commonfields:
+  id: 69b25c10-04af-427f-8e33-e54b8faf8260
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: autoclose_Qradar_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2
+
+  import json
+  closingnote="The incident is false positive alert and is auto closed by autobot"
+  invAna="The incident is related to vulnerable port scan and in raw logs we are able to see the aged-out flag hence closing this as false positive"
+  invCon="False Positive"
+
+  # incident = demisto.executeCommand('GetIncidentsByQuery ', { "query" : "name:Suspicious Communication On Vulnerable Port and status:Active","includeContext":"true","limit":10})
+  # print(incident)
+  incident=demisto.args().get("data")
+  # print(type(incident))
+  #print(incident)
+
+  listOfData=[]
+
+  if incident.get('CustomFields'):
+      if incident.get('CustomFields').get('events'):
+
+          events=incident['CustomFields']['events'][0]
+          #events=incident['CustomFields']['events'][1]
+          #print(events)
+          invid=incident.get('investigationId')
+          listOfData.append({'event':events,'id':invid})
+          closeinc=[]
+          needinv=[]
+
+          if 'aged-out' in events:
+
+              res = demisto.executeCommand("setIncident",{"id":invid,"closingnote":closingnote,"closeNotes":"This incident is closed by Autobot","investigationanalysis":invAna,"investigationconclusion":invCon,"informedteamtofinetunealert":"Yes"})
+              #demisto.results(res)
+              res = demisto.executeCommand("closeInvestigation",{"id":invid})
+              demisto.results(res)
+              #demisto.results("Closed inc "+invid)
+          else:
+              events=incident['CustomFields']['events'][1]
+              if 'aged-out' in events:
+                  res = demisto.executeCommand("setIncident",{"id":invid,"closingnote":closingnote,"closeNotes":"This incident is closed by Autobot","investigationanalysis":invAna,"investigationconclusion":invCon,"informedteamtofinetunealert":"Yes"})
+                  demisto.results(res)
+                  res = demisto.executeCommand("closeInvestigation",{"id":invid})
+                  demisto.results(res)
+                  #demisto.results(invid)
+
+              else:
+                  demisto.results(invid)
+                  needinv.append(invid)
+      else:
+
+          print("Incidnets needs to be checked",incident.get('investigationId'))
+  else:
+      print("Incidnets needs to be checked",incident.get('investigationId'))
+
+
+
+  # print("Closed inc ", closeinc)
+  # print("Need investigation ", needinv)
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
