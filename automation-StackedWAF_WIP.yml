@@ -1,0 +1,147 @@
+args:
+- name: to
+- name: from
+commonfields:
+  id: 3f16bfa8-c9cc-40bc-8b2e-efeceb84fcda
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: StackedWAF_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  to_arg = demisto.args().get('to')
+  from_arg = demisto.args().get('from')
+  timeline = json.loads(demisto.executeCommand('getList', {'listName':'WAFStackList'})[0]['Contents'])
+
+  widget=[]
+  for k,v in timeline.items():
+      k_formatted=datetime.strptime(k, '%Y-%m-%d').strftime('%d %b %Y')
+      # Checking if 'To' is not set in the widget
+      if to_arg == '0001-01-01T00:00:00Z':
+          if k >= from_arg[0:10]:
+              widget.append(v)
+      else:
+          if k > from_arg[0:10] and k <= to_arg[0:10]:
+              widget.append(v)
+
+
+  # return_results(widget)
+  demisto.results(json.dumps(widget))
+
+  '''
+  totalCount=demisto.args().get('totalCount')
+  subCounts=demisto.args().get('subCount')
+  # lowLevelCategory=demisto.args().get("lowLevelCategory")
+  # breakCounts=demisto.args().get('breakCounts')
+
+  events=subCounts.get("events")
+  demisto.results(type(events))
+  sublist=[]
+  for i in events:
+      sublist.append({"name":i.get('Lowcategory'),"data": [i.get('eventcount')]})
+
+  data=[{"name": "2022-01-12", "data": [totalCount], "groups": sublist}]
+  demisto.results(json.dumps(data))
+  # demisto.results({lowLevelCategory,breakCounts})
+
+
+  sublist=[
+     { "Lowcategory":"Command Execution",
+  "eventcount":133271},
+  {"Lowcategory":"Cross Site Scripting",
+  "eventcount":31183},
+  {"Lowcategory":"Code Injection",
+  "eventcount":17683},
+  {"Lowcategory":"Invalid Command or Data",
+  "eventcount":13976},
+  {"Lowcategory":"Unknown",
+  "eventcount":12468},
+  {
+  "Lowcategory":"Information Leak",
+  "eventcount":6435},
+
+  {"Lowcategory":"Potential Web Exploit",
+  "eventcount":3659},
+  {"Lowcategory":"Web Exploit",
+  "eventcount":1134},
+
+  {"Lowcategory":"SQL Injection",
+  "eventcount":951},
+  {
+  "Lowcategory":"Compliance Violation",
+  "eventcount":502},
+
+  {"Lowcategory":"Input Validation Exploit",
+  "eventcount":140},
+
+  {"Lowcategory":"Network Threshold Policy Violation",
+  "eventcount":125},
+
+  {"Lowcategory":"Unknown Evasion Event",
+  "eventcount":71},
+
+  {"Lowcategory":"Remote Access Exploit",
+  "eventcount":30},
+
+  {"Lowcategory":"Remote Code Execution",
+  "eventcount":17},
+
+  {"Lowcategory":"Buffer Overflow",
+  "eventcount":12},
+
+  {"Lowcategory":"Session Hijack",
+  "eventcount":9},
+
+  {"Lowcategory":"Content Scan",
+  "eventcount":6},
+
+  {"Lowcategory":"Unauthorized Access Attempt",
+  "eventcount":3},
+
+  {"Lowcategory":"Misc DoS",
+  "eventcount":1},
+
+  {"Lowcategory":"Potential Buffer Overflow",
+  "eventcount":1}
+      ]
+
+
+  data = [
+  {"name": "2018-04-12", "data": [10], "groups": [{"name": "Unclassified",
+  "data": [10] }]},
+  {"name": "2018-04-10", "data": [3], "groups": [{"name": "Unclassified",
+  "data": [2] }, {"name": "Access", "data": [1] }]},
+  {"name": "2018-04-17", "data": [1], "groups": [{"name": "Unclassified",
+  "data": [1] }]},
+  {"name": "2018-04-16", "data": [36], "groups": [{"name": "Unclassified",
+  "data": [18] }, {"name": "Phishing", "data": [14] }, {"name": "Exploits", "data": [4] }]},
+  {"name": "2018-04-15", "data": [17], "groups": [{"name": "Access", "data":
+  [13] }, {"name": "Exploits", "data": [4] }]}
+  ];
+  demisto.results(json.dumps(data))
+  '''
+
+
+
+  # demisto.results(type(sublist))
+  # demisto.setContext('subplaybook-1.QRadar.Search.Result.events',sublist)
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
