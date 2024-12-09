@@ -1,0 +1,111 @@
+args:
+- name: entryID
+- name: submissionID
+commonfields:
+  id: c92c0ef2-d935-43c7-8f05-c02ef68c487b
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.5.31928
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: SentinelTest_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  import requests
+  from requests.auth import HTTPBasicAuth
+  import ssl
+  import json
+  from pprint import pprint
+  import os
+  # import http.client
+
+  '''
+  url='sentineluatcloud.ultimatix.net/NonUtxMod/rest/authenticate'
+
+  headers = {
+      'Content-type': 'application/json'
+
+  }
+  data={
+      'username':'admin',
+      'password':'admin'
+
+  }
+
+  response=requests.post(url, headers, data, verify=False, trust_env = False)
+
+  print(response)
+
+
+  '''
+  # username='152585'
+  # password='Pass@123'
+
+  # requrl='https://sentineluatcloud.ultimatix.net/CompNotify'
+  # url='https://authsit.ultimatix.net/utxLogin/login'
+  url='https://sentineluatcloud.ultimatix.net/NonUtxMod/rest/authenticate'
+  the_page_i_want = "https://sentineluatcloud.ultimatix.net/NonUtxMod/rest/senGetinventoryDetails"
+  # the_page_i_want = "https://sentineluatcloud.ultimatix.net/CompNotify/rest/senGetinventoryDetails"
+
+
+
+  with requests.Session() as session:
+      # session = requests.Session()
+      session.trust_env = False
+      session.verify = False
+      session.headers = {
+          # 'User-Agent': 'curl/7.29.0',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36',
+          'Content-Type': 'application/json'
+      }
+      response= session.post(url,json={'username':'admin',
+          'password':'admin'})
+      # print(response)
+      # token=response.json()
+      token=response.json().get('token')
+      # print(token)
+      # session.headers = {
+      #     # 'User-Agent': 'curl/7.29.0',
+      #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36',
+      #     'Content-Type': 'application/json',
+      #     'Authorization': f'Bearer {token}'
+      #     # 'Authorization': 'Bearer ' + token
+      # }
+
+      session.headers.update({
+          'Authorization': 'Bearer ' + token
+      })
+      # print(session.headers)
+      resp= session.post(the_page_i_want,json={
+        "ip":"",
+        "hostName":"01VD0061723",
+        "deviceOwnerId":""
+      })
+      # print(resp)
+      # print(resp.headers)
+      # print(resp.text)
+      # print(resp.cookies)
+      demisto.results(resp.json())
+
+      # print(response.body)
+      # demisto.results(json.loads(str(resp.text)))
+
+
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
