@@ -1,0 +1,79 @@
+args:
+- description: The name of the IP List to be updated.
+  name: listname
+  required: true
+comment: Removes any users from the out-of-office list whose 'off until day' is in
+  the past.
+commonfields:
+  id: 4cb02ed9-8219-4893-892e-e2f797a2c942
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.1.14969
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: IOCListCleanup
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2
+
+
+
+  def main():
+      # get current time
+      now = datetime.now()
+
+      # args
+      list_name = demisto.getArg("listname")
+
+
+      # get the current list
+      ipList = demisto.executeCommand("getList", {"listName": list_name})[0]["Contents"]
+
+      # check if the list exists, if not create it:
+      if "Item not found" in ipList:
+          demisto.executeCommand("createList", {"listName": list_name, "listData": []})
+          ipList = demisto.executeCommand("getList", {"listName": list_name})[0]["Contents"]
+
+      # check status of the list, and add/remove the user from it.
+      if not ipList:
+          list_data = []
+      else:
+          list_data = json.loads(ipList)
+
+      # loop the list, removing any where the inList_until is in the past
+      remove = []
+      new_list_data = []
+      for i in list_data:
+          inList_until = datetime.strptime(i['inList_until'], "%Y-%m-%d")
+          if inList_until < now:
+              remove.append(i.get('ip'))
+          else:
+              new_list_data.append(i)
+
+      # set the list, return results
+      set_list_res = demisto.executeCommand("setList", {"listName": list_name, "listData": json.dumps(new_list_data)})
+      if isError(set_list_res):
+          return_error(f'Failed to update the list {list_name}: {str(get_error(set_list_res))}')
+      remove = '\n'.join(remove)
+      return_results(f'The following IPs were removed from the IP List {list_name}:\n{remove}' if len(remove)!=0 else 'No IPs to remove from list!')
+
+
+  if __name__ in ('__builtin__', 'builtins', '__main__'):
+      main()
+scripttarget: 0
+subtype: python3
+tags:
+- Shift Management
+type: python
