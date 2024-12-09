@@ -1,0 +1,1246 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 75b02cb4-8606-4ea5-8ce2-cd00c40e3be2
+inputs: []
+name: TCS-IP Enrich & Contextualize  v1.0_KK
+outputs: []
+sourceplaybookid: 08c3b260-77a7-4316-8c5d-802cc55f4e22
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "99"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 95723d7c-0654-4a29-83fa-3e026be410d2
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 95723d7c-0654-4a29-83fa-3e026be410d2
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": -1290,
+          "y": -1710
+        }
+      }
+  "99":
+    continueonerrortype: ""
+    id: "99"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "105"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+          transformers:
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: splitAndTrim
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2.1
+      description: Gets a quick indicator of the risk associated with an IP address.
+      id: 163383e9-176f-4d43-8274-5e5647e8a2ce
+      iscommand: true
+      name: Enrich IP - RF
+      script: Recorded Future v2.1|||ip
+      type: regular
+      version: -1
+    taskid: 163383e9-176f-4d43-8274-5e5647e8a2ce
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -1290,
+          "y": -1370
+        }
+      }
+  "103":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "103"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "130"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: VTDomain
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: URL.PositiveDetections
+              operator: greaterThan
+              right:
+                value:
+                  simple: "0"
+          root: URL
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 998883f0-8290-48cb-8e64-88bcaed858f9
+      iscommand: false
+      name: Set VirusTotal Malicious Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 998883f0-8290-48cb-8e64-88bcaed858f9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1040,
+          "y": -990
+        }
+      }
+  "104":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "104"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "133"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: ZSIP.IP.Address
+      value:
+        complex:
+          accessor: Address
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: IP.Malicious.Description
+              operator: isExists
+          root: IP
+          transformers:
+          - args:
+              limit: {}
+              replaceWith:
+                value:
+                  simple: '[.]'
+              toReplace:
+                value:
+                  simple: .
+            operator: replace
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 05d5bc20-4a9f-46f9-83ae-521964af2b73
+      iscommand: false
+      name: Set Zscaler Malicious Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 05d5bc20-4a9f-46f9-83ae-521964af2b73
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -830,
+          "y": -990
+        }
+      }
+  "105":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.IP
+          operator: greaterThan
+          right:
+            value:
+              simple: "0"
+      label: "yes"
+    continueonerrortype: ""
+    id: "105"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "126"
+      "yes":
+      - "108"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 475b0129-cceb-479b-8d45-6e6dfa58c10b
+      iscommand: false
+      name: RF Found IP Malicious ?
+      type: condition
+      version: -1
+    taskid: 475b0129-cceb-479b-8d45-6e6dfa58c10b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -1290,
+          "y": -1190
+        }
+      }
+  "107":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: PositiveDetections
+                root: IP
+          operator: greaterThan
+          right:
+            value:
+              simple: "0"
+      label: "yes"
+    continueonerrortype: ""
+    id: "107"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "113"
+      "yes":
+      - "103"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9eff9333-62e9-4778-88b3-6d5868e480b3
+      iscommand: false
+      name: VirusTotal Found IP Malicious ?
+      type: condition
+      version: -1
+    taskid: 9eff9333-62e9-4778-88b3-6d5868e480b3
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1040,
+          "y": -1190
+        }
+      }
+  "108":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "108"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "132"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: RFIP.IP.Address
+      value:
+        complex:
+          accessor: name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: RecordedFuture.IP.riskScore
+              operator: isNotEqualNumber
+              right:
+                value:
+                  simple: "0"
+          root: RecordedFuture.IP
+          transformers:
+          - args:
+              limit: {}
+              replaceWith:
+                value:
+                  simple: '[.]'
+              toReplace:
+                value:
+                  simple: .
+            operator: replace
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 693546e2-f8b5-46af-8fd1-6cfa689dbf67
+      iscommand: false
+      name: Set RF Malicious Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 693546e2-f8b5-46af-8fd1-6cfa689dbf67
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -1290,
+          "y": -990
+        }
+      }
+  "110":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: PAN_DB
+                root: AutoFocus.IP.LatestPanVerdicts
+                transformers:
+                - operator: toLowerCase
+          operator: isNotEqualString
+          right:
+            value:
+              simple: benign
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: WF_SAMPLE
+                root: AutoFocus.IP.LatestPanVerdicts
+                transformers:
+                - operator: toLowerCase
+          operator: isNotEqualString
+          right:
+            value:
+              simple: benign
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: MALWARE
+                root: AutoFocus.IP.WildfireRelatedSampleVerdictCounts
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "110"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "113"
+      "yes":
+      - "111"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 740354eb-6149-4f96-8c52-1ae4ca2b8bef
+      iscommand: false
+      name: AutoFocus Found Domain Malicious ?
+      type: condition
+      version: -1
+    taskid: 740354eb-6149-4f96-8c52-1ae4ca2b8bef
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -300,
+          "y": -1190
+        }
+      }
+  "111":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "111"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "134"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: AFIP.IP.Address
+      value:
+        complex:
+          accessor: IndicatorValue
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: AutoFocus.IP.LatestPanVerdicts.PAN_DB
+              operator: isNotEqualString
+              right:
+                value:
+                  simple: BENIGN
+            - left:
+                iscontext: true
+                value:
+                  simple: AutoFocus.IP.LatestPanVerdicts.WF_SAMPLE
+              operator: isNotEqualString
+              right:
+                value:
+                  simple: BENIGN
+          root: AutoFocus.IP
+          transformers:
+          - args:
+              limit: {}
+              replaceWith:
+                value:
+                  simple: '[.]'
+              toReplace:
+                value:
+                  simple: .
+            operator: replace
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: a34104f5-da71-4ed3-8e4d-daa7718bb73f
+      iscommand: false
+      name: Set AutoFocus Malicious Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: a34104f5-da71-4ed3-8e4d-daa7718bb73f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -300,
+          "y": -990
+        }
+      }
+  "113":
+    continueonerrortype: ""
+    id: "113"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 226260a6-4773-478e-8bf8-09e75565042d
+      iscommand: false
+      name: Access & Notify
+      type: title
+      version: -1
+    taskid: 226260a6-4773-478e-8bf8-09e75565042d
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 130,
+          "y": 50
+        }
+      }
+  "121":
+    continueonerrortype: ""
+    id: "121"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "107"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        simple: ${ExtractedIndicators.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: VirusTotal
+      description: Checks the reputation of an IP address.
+      id: 762ce528-1be2-4721-878c-48321cf6225f
+      iscommand: true
+      name: Enrich IP - VirusTotal
+      script: VirusTotal|||ip
+      type: regular
+      version: -1
+    taskid: 762ce528-1be2-4721-878c-48321cf6225f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1040,
+          "y": -1370
+        }
+      }
+  "123":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Description
+                root: IP.Malicious
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Description
+                root: IP.Malicious
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "123"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "127"
+      "yes":
+      - "104"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d0ae8beb-6816-4760-88e2-17701f75707d
+      iscommand: false
+      name: Zscaler Found IP Malicious ?
+      type: condition
+      version: -1
+    taskid: d0ae8beb-6816-4760-88e2-17701f75707d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -830,
+          "y": -1190
+        }
+      }
+  "126":
+    continueonerrortype: ""
+    id: "126"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "123"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+          transformers:
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: splitAndTrim
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      using:
+        simple: Zscaler_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Looks up the classification for each of the specified IP addresses.
+      id: a5f19613-13df-45af-8ca4-06a72b0e827d
+      iscommand: true
+      name: Enrich IP - Zscaler
+      script: Zscaler|||ip
+      type: regular
+      version: -1
+    taskid: a5f19613-13df-45af-8ca4-06a72b0e827d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -830,
+          "y": -1370
+        }
+      }
+  "127":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "127"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "110"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+          transformers:
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+          - args:
+              delimiter: {}
+            operator: splitAndTrim
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: AutoFocus V2
+      description: Checks the reputation of an IP address in AutoFocus.
+      id: fdb681a4-2e48-4071-877c-0be376cde3ff
+      iscommand: true
+      name: Enrich IP - AutoFocus
+      script: AutoFocus V2|||ip
+      type: regular
+      version: -1
+    taskid: fdb681a4-2e48-4071-877c-0be376cde3ff
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -300,
+          "y": -1370
+        }
+      }
+  "130":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "130"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "113"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: VTDomain.Title
+      value:
+        simple: VirusTotal
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: f1fa64c9-0bca-4234-8884-5bfd7f2a7ad1
+      iscommand: false
+      name: Set VirusTotal Malicious Context Title
+      script: Set
+      type: regular
+      version: -1
+    taskid: f1fa64c9-0bca-4234-8884-5bfd7f2a7ad1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1040,
+          "y": -810
+        }
+      }
+  "132":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "132"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "138"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: RFIP.IP.RiskScore
+      value:
+        complex:
+          accessor: riskScore
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: RecordedFuture.IP.riskScore
+              operator: isNotEqualNumber
+              right:
+                value:
+                  simple: "0"
+          root: RecordedFuture.IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 04cb4db0-cbf1-444c-803f-b0769599652d
+      iscommand: false
+      name: Set RF Malicious Context Verdict
+      script: Set
+      type: regular
+      version: -1
+    taskid: 04cb4db0-cbf1-444c-803f-b0769599652d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -1290,
+          "y": -810
+        }
+      }
+  "133":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "133"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "139"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: ZSIP.IP.Verdict
+      value:
+        complex:
+          accessor: Malicious.Description
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: IP.Malicious.Description
+              operator: isExists
+          root: IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: ee5c6aaa-c4b6-4e34-818f-3b7fb732335a
+      iscommand: false
+      name: Set Zscaler Malicious Context Verdict
+      script: Set
+      type: regular
+      version: -1
+    taskid: ee5c6aaa-c4b6-4e34-818f-3b7fb732335a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -830,
+          "y": -810
+        }
+      }
+  "134":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "134"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "142"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: AFIP.IP.Verdict
+      value:
+        complex:
+          accessor: WF_SAMPLE
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: AutoFocus.IP.LatestPanVerdicts.PAN_DB
+              operator: isNotEqualString
+              right:
+                value:
+                  simple: BENIGN
+            - left:
+                iscontext: true
+                value:
+                  simple: AutoFocus.IP.LatestPanVerdicts.WF_SAMPLE
+              operator: isNotEqualString
+              right:
+                value:
+                  simple: BENIGN
+          root: AutoFocus.IP.LatestPanVerdicts
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: b439fbe1-89e8-42ef-8978-86ca1b52b235
+      iscommand: false
+      name: Set AutoFocus Malicious Context Verdict
+      script: Set
+      type: regular
+      version: -1
+    taskid: b439fbe1-89e8-42ef-8978-86ca1b52b235
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -300,
+          "y": -810
+        }
+      }
+  "135":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "135"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "141"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: AFIP.IP.Verdict
+      value:
+        complex:
+          accessor: PAN_DB
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: AutoFocus.IP.LatestPanVerdicts.PAN_DB
+              operator: isNotEqualString
+              right:
+                value:
+                  simple: BENIGN
+            - left:
+                iscontext: true
+                value:
+                  simple: AutoFocus.IP.LatestPanVerdicts.WF_SAMPLE
+              operator: isNotEqualString
+              right:
+                value:
+                  simple: BENIGN
+          root: AutoFocus.IP.LatestPanVerdicts
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 68e5c2a2-21b0-4a05-8f1e-1227f310aba2
+      iscommand: false
+      name: Set AutoFocus Malicious Context Verdict
+      script: Set
+      type: regular
+      version: -1
+    taskid: 68e5c2a2-21b0-4a05-8f1e-1227f310aba2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 130,
+          "y": -650
+        }
+      }
+  "136":
+    continueonerrortype: ""
+    id: "136"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "127"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Delete field from context
+      id: 710d6754-5a37-48f1-815f-decf2cfd2528
+      iscommand: false
+      name: Delete Context IP
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 710d6754-5a37-48f1-815f-decf2cfd2528
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -830,
+          "y": -480
+        }
+      }
+  "137":
+    continueonerrortype: ""
+    id: "137"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "126"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Delete field from context
+      id: f1ad8571-d087-46bd-88ac-fcf3bb3b52e8
+      iscommand: false
+      name: Delete Context IP
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: f1ad8571-d087-46bd-88ac-fcf3bb3b52e8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -1290,
+          "y": -480
+        }
+      }
+  "138":
+    continueonerrortype: ""
+    id: "138"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "137"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      table:
+        simple: ${RFIP.IP}
+      title:
+        simple: Recorded Future - IP Address
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Converts a given array to an HTML table
+      id: 85653a16-9f96-4357-88fb-9bca401d38df
+      iscommand: false
+      name: Create HTML Table
+      script: ConvertTableToHTML
+      type: regular
+      version: -1
+    taskid: 85653a16-9f96-4357-88fb-9bca401d38df
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -1290,
+          "y": -650
+        }
+      }
+  "139":
+    continueonerrortype: ""
+    id: "139"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "136"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      table:
+        simple: ${ZSIP.IP}
+      title:
+        simple: Zscaler - IP Address
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Converts a given array to an HTML table
+      id: 7bd873cc-52d9-4d19-89f9-a997621c44c8
+      iscommand: false
+      name: Create HTML Table
+      script: ConvertTableToHTML
+      type: regular
+      version: -1
+    taskid: 7bd873cc-52d9-4d19-89f9-a997621c44c8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -830,
+          "y": -650
+        }
+      }
+  "140":
+    continueonerrortype: ""
+    id: "140"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "113"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      table:
+        simple: ${AFIP.IP}
+      title:
+        simple: AutoFocus - IP Address
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Converts a given array to an HTML table
+      id: e18c9a48-bb20-4e3d-8d2d-45fc07812824
+      iscommand: false
+      name: Create HTML Table
+      script: ConvertTableToHTML
+      type: regular
+      version: -1
+    taskid: e18c9a48-bb20-4e3d-8d2d-45fc07812824
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -300,
+          "y": -480
+        }
+      }
+  "141":
+    continueonerrortype: ""
+    id: "141"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "113"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      table:
+        simple: ${AFIP.IP}
+      title:
+        simple: AutoFocus - IP Address
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Converts a given array to an HTML table
+      id: 9c0a384c-b1f8-4023-865d-be635b197e32
+      iscommand: false
+      name: Create HTML Table
+      script: ConvertTableToHTML
+      type: regular
+      version: -1
+    taskid: 9c0a384c-b1f8-4023-865d-be635b197e32
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 130,
+          "y": -480
+        }
+      }
+  "142":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: PAN_DB
+                root: |2-
+
+                  AutoFocus.IP.LatestPanVerdicts
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "142"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "140"
+      "yes":
+      - "135"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ef302f86-3be6-4938-85e2-c53c2726cbcc
+      iscommand: false
+      name: PAN DB Context Exists?
+      type: condition
+      version: -1
+    taskid: ef302f86-3be6-4938-85e2-c53c2726cbcc
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -300,
+          "y": -660
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1825,
+        "width": 2710,
+        "x": -1290,
+        "y": -1710
+      }
+    }
+  }
