@@ -1,0 +1,594 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 0ac25229-526d-4fea-8888-a41e5e416ba2
+inputs:
+- description: ""
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: IP
+      root: ExtractedIndicators
+      transformers:
+      - operator: uniq
+- description: ""
+  key: Domain
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: Domain
+      root: ExtractedIndicators
+name: TCS-Cisco Umbrella  IOC Enrichment Playbook v 1.1
+outputs:
+- contextPath: ExtractedIndicators.IP
+  description: IP address
+- contextPath: DBotScore
+  description: DBot Score
+  type: unknown
+- contextPath: ExtractedIndicators.Domain
+  description: Domain
+sourceplaybookid: 08c3b260-77a7-4316-8c5d-802cc55f4e22
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7240de47-5992-45be-80fc-e9aab131da92
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 7240de47-5992-45be-80fc-e9aab131da92
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 600
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ab93524b-6704-415c-81b5-02e27708833b
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: ab93524b-6704-415c-81b5-02e27708833b
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 260,
+          "y": 2040
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.IP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.IP
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "34"
+      "yes":
+      - "19"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: 6b24a2a5-36b1-463e-8f76-e03a86122510
+      iscommand: false
+      name: Are there any IP addresses ?
+      type: condition
+      version: -1
+    taskid: 6b24a2a5-36b1-463e-8f76-e03a86122510
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 960
+        }
+      }
+  "18":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: brand
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Cisco Umbrella Investigate
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if there is an active instance of the ThreatCrowd integration
+        enabled.
+      id: 34bccca7-5f70-4d16-8890-f4010a6d3e66
+      iscommand: false
+      name: Is Cisco Umbrella Investigate enabled?
+      type: condition
+      version: -1
+    taskid: 34bccca7-5f70-4d16-8890-f4010a6d3e66
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 780
+        }
+      }
+  "19":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "43"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+      retry-count:
+        simple: "2"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cisco Umbrella Investigate
+      description: This command  shows whether the IP address you’ve entered as input
+        has any known malicious domains associated with it. The domains that appear
+        when using this endpoint are those that currently exist in the Umbrella block
+        list. This endpoint will return an array with a single domain name for each
+        domain associated with the IP, along with an id number that can be ignored.
+      id: 6d93c2a2-a017-420b-8c32-f27e59952aef
+      iscommand: true
+      name: Get Malicious Domains Associated With IP Address
+      script: Cisco Umbrella Investigate|||umbrella-ip-malicious-domains
+      tags:
+      - toreport
+      type: regular
+      version: -1
+    taskid: 6d93c2a2-a017-420b-8c32-f27e59952aef
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1150
+        }
+      }
+  "34":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.Domain
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.Domain
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "36"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: 26e70758-4e92-4edf-8929-aee68c2c9277
+      iscommand: false
+      name: Are there any Domains ?
+      type: condition
+      version: -1
+    taskid: 26e70758-4e92-4edf-8929-aee68c2c9277
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 780
+        }
+      }
+  "36":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "39"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domain:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: Domain.Name
+              operator: notContainsGeneral
+              right:
+                value:
+                  simple: tcs.com
+          - - left:
+                iscontext: true
+                value:
+                  simple: Domain.Name
+              operator: notContainsGeneral
+              right:
+                value:
+                  simple: ultimatix.net
+          root: Domain.Name
+      extend-context:
+        simple: Umbrella.ContentCategories=Domain.Umbrella.ContentCategories, Umbrella.MalwareCategories=Domain.Umbrella.MalwareCategories
+      retry-count:
+        simple: "2"
+      using:
+        simple: Cisco Umbrella Investigate_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cisco Umbrella Investigate
+      description: Get Domain Reputation info using Cisco Umbrella Investigate. Domain
+        reputation score is either true or false from the service and cannot be modified
+        using a threshold.
+      id: 4df2799d-d5c5-4f8a-8770-9fce55160aa7
+      iscommand: true
+      name: 'Get Domain Report From Cisco Umbrella '
+      script: Cisco Umbrella Investigate|||domain
+      tags:
+      - toreport
+      type: regular
+      version: -1
+    taskid: 4df2799d-d5c5-4f8a-8770-9fce55160aa7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1330
+        }
+      }
+  "39":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domain:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+      retry-count:
+        simple: "2"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cisco Umbrella Investigate
+      description: This will return a list of domain names that have been frequently
+        seen requested b around the same time (up to 60 seconds before or after) as
+        the given domain name, but that are not frequently associated with other domain
+        names.
+      id: 40f41994-beb8-41b9-8dd9-d4a9fe8751fe
+      iscommand: true
+      name: 'Get Related/Associated  Domain From Cisco Umbrella '
+      script: Cisco Umbrella Investigate|||umbrella-domain-related
+      tags:
+      - toreport
+      type: regular
+      version: -1
+    taskid: 40f41994-beb8-41b9-8dd9-d4a9fe8751fe
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1520
+        }
+      }
+  "40":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "41"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      execution-timeout:
+        simple: "10000"
+      ip:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+      retries:
+        simple: "2"
+      retry-count:
+        simple: "2"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Ipstack
+      description: Queries an IP address in ipstack.
+      id: 538480ce-1806-47fb-8b13-3a11764b6e88
+      iscommand: true
+      name: Get IP Address of Domain
+      script: Ipstack|||ip
+      type: regular
+      version: -1
+    taskid: 538480ce-1806-47fb-8b13-3a11764b6e88
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 960
+        }
+      }
+  "41":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        complex:
+          accessor: ip.address
+          root: Ipstack
+      retry-count:
+        simple: "2"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cisco Umbrella Investigate
+      description: This command  shows whether the IP address you’ve entered as input
+        has any known malicious domains associated with it. The domains that appear
+        when using this endpoint are those that currently exist in the Umbrella block
+        list. This endpoint will return an array with a single domain name for each
+        domain associated with the IP, along with an id number that can be ignored.
+      id: bbacded5-e928-41f9-8812-588b2e965bde
+      iscommand: true
+      name: Get Malicious Domains Associated With IP Address
+      script: Cisco Umbrella Investigate|||umbrella-ip-malicious-domains
+      tags:
+      - toreport
+      type: regular
+      version: -1
+    taskid: bbacded5-e928-41f9-8812-588b2e965bde
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1150
+        }
+      }
+  "42":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domain:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+      using:
+        simple: Cisco Umbrella Investigate_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cisco Umbrella Investigate
+      description: This command will provide a standard WHOIS response record for
+        a single domain with all available WHOIS data returned.
+      id: ff962da1-1b91-4235-8543-95112e92a4c9
+      iscommand: true
+      name: Get Whois Information
+      script: Cisco Umbrella Investigate|||umbrella-get-whois-for-domain
+      type: regular
+      version: -1
+    taskid: ff962da1-1b91-4235-8543-95112e92a4c9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1730
+        }
+      }
+  "43":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domain:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+      using:
+        simple: Cisco Umbrella Investigate_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Cisco Umbrella Investigate
+      description: This command will provide a standard WHOIS response record for
+        a single domain with all available WHOIS data returned.
+      id: 1f93ca66-17b0-4311-8531-ce2083279ce5
+      iscommand: true
+      name: Get Whois Information
+      script: Cisco Umbrella Investigate|||umbrella-get-whois-for-domain
+      type: regular
+      version: -1
+    taskid: 1f93ca66-17b0-4311-8531-ce2083279ce5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1320
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1505,
+        "width": 810,
+        "x": 50,
+        "y": 600
+      }
+    }
+  }
