@@ -1,0 +1,111 @@
+args:
+- name: entryID
+  required: true
+commonfields:
+  id: 8318f8d7-2d3c-45c8-8aa2-5f9eeead6a1a
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: DeleteHostsInLoop
+outputs:
+- description: ""
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  entryID=demisto.args().get('entryID')
+  text=''
+  limit=100
+  counter=0
+  context={}
+  allhosts=[]#all the hosts provided as input
+  hostpresent=[]#hosts that are currently in the loop of grp of 100 and are present in CS and need to be deleted
+  allhostpresent=[]##all the hosts that are currently present in CS and need to be deleted
+  hostnotpresent=[]# hosts that are not found on CS so cant be deleted
+  file_info = {}  # type: dict
+  try:
+  # if True:
+      file_info = demisto.getFilePath(entryID)
+      file_path = file_info['path']
+      with open(file_path) as openfileobject:
+          # lines = openfileobject.read().splitlines()
+
+          for line in openfileobject:
+              counter+=1
+              text=text+line
+              if counter==limit:
+                  if text.endswith('\n'):
+                      text=text[:-1]
+                  textlist=text.split('\n')
+                  allhosts+=textlist
+                  ids=text.replace('\n',',')
+                  # print(ids)
+                  res = demisto.executeCommand("cs-falcon-search-device", {'ids':ids,'using':'CrowdstrikeFalcon_instance_1'})[0]['Contents']
+                  if res:
+                      for i in res['resources']:
+                          # print(i)
+                          hostpresent.append(i['device_id'])
+                      allhostpresent+=hostpresent
+                      idspresent=",".join(hostpresent)
+                      delcmd=demisto.executeCommand("csfalcon-delete-host", {'ids':idspresent,'using':'Crowdstrike Falcon v2.0_instance_1'})
+                      if isError(delcmd):
+                          print('Erorr')
+                      else:
+                          demisto.results('Deleted hosts')
+                  counter=0
+                  text=''
+                  hostpresent=[]
+                  hostnotpresent=list(set(allhosts) - set(allhostpresent))
+                  demisto.setContext('DeletedHosts',allhostpresent)
+                  demisto.setContext('HostsNotFound',hostnotpresent)
+          if text:
+              if text.endswith('\n'):
+                  text=text[:-1]
+              textlist=text.split('\n')
+              allhosts+=textlist
+
+              ids=text.replace('\n',',')
+              # print(ids)
+              res = demisto.executeCommand("cs-falcon-search-device", {'ids':ids,'using':'CrowdstrikeFalcon_instance_1'})[0]['Contents']
+              if res:
+                  for i in res['resources']:
+                      # print(i)
+                      hostpresent.append(i['device_id'])
+                  allhostpresent+=hostpresent
+                  if len(hostpresent)>1:
+                      idspresent=",".join(hostpresent)
+                  else:
+                      idspresent=hostpresent[0]
+                  delcmd=demisto.executeCommand("csfalcon-delete-host", {'ids':idspresent,'using':'Crowdstrike Falcon v2.0_instance_1'})
+                  if isError(delcmd):
+                      print('Erorr')
+                  else:
+                      demisto.results('Deleted hosts')
+
+              hostnotpresent=list(set(allhosts) - set(allhostpresent))
+              demisto.setContext('DeletedHosts',allhostpresent)
+              demisto.setContext('HostsNotFound',hostnotpresent)
+              print(f"Deleted Hosts: {allhostpresent}")
+              print(f"Deleted Hosts: {hostnotpresent}")
+
+
+  except Exception as e:
+      return_error('Failed to get the file path for entry: {} the error message was {}'.format(entryID, str(e)))
+scripttarget: 0
+subtype: python3
+tags: []
+timeout: 7.2µs
+type: python
