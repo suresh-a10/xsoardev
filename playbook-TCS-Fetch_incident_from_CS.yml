@@ -1,0 +1,510 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 2299210a-f915-4b88-865c-e5596c75c5e7
+inputs:
+- description: ""
+  key: hostname
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: ${TCSHostnameArray}
+name: TCS-Fetch incident from CS
+outputs: []
+quiet: true
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 63c69a1b-26a1-4c34-852a-b5ab61aef7dd
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 63c69a1b-26a1-4c34-852a-b5ab61aef7dd
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 900,
+          "y": 0
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      filter:
+        simple: device.hostname:'${inputs.hostname}'
+      using:
+        simple: CrowdstrikeFalcon_Detections
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Search for details of specific detections, either using a filter
+        query, or by providing the IDs of the detections.
+      id: b9d58102-455b-455f-81fb-6ff1d277c74a
+      iscommand: true
+      name: Fetch the CS detection
+      script: CrowdstrikeFalcon|||cs-falcon-search-detection
+      type: regular
+      version: -1
+    taskid: b9d58102-455b-455f-81fb-6ff1d277c74a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 200
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Csstatus
+      value:
+        simple: ${CrowdStrike.Detection.Status}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: ab399998-eca8-46ae-8d8e-dc0e3f27dd99
+      iscommand: false
+      name: Set value for CS status
+      script: Set
+      type: regular
+      version: -1
+    taskid: ab399998-eca8-46ae-8d8e-dc0e3f27dd99
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 370
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Csstatus
+          operator: isEqualString
+          right:
+            value:
+              simple: new
+      label: "yes"
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8a2846af-f3f0-429d-8f16-90ee82fb145d
+      iscommand: false
+      name: Checked the CS new status
+      type: condition
+      version: -1
+    taskid: 8a2846af-f3f0-429d-8f16-90ee82fb145d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 540
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      actionnotification:
+        simple: abc
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: d3d468c5-233d-4734-83a3-4b5c72834221
+      iscommand: true
+      name: set
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: d3d468c5-233d-4734-83a3-4b5c72834221
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 130,
+          "y": 800
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: detectionid
+      value:
+        complex:
+          accessor: ID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: CrowdStrike.Detection.Status
+              operator: in
+              right:
+                value:
+                  simple: new
+          root: CrowdStrike.Detection
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: db844d42-6c82-4614-8731-ee4838c6f762
+      iscommand: false
+      name: set detection id
+      script: Set
+      type: regular
+      version: -1
+    taskid: db844d42-6c82-4614-8731-ee4838c6f762
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 710,
+          "y": 810
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      casedetectionid:
+        simple: ${detectionid}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 38c75174-24a6-4767-83c4-a4c8ef9d76bf
+      iscommand: false
+      name: TCS-CS incident created
+      playbookId: 6488e426-8d3e-45a1-821f-7ccd97f996e2
+      type: playbook
+      version: -1
+    taskid: 38c75174-24a6-4767-83c4-a4c8ef9d76bf
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 710,
+          "y": 1160
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "yes"
+      keysToKeep:
+        simple: detectionid
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Delete field from context.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.10/Cortex-XSOAR-Administrator-Guide/Automations
+      id: 33fefe4e-3734-4646-82b4-083fb6604dd6
+      iscommand: false
+      name: Delete CS Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 33fefe4e-3734-4646-82b4-083fb6604dd6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 710,
+          "y": 990
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 187653af-1354-44f9-8fc1-8811577585a9
+      iscommand: false
+      name: END
+      type: title
+      version: -1
+    taskid: 187653af-1354-44f9-8fc1-8811577585a9
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 320,
+          "y": 1360
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 1
+    note: false
+    quietmode: 0
+    scriptarguments:
+      casedetectionid:
+        simple: ${detectionid}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e338a09d-246c-4d82-8de8-da8480db30a6
+      iscommand: false
+      name: TCS-CS incident created
+      playbookId: 6488e426-8d3e-45a1-821f-7ccd97f996e2
+      type: playbook
+      version: -1
+    taskid: e338a09d-246c-4d82-8de8-da8480db30a6
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1180,
+          "y": 1100
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: CShostname
+      value:
+        simple: ${CrowdStrike.Detection.System}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 5d5b0302-8a30-4637-8dc0-5e6039ae0ae4
+      iscommand: false
+      name: Untitled Task
+      script: Set
+      type: regular
+      version: -1
+    taskid: 5d5b0302-8a30-4637-8dc0-5e6039ae0ae4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": 850
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      crowdstrikedetectionid:
+        simple: ${inputs.hostname}
+      name:
+        simple: CORP
+      type:
+        simple: Malware_Investigation
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.create.inc
+      id: b0cb5a6e-3503-4e96-8e1e-47ef6c0fa1f2
+      iscommand: true
+      name: Create new incident
+      script: Builtin|||createNewIncident
+      type: regular
+      version: -1
+    taskid: b0cb5a6e-3503-4e96-8e1e-47ef6c0fa1f2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 900,
+          "y": 150
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 07f0d8bb-25de-4f45-8716-7a8e8fd46caf
+      iscommand: false
+      name: END
+      type: title
+      version: -1
+    taskid: 07f0d8bb-25de-4f45-8716-7a8e8fd46caf
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 900,
+          "y": 320
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1425,
+        "width": 1430,
+        "x": 130,
+        "y": 0
+      }
+    }
+  }
