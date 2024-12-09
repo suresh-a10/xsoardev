@@ -1,0 +1,255 @@
+args:
+- description: Additional text by which to query incidents.
+  name: query
+- description: A comma-separatetd list of incident types by which to filter.
+  name: incidentTypes
+- description: 'The start date by which to filter incidents. Date format will be the
+    same as in the incidents query page, for example: "3 days ago", ""2019-01-01T00:00:00
+    +0200").'
+  name: fromDate
+- description: 'The end date by which to filter incidents. Date format will be the
+    same as in the incidents query page, for example: "3 days ago", ""2019-01-01T00:00:00
+    +0200").'
+  name: toDate
+- defaultValue: "3000"
+  description: The maximum number of incidents to fetch. The default value is 3000.
+  name: limit
+- auto: PREDEFINED
+  defaultValue: "false"
+  description: Whether to query and fetch incident context. Can be "true" or "false".
+    The default is "false".
+  name: includeContext
+  predefined:
+  - "true"
+  - "false"
+- auto: PREDEFINED
+  defaultValue: created
+  description: The incident field to specify for the date range. Can be "created"
+    or "modified". The default is "created".
+  name: timeField
+  predefined:
+  - created
+  - modified
+- description: A comma-separated list of non-empty value incident field names by which
+    to filter incidents.
+  name: NonEmptyFields
+- auto: PREDEFINED
+  defaultValue: "yes"
+  description: Save results as file?
+  name: saveFile
+  predefined:
+  - "yes"
+  - "no"
+- auto: PREDEFINED
+  defaultValue: pickle
+  description: The output file format.
+  name: outputFormat
+  predefined:
+  - json
+  - pickle
+- description: A comma-separated list of fields in the object to poplulate.
+  name: populateFields
+comment: Gets a list of incident objects and the associated incident outputs that
+  match the specified query and filters. The results are returned in a structured
+  data file.
+commonfields:
+  id: 49d7a09e-d349-4c1a-8eb1-67ef241b3cd1
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.8.5.10845
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GetIncidentsByQueryV3
+outputs:
+- contextPath: GetIncidentsByQuery.Filename
+  description: The output file name.
+  type: String
+- contextPath: GetIncidentsByQuery.FileFormat
+  description: The output file format.
+  type: String
+pswd: ""
+runas: DBotWeakRole
+runonce: true
+script: |2-
+
+  import pickle
+  import re
+  import uuid
+  from datetime import datetime, timedelta
+  from dateutil import parser
+  from distutils.util import strtobool
+
+  def parse_datetime(datetime_str):
+      try:
+          return parser.parse(datetime_str).isoformat()
+      except Exception:
+          return datetime_str
+
+
+  def parse_relative_time(datetime_str):
+      try:
+          res = re.search("([0-9]+) (minutes|hours|days|weeks|months|years) ago", datetime_str)
+          if res:
+              number = int(res.group(1))
+              unit = res.group(2)
+              if unit == 'years':
+                  unit = 'days'
+                  number *= 365
+              elif unit == 'months':
+                  number *= 43800
+                  unit = 'minutes'
+
+              kargs = {}
+              kargs[unit] = int(number)
+              result = datetime.now() - timedelta(**kargs)
+              return result
+      except Exception:
+          return None
+
+
+  def get_context(incident_id):
+      res = demisto.executeCommand("getContext", {'id': incident_id})
+      try:
+          return res[0]['Contents'].get('context') or {}
+      except Exception:
+          return {}
+
+
+  def build_incidents_query(extra_query, incident_types, time_field, from_date, to_date, non_empty_fields):
+      query_parts = []
+      if extra_query:
+          query_parts.append(extra_query)
+      if incident_types:
+          types_part = "type:(%s)" % " ".join(map(lambda x: '"%s"' % x.strip(), incident_types.split(",")))
+          query_parts.append(types_part)
+      if from_date:
+          from_part = '%s:>="%s"' % (time_field, parse_datetime(from_date))
+          query_parts.append(from_part)
+      if to_date:
+          to_part = '%s:<"%s"' % (time_field, parse_datetime(to_date))
+          query_parts.append(to_part)
+      if non_empty_fields:
+          non_empty_fields_part = " and ".join(map(lambda x: "%s:*" % x, non_empty_fields.split(",")))
+          query_parts.append(non_empty_fields_part)
+      if len(query_parts) == 0:
+          return_error("Incidents query is empty - please fill one of the arguments")
+      query = " and ".join(map(lambda x: "(%s)" % x, query_parts))
+
+      return query
+
+
+  def get_incidents(query, time_field, size, from_date, page):
+      args = {"query": query, "size": size, "sort": time_field, "page": page}
+      if time_field == "created" and from_date:
+          from_datetime = None
+          try:
+              from_datetime = parser.parse(from_date)
+          except Exception:
+              pass
+          if from_datetime is None and from_date.strip().endswith("ago"):
+              from_datetime = parse_relative_time(from_date)
+          if from_datetime:
+              args['from'] = from_datetime.isoformat()
+      res = demisto.executeCommand("getIncidents", args)
+      if res[0]['Type'] == entryTypes['error']:
+          error_message = str(res[0]['Contents'])
+          return_error("Failed to get incidents by query: %s error: %s" % (query, error_message))
+      incident_list = res[0]['Contents'].get('data') or []
+      return incident_list
+
+
+  def get_comma_sep_list(value):
+      return [v.strip() for v in value.split(',') if v]
+
+
+  # main():
+  # fetch query
+  query = build_incidents_query(demisto.getArg('query'),
+                                demisto.getArg('incidentTypes'),
+                                demisto.getArg('timeField'),
+                                demisto.getArg('fromDate'),
+                                demisto.getArg('toDate'),
+                                demisto.getArg('NonEmptyFields'))
+  page = 0
+  limit = int(demisto.args()['limit'])
+  page_limit = min(500, limit)
+  result = []
+  paged_incident_list = get_incidents(query, demisto.args()['timeField'],
+                                      page_limit,
+                                      demisto.args().get('fromDate'),
+                                      page)
+
+  include_context = strtobool(demisto.getArg('includeContext'))
+  fields_to_populate = demisto.getArg('populateFields')
+  if fields_to_populate:
+      fields_to_populate = get_comma_sep_list(fields_to_populate)
+      fields_to_populate += get_comma_sep_list(demisto.getArg('NonEmptyFields', ''))
+      fields_to_populate = set([x for x in fields_to_populate if x])
+  if include_context:
+      fields_to_populate.add('context')
+
+  while True:
+      # extend incidents fields \ context
+      for i in paged_incident_list:
+          # we flat the custom field to the incident structure, like in the context
+          custom_fields = i.get('CustomFields', {}) or {}
+          i.update(custom_fields)
+          if include_context:
+              i['context'] = get_context(i['id'])
+
+          if fields_to_populate and len(fields_to_populate) > 0:
+              i = {k: v for k, v in i.items() if k in fields_to_populate}
+          result.append(i)
+
+      # did we reach limit or no more incidents to fetch?
+      if len(result) < limit and len(paged_incident_list) == page_limit:
+          page += 1
+          paged_incident_list = get_incidents(query, demisto.args()['timeField'],
+                                  page_limit,
+                                  demisto.args().get('fromDate'),
+                                  page)
+      else:
+          break
+
+  # output
+  entry = {'Type': entryTypes['note']}
+  if strtobool(demisto.getArg('saveFile')):
+      file_name = str(uuid.uuid4())
+      output_format = demisto.args()['outputFormat']
+      if output_format == 'pickle':
+          data_encoded = pickle.dumps(result)
+      elif output_format == 'json':
+          data_encoded = json.dumps(result)
+      else:
+          return_error("Invalid output format: %s" % output_format)
+
+      entry = fileResult(file_name, data_encoded)
+      entry['EntryContext'] = {
+          'GetIncidentsByQuery': {
+              'Filename': file_name,
+              'FileFormat': output_format,
+          }
+      }
+
+  entry['Contents'] = result
+  entry['ContentsFormat'] = formats['json']
+  entry['HumanReadable'] = f"Succesfully fetched {len(result)} incidents in {page+1} pages with query: {query}"
+  demisto.results(entry)
+scripttarget: 0
+subtype: python3
+tags:
+- ml
+- telemetry
+timeout: 60µs
+type: python
