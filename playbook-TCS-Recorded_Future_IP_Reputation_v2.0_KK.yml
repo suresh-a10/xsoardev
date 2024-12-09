@@ -1,0 +1,706 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.0.0
+    itemVersion: 1.2.1
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: IP address reputation using Recorded Future SOAR enrichment
+id: cd7b671b-ee9e-4193-8607-8e055964b93c
+inputs:
+- description: The IP address to get reputation of.
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: Address
+      root: IP
+      transformers:
+      - operator: uniq
+name: TCS-Recorded Future IP Reputation v2.0_KK
+outputs:
+- contextPath: DBotScore.Indicator
+  description: The indicator that was tested
+  type: string
+- contextPath: DBotScore.Type
+  description: Indicator type
+  type: string
+- contextPath: DBotScore.Vendor
+  description: Vendor used to calculate the score
+  type: string
+- contextPath: DBotScore.Score
+  description: The actual score
+  type: number
+- contextPath: IP.Malicious.Vendor
+  description: For malicious IP addresses, the vendor that made the decision
+  type: string
+- contextPath: IP.Malicious.Description
+  description: For malicious IP addresses, the reason that the vendor made the decision
+  type: string
+- contextPath: IP.Address
+  description: IP address
+  type: string
+- contextPath: RecordedFuture.IP.riskScore
+  description: Recorded Future IP Risk Score
+  type: number
+- contextPath: RecordedFuture.IP.riskLevel
+  description: Recorded Future IP Risk Level
+  type: string
+- contextPath: RecordedFuture.IP.Evidence.rule
+  description: Recorded Future Risk Rule Name
+  type: string
+- contextPath: RecordedFuture.IP.Evidence.mitigation
+  description: Recorded Future Risk Rule Mitigation
+  type: string
+- contextPath: RecordedFuture.IP.Evidence.description
+  description: Recorded Future Risk Rule Description
+  type: string
+- contextPath: RecordedFuture.IP.Evidence.timestamp
+  description: Recorded Future Risk Rule Timestamp
+  type: date
+- contextPath: RecordedFuture.IP.Evidence.level
+  description: Recorded Future Risk Rule Level
+  type: number
+- contextPath: RecordedFuture.IP.Evidence.ruleid
+  description: Recorded Future Risk Rule ID
+  type: string
+- contextPath: RecordedFuture.IP.name
+  description: IP Address
+  type: string
+- contextPath: RecordedFuture.IP.maxRules
+  description: Maximum count of Recorded Future IP Risk Rules
+  type: number
+- contextPath: RecordedFuture.IP.ruleCount
+  description: Number of triggered Recorded Future IP Risk Rules
+  type: number
+sourceplaybookid: Recorded Future IP Reputation
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "28"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5f48cfbe-d8da-477e-80fe-02ca948a6964
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 5f48cfbe-d8da-477e-80fe-02ca948a6964
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 09c3c5e6-8d66-4dc5-8964-4b6d4fe59d81
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 09c3c5e6-8d66-4dc5-8964-4b6d4fe59d81
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1950
+        }
+      }
+  "28":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.IP
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "24"
+      "yes":
+      - "36"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: 312b3632-b0b8-4c07-8e44-fc57add8e81e
+      iscommand: false
+      name: Is there an IP address to get reputation of?
+      type: condition
+      version: -1
+    taskid: 312b3632-b0b8-4c07-8e44-fc57add8e81e
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 195
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "37"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d4736e5f-adba-4b7d-8e39-547e3ea6018a
+      iscommand: false
+      name: Get reputation using Recorded Future API
+      type: title
+      version: -1
+    taskid: d4736e5f-adba-4b7d-8e39-547e3ea6018a
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 370
+        }
+      }
+  "37":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: brand
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: containsString
+                    right:
+                      value:
+                        simple: Recorded Future
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "24"
+      "yes":
+      - "38"
+      - "45"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if there is an active instance of the Recorded Future API
+        integration enabled.
+      id: bed855ba-42d8-4a13-8647-d3f41c720cf6
+      iscommand: false
+      name: Is Recorded Future API enabled?
+      type: condition
+      version: -1
+    taskid: bed855ba-42d8-4a13-8647-d3f41c720cf6
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 505
+        }
+      }
+  "38":
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "39"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      ip:
+        simple: ${inputs.IP}
+      using:
+        simple: Recorded Future v2_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with an IP address.
+      id: c5a3c99f-ff3c-4817-8dd0-9b7be8286084
+      iscommand: true
+      name: Get IP reputation from Recorded Future
+      script: Recorded Future v2|||ip
+      type: regular
+      version: -1
+    taskid: c5a3c99f-ff3c-4817-8dd0-9b7be8286084
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 720
+        }
+      }
+  "39":
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "46"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      recordedfutureriskrules:
+        simple: ${RecordedFuture.IP.rules}
+      value:
+        complex:
+          accessor: name
+          root: RecordedFuture.IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Change the properties of an indicator
+      id: e020ed54-0e09-49a6-8d23-9ff68374eb20
+      iscommand: true
+      name: Set Indicator
+      script: Builtin|||setIndicator
+      type: regular
+      version: -1
+    taskid: e020ed54-0e09-49a6-8d23-9ff68374eb20
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 910
+        }
+      }
+  "40":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.IP
+          operator: lessThan
+          right:
+            value:
+              simple: "65"
+      label: "yes"
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "24"
+      "yes":
+      - "41"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 252c36a6-f671-47ca-8084-fbf532f3e890
+      iscommand: false
+      name: Are There Any IPs  With Risk Score <  65
+      type: condition
+      version: -1
+    taskid: 252c36a6-f671-47ca-8084-fbf532f3e890
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 1250
+        }
+      }
+  "41":
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "44"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: BELOWSIXFIVE.IP
+      value:
+        complex:
+          accessor: name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: RecordedFuture.IP.riskScore
+              operator: lessThan
+              right:
+                value:
+                  simple: "65"
+          root: RecordedFuture.IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 3f6ed367-dc56-446a-88f4-9cfdff340913
+      iscommand: false
+      name: 'Set IPBelow 65 To Context '
+      script: Set
+      type: regular
+      version: -1
+    taskid: 3f6ed367-dc56-446a-88f4-9cfdff340913
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 1470
+        }
+      }
+  "42":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: riskScore
+                root: RecordedFuture.IP
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "65"
+      label: "yes"
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "24"
+      "yes":
+      - "43"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5295c2bf-4cae-4895-8d85-16d26ca18fd7
+      iscommand: false
+      name: Are There Any IPs  With Risk Score >  65
+      type: condition
+      version: -1
+    taskid: 5295c2bf-4cae-4895-8d85-16d26ca18fd7
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 850,
+          "y": 1250
+        }
+      }
+  "43":
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "24"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: SIXFIVE.IP
+      value:
+        complex:
+          accessor: name
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: RecordedFuture.IP.riskScore
+              operator: greaterThanOrEqual
+              right:
+                value:
+                  simple: "65"
+          root: RecordedFuture.IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 4dbd2a94-3436-449e-8650-5b5f5066a418
+      iscommand: false
+      name: 'Set IP Greater 65 To Context '
+      script: Set
+      type: regular
+      version: -1
+    taskid: 4dbd2a94-3436-449e-8650-5b5f5066a418
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 850,
+          "y": 1470
+        }
+      }
+  "44":
+    continueonerrortype: ""
+    id: "44"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "24"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: Below65
+      value:
+        complex:
+          accessor: IP
+          root: BELOWSIXFIVE
+          transformers:
+          - operator: StringifyArray
+          - args:
+              chars:
+                value:
+                  simple: '[" "] "'
+            operator: StripChars
+          - args:
+              regex:
+                value:
+                  simple: '","'
+              replaceWith:
+                value:
+                  simple: ' '
+            operator: replaceMatch
+          - args:
+              delimiter:
+                value:
+                  simple: ' '
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: f8c8fd6b-9116-4969-87fc-8e844311c033
+      iscommand: false
+      name: Set IP Below 65 To Common Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: f8c8fd6b-9116-4969-87fc-8e844311c033
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 1670
+        }
+      }
+  "45":
+    continueonerrortype: ""
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "39"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      entity:
+        simple: ${inputs.IP}
+      entity_type:
+        simple: ip
+      using:
+        simple: Recorded Future v2_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Get threat intelligence for an IP, Domain, CVE, URL, File or Malware.
+      id: 1711d93d-560a-4b12-8815-def3f346d819
+      iscommand: true
+      name: Get IP Intelligence From Recorded Future
+      script: Recorded Future v2|||recordedfuture-intelligence
+      type: regular
+      version: -1
+    taskid: 1711d93d-560a-4b12-8815-def3f346d819
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 830,
+          "y": 720
+        }
+      }
+  "46":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "46"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "40"
+      - "42"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      recordedfutureaiinsights:
+        simple: ${RecordedFuture.IP.aiInsights.text}
+      recordedfutureriskrule:
+        simple: ${RecordedFuture.IP.concatRules}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: b1a7721d-d7f1-4e4f-8bf5-ebdd82c1ca80
+      iscommand: true
+      name: Set Incident Field
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: b1a7721d-d7f1-4e4f-8bf5-ebdd82c1ca80
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 1080
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "28_24_#default#": 0.59,
+      "37_24_#default#": 0.42,
+      "37_38_yes": 0.52
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1965,
+        "width": 1180,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
