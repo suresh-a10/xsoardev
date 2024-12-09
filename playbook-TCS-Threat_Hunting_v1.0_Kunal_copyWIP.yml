@@ -1,0 +1,4654 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.0.0
+    itemVersion: 1.6.17
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 4406cdd5-a57b-475e-8c1e-3ec219b1cca2
+inputs:
+- description: Whether to automatically block the indicators involved.
+  key: BlockIndicatorsAutomatically
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "False"
+- description: The earliest time for the Splunk search query.
+  key: SplunkEarliestTime
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: -14d
+- description: The latest time for the Splunk search query.
+  key: SplunkLatestTime
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: now
+- description: The source of the Yara rules
+  key: YaraRulesSource
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: https://raw.githubusercontent.com/cado-security/DFIR_Resources_REvil_Kaseya/main/IOCs/Yara.rules
+- description: The source of the Sigma rules
+  key: SigmaRulesSource
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: https://raw.githubusercontent.com/SigmaHQ/sigma/master/rules/windows/process_creation/win_apt_revil_kaseya.yml
+- description: The time range for the QRadar search query.
+  key: QRadarSearchTimeRange
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: LAST 14 DAYS
+- description: Search splunk for related REvil - Kaseya breach file names.
+  key: SplunkAdvancedSearch4FilesandReg
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: index=* "c:\\kworking\\agent.exe" OR "c:\\windows\\mpsvc.dll" OR "c:\\windows\\system32\\sfc.dll"
+      OR "c:\\kworking\\binco-readme.txt" OR "c:\\kworking\\agent.crt" OR "c:\\windows\\cert.exe"
+      OR "SOFTWARE\\BlackLivesMatter"
+- description: Search Splunk for related REvil - Kaseya breach Powershell behaviours.
+  key: SplunkAdvancedSearch4PSCMD
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: index=* "*C:\\Windows\\cert.exe & echo %RANDOM%*" OR "*C:\\Windows\\cert.exe
+      -decode c:\\kworking\\agent.crt*" OR "*del /q /f c:\\kworking\\agent.crt*"
+- description: Search Splunk for related REvil - Kaseya breach web access logs activity.
+  key: SplunkAdvancedSearch4WebLog
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: 'index=* ("POST" AND "/dl.asp") OR ("GET" AND "/done.asp") OR ("POST"
+      AND "/cgi-bin/KUpload.dll") OR ("POST" AND "/userFilterTableRpt.asp") '
+- description: The name of the EDL Domain Blocklist.
+  key: EDLDomainBlocklist
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: Demisto Remediation - Domain EDL
+- description: The QRadar domain field name to check against the Reference Set of
+    Kaseya domains.
+  key: QRadarDomainFieldName
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: domain
+- description: The reference list name to create in QRadar for the Domain Indicators
+    Hunting.
+  key: ReferenceListName
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: KaseyaDomainIndicators
+name: TCS-Threat Hunting v1.0_Kunal_copyWIP
+outputs: []
+sourceplaybookid: Kaseya VSA  0-day - REvil Ransomware Supply Chain Attack
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "92"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6b3c9dc5-95b9-4707-82ee-1801ff49a1f4
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 6b3c9dc5-95b9-4707-82ee-1801ff49a1f4
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": -4220,
+          "y": -2410
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+      - "3"
+      - "6"
+      - "39"
+      - "60"
+      - "64"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2704a743-981c-410a-874c-eee824c19adf
+      iscommand: false
+      name: Collect Indicators
+      type: title
+      version: -1
+    taskid: 2704a743-981c-410a-874c-eee824c19adf
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": -350
+        }
+      }
+  "2":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      exclude_indicators:
+        simple: https://twitter.com/cyb3rops/status/1411091044100448258,  https://community.sophos.com/b/security-blog/posts/active-ransomware-attack-on-kaseya-customers,https://blog.truesec.com/2021/07/04/kaseya-supply-chain-attack-targeting-msps-to-deliver-revil-ransomware/
+      unescape_domain:
+        simple: "False"
+      url:
+        simple: https://github.com/cado-security/DFIR_Resources_REvil_Kaseya/blob/main/IOCs/Hashes.txt
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This script will extract indicators from HTML and will handle bad
+        TLD to avoid file extensions false positives.
+      id: 3bd0a4e5-1467-4bc7-8907-3fe40d2751d0
+      iscommand: false
+      name: Collect Hash indicators from cado-security
+      script: ParseHTMLIndicators
+      type: regular
+      version: -1
+    taskid: 3bd0a4e5-1467-4bc7-8907-3fe40d2751d0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": -190
+        }
+      }
+  "3":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      exclude_indicators:
+        simple: github.com,twitter.com
+      unescape_domain:
+        simple: "True"
+      url:
+        simple: https://github.com/cado-security/DFIR_Resources_REvil_Kaseya/blob/main/IOCs/Domains.txt
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This script will extract indicators from HTML and will handle bad
+        TLD to avoid file extensions false positives.
+      id: a2c6a934-9937-4e20-8a24-87044da155c6
+      iscommand: false
+      name: Collect Domain indicators from cado-security
+      script: ParseHTMLIndicators
+      type: regular
+      version: -1
+    taskid: a2c6a934-9937-4e20-8a24-87044da155c6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 680,
+          "y": -190
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 122c0fe4-32b4-4edc-827e-b287d6beea27
+      iscommand: false
+      name: Extract Indicators
+      type: title
+      version: -1
+    taskid: 122c0fe4-32b4-4edc-827e-b287d6beea27
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 10
+        }
+      }
+  "5":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "52"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      text:
+        simple: ${http.parsedBlog.indicators}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: f518fcdf-899d-4953-876c-57c3c33a17b4
+      iscommand: true
+      name: Extract Indicators From Data Collected
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: f518fcdf-899d-4953-876c-57c3c33a17b4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 170
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      filename:
+        simple: YaraRules.yar
+      method:
+        simple: GET
+      saveAsFile:
+        simple: "yes"
+      url:
+        complex:
+          root: inputs.YaraRulesSource
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Download Yara Rules
+      id: 29d4808b-3364-4ebf-8f45-b801fa98d7a0
+      iscommand: false
+      name: Download Yara Rules
+      script: http
+      type: regular
+      version: -1
+    taskid: 29d4808b-3364-4ebf-8f45-b801fa98d7a0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -230,
+          "y": -190
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+      - "8"
+      - "26"
+      - "45"
+      - "66"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: de6284bd-0653-494c-8809-b8b6ce1ee7be
+      iscommand: false
+      name: Threat Hunting
+      type: title
+      version: -1
+    taskid: de6284bd-0653-494c-8809-b8b6ce1ee7be
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 860
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+      - "85"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5967a97d-4892-4903-81c3-0ba077bf5e91
+      iscommand: false
+      name: SIEM Hunting
+      type: title
+      version: -1
+    taskid: 5967a97d-4892-4903-81c3-0ba077bf5e91
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -1820,
+          "y": 1160
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+      - "32"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4bb39dd8-50b4-4e84-8429-64f1a087f44c
+      iscommand: false
+      name: Palo Alto Networks Hunting
+      type: title
+      version: -1
+    taskid: 4bb39dd8-50b4-4e84-8429-64f1a087f44c
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1160
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      scriptArguments:
+        MD5:
+          complex:
+            accessor: MD5
+            root: File
+        SHA1:
+          complex:
+            accessor: SHA1
+            root: File
+        SHA256:
+          complex:
+            accessor: SHA256
+            root: File
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      IPAddresses:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+      MD5:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators.File
+              operator: hasLength
+              right:
+                value:
+                  simple: "32"
+          root: ExtractedIndicators.File
+          transformers:
+          - operator: uniq
+      SHA1:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators.File
+              operator: hasLength
+              right:
+                value:
+                  simple: "40"
+          root: ExtractedIndicators.File
+          transformers:
+          - operator: uniq
+      SHA256:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators.File
+              operator: hasLength
+              right:
+                value:
+                  simple: "64"
+          root: ExtractedIndicators.File
+          transformers:
+          - operator: uniq
+      URLDomain:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      description: "This is a multipurpose playbook used for hunting and threat detection.
+        The playbook receives inputs based on hashes, IP addresses, or domain names
+        provided manually or from outputs by other playbooks. \nWith the received
+        indicators, the playbook leverages data received by PANW products including,
+        Cortex Data Lake, Autofocus and Pan-OS to search for IP addresses, host names
+        and users related to the provided indicators.\nThe output provided by the
+        playbook facilitates pivoting searches for possibly affected IP addresses
+        or users."
+      id: 4516d61f-d639-4280-8eb1-c9de6638105b
+      iscommand: false
+      name: Palo Alto Networks - Hunting And Threat Detection
+      playbookId: Palo Alto Networks - Hunting And Threat Detection
+      type: playbook
+      version: -1
+    taskid: 4516d61f-d639-4280-8eb1-c9de6638105b
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 680,
+          "y": 1340
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      scriptArguments:
+        IndexName:
+          simple: '*'
+        MD5:
+          complex:
+            accessor: MD5
+            root: File
+        SHA1:
+          complex:
+            accessor: SHA1
+            root: File
+        SHA256:
+          complex:
+            accessor: SHA256
+            root: File
+        SelectFields:
+          simple: source,timestamp
+        earliest_time:
+          complex:
+            root: inputs.SplunkEarliestTime
+        event_limit:
+          simple: "100"
+        latest_time:
+          complex:
+            root: inputs.SplunkLatestTime
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      IPAddress:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      IndexName:
+        simple: index=*
+      MD5:
+        complex:
+          accessor: File
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators
+              operator: hasLength
+              right:
+                value:
+                  simple: "32"
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      SHA1:
+        complex:
+          accessor: File
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators
+              operator: hasLength
+              right:
+                value:
+                  simple: "40"
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      SHA256:
+        complex:
+          accessor: File
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators
+              operator: hasLength
+              right:
+                value:
+                  simple: "64"
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      SelectFields:
+        simple: source,timestamp
+      URLDomain:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      earliest_time:
+        complex:
+          root: inputs.SplunkEarliestTime
+      event_limit:
+        simple: "100"
+      latest_time:
+        complex:
+          root: inputs.SplunkLatestTime
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      description: This playbook queries Splunk for indicators such as file hashes,
+        IP addresses, domains, or urls. It outputs detected users, ip addresses, and
+        hostnames related to the indicators.
+      id: 0a13f7f9-ba26-4a7b-80d5-dd9f8c1f1cee
+      iscommand: false
+      name: Splunk Indicator Hunting
+      playbookId: Splunk Indicator Hunting
+      type: playbook
+      version: -1
+    taskid: 0a13f7f9-ba26-4a7b-80d5-dd9f8c1f1cee
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -1480,
+          "y": 1360
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      IPAddress:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      InvestigationIPFields:
+        simple: sourceip,destinationip
+      InvestigationUserFields:
+        simple: username
+      MD5:
+        complex:
+          accessor: File
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators
+              operator: hasLength
+              right:
+                value:
+                  simple: "32"
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      QradarIPfield:
+        simple: sourceip,destinationip
+      SHA1:
+        complex:
+          accessor: File
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators
+              operator: hasLength
+              right:
+                value:
+                  simple: "40"
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      SHA256:
+        complex:
+          accessor: File
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators
+              operator: hasLength
+              right:
+                value:
+                  simple: "64"
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      TimeFrame:
+        complex:
+          root: inputs.QRadarSearchTimeRange
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      description: 'The Playbook queries QRadar SIEM for indicators such as file hashes,
+        IP addresses, domains, or urls. '
+      id: 67873457-15fd-4784-8cd7-62b76f49bd94
+      iscommand: false
+      name: QRadar Indicator Hunting V2
+      playbookId: QRadar Indicator Hunting V2
+      type: playbook
+      version: -1
+    taskid: 67873457-15fd-4784-8cd7-62b76f49bd94
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -1940,
+          "y": 1755
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      scriptArguments:
+        MD5Hash:
+          complex:
+            accessor: MD5
+            root: File
+            transformers:
+            - operator: uniq
+        SHA1Hash:
+          complex:
+            accessor: SHA1
+            root: File
+            transformers:
+            - operator: uniq
+        SHA256Hash:
+          complex:
+            accessor: SHA256
+            root: File
+            transformers:
+            - operator: uniq
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      MD5Hash:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators.File
+              operator: hasLength
+              right:
+                value:
+                  simple: "32"
+          root: ExtractedIndicators.File
+          transformers:
+          - operator: uniq
+      SHA1Hash:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators.File
+              operator: hasLength
+              right:
+                value:
+                  simple: "40"
+          root: ExtractedIndicators.File
+          transformers:
+          - operator: uniq
+      SHA256Hash:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators.File
+              operator: hasLength
+              right:
+                value:
+                  simple: "64"
+          root: ExtractedIndicators.File
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Hunt using available tools
+      id: f3630573-244a-4a94-8539-d665d8a86d7a
+      iscommand: false
+      name: Search Endpoints By Hash - Generic V2
+      playbookId: Search Endpoints By Hash - Generic V2
+      type: playbook
+      version: -1
+    taskid: f3630573-244a-4a94-8539-d665d8a86d7a
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1240,
+          "y": 1340
+        }
+      }
+  "26":
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "31"
+      - "25"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1da2a4ab-53ee-417d-894f-98c69bf6fb03
+      iscommand: false
+      name: Hunting REvil Known Samples on Endpoints
+      type: title
+      version: -1
+    taskid: 1da2a4ab-53ee-417d-894f-98c69bf6fb03
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1450,
+          "y": 1160
+        }
+      }
+  "27":
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+      - "86"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: REvilXDRincidents=
+      query:
+        simple: 'xdralerts.name:"network_ransom1" OR xdralerts.description: *malicious_dll_dropped_mpsvc.dll.1*
+          OR  xdralerts.description: *malicious_dll_dropped_mpsvc.dll.2* OR  xdralerts.description:
+          *malicious_dll_dropped_mpsvc.dll.3* OR  xdralerts.description: *malicious_dll_dropped_mpsvc.dll.4*
+          OR  xdralerts.description: *malicious_dll_dropped_mpsvc.dll.5* OR xdralerts.description:
+          *sync.malicious_dll_loaded_mpsvc.dll.1* OR xdralerts.description: *sync.malicious_dll_loaded_mpsvc.dll.2*
+          OR xdralerts.description: *sync.malicious_dll_loaded_mpsvc.dll.3* OR xdralerts.description:
+          *sync.malicious_dll_loaded_mpsvc.dll.4* OR xdralerts.description: *sync.malicious_dll_loaded_mpsvc.dll.5*
+          OR xdralerts.description: *msmpeng_hijack* OR xdralerts.name: *msmpeng_hijack*'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Search XDR incidents for REvil in the network.
+      id: da0eb9b8-5e1b-4de8-8d59-082f7c2e6c16
+      iscommand: false
+      name: 'Search XDR incidents for suspicious network behavior '
+      script: SearchIncidentsV2
+      type: regular
+      version: -1
+    taskid: da0eb9b8-5e1b-4de8-8d59-082f7c2e6c16
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1810,
+          "y": 1870
+        }
+      }
+  "31":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: state
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Cortex XDR - IR
+                root: modules
+          operator: isEqualString
+          right:
+            value:
+              simple: active
+      label: "yes"
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "34"
+      "yes":
+      - "27"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if the Cortex XDR instance is enabled.
+      id: b4749f32-b3e8-488e-8d4f-a66366b2fcb3
+      iscommand: false
+      name: 'Is Cortex XDR enabled? '
+      type: condition
+      version: -1
+    taskid: b4749f32-b3e8-488e-8d4f-a66366b2fcb3
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1660,
+          "y": 1340
+        }
+      }
+  "32":
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      log_type:
+        simple: threat
+      query:
+        simple: (threatid eq 2034491) or (threatid eq 2744436) or (threatid eq 2552057)
+          or (threatid eq 2034498) or (threatid eq 2557145) or (threatid eq 2744446)
+          or (threatid eq 2649949)
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      description: 'Query Panorama Logs of types: traffic, threat, url, data-filtering
+        and wildfire.'
+      id: 58b911a2-491d-4dd5-8c66-29b53988d524
+      iscommand: false
+      name: Panorama Query Logs for Kaseya breach Threat IDs
+      playbookId: Panorama Query Logs
+      type: playbook
+      version: -1
+    taskid: 58b911a2-491d-4dd5-8c66-29b53988d524
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": 1340
+        }
+      }
+  "33":
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "57"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      AutoRemediation:
+        simple: "False"
+      EmailBody:
+        simple: During the Kaseya breach investigation in XSOAR, infected endpoints
+          were found and requires your attention.
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |+
+        Provides the first step in the investigation of ransomware attacks.
+         The playbook requires the ransom note and an example of an encrypted file (<1MB) to try to identify the ransomware and find a recovery tool via the online database.
+         You will be guided with further investigation steps throughout the playbook, some of the key features are:
+
+        - Encrypted file owner investigation
+         - Endpoint forensic investigation
+         - Active Directory investigation
+         - Timeline of the breach investigation
+         - Indicator and account enrichment
+
+        Playbook settings and mapping:
+         For the full operation of the playbook, the following data should be mapped to the relevant incident fields.
+         Username - Usernames (common incident field)
+         Hostname - Hostnames (common incident field)
+
+
+
+      id: 0b6cd3ae-b131-49cf-889d-ae2ff2f77c1b
+      iscommand: false
+      name: Post Intrusion Ransomware Investigation
+      playbookId: Post Intrusion Ransomware Investigation
+      type: playbook
+      version: -1
+    taskid: 0b6cd3ae-b131-49cf-889d-ae2ff2f77c1b
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1770,
+          "y": 3610
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c21f12a4-57ed-4986-84ab-0928b959605d
+      iscommand: false
+      name: Remediation
+      type: title
+      version: -1
+    taskid: c21f12a4-57ed-4986-84ab-0928b959605d
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 2650
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "57"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Yara rules file has been downloaded as YaraRules.yar and is available
+        for download directly from XSOAR.
+      id: 3edfb3eb-0d00-4c72-8410-a789d169c3a5
+      iscommand: false
+      name: Deploy YARA rules
+      type: regular
+      version: -1
+    taskid: 3edfb3eb-0d00-4c72-8410-a789d169c3a5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -290,
+          "y": 3440
+        }
+      }
+  "37":
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "57"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sigma rules file has been downloaded as SigmaRules.yml and is available
+        for download directly from XSOAR.
+      id: 19d5b9f2-f25a-4148-8829-2c04db5c6066
+      iscommand: false
+      name: Deploy Sigma rules
+      type: regular
+      version: -1
+    taskid: 19d5b9f2-f25a-4148-8829-2c04db5c6066
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -710,
+          "y": 3440
+        }
+      }
+  "39":
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      filename:
+        simple: SigmaRules.yml
+      method:
+        simple: GET
+      saveAsFile:
+        simple: "yes"
+      url:
+        complex:
+          root: inputs.SigmaRulesSource
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Download Sigma Rules
+      id: ca385bf3-c3a3-4b4e-8c07-75ab43b35d73
+      iscommand: false
+      name: Download Sigma Rules
+      script: http
+      type: regular
+      version: -1
+    taskid: ca385bf3-c3a3-4b4e-8c07-75ab43b35d73
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -690,
+          "y": -190
+        }
+      }
+  "40":
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "71"
+      - "73"
+      - "72"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 0481dfcd-4034-4440-8070-220effd6ac98
+      iscommand: false
+      name: Advanced Hunting and Detection Procedures
+      type: title
+      version: -1
+    taskid: 0481dfcd-4034-4440-8070-220effd6ac98
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 3160
+        }
+      }
+  "41":
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      scriptArguments:
+        AutoCommit:
+          simple: "No"
+        CustomBlockRule:
+          simple: "True"
+        CustomURLCategory:
+          simple: Demisto Remediation - Malicious URLs
+        IP:
+          complex:
+            accessor: IP
+            root: ExtractedIndicators
+            transformers:
+            - operator: uniq
+        MD5:
+          complex:
+            filters:
+            - - left:
+                  iscontext: true
+                  value:
+                    simple: ExtractedIndicators.File
+                operator: stringHasLength
+                right:
+                  value:
+                    simple: "32"
+            root: ExtractedIndicators.File
+            transformers:
+            - operator: uniq
+        SHA256:
+          complex:
+            filters:
+            - - left:
+                  iscontext: true
+                  value:
+                    simple: ExtractedIndicators.File
+                operator: stringHasLength
+                right:
+                  value:
+                    simple: "64"
+            root: ExtractedIndicators.File
+            transformers:
+            - operator: uniq
+        URL:
+          complex:
+            filters:
+            - - ignorecase: true
+                left:
+                  iscontext: true
+                  value:
+                    simple: ExtractedIndicators.URL
+                operator: notContainsGeneral
+                right:
+                  value:
+                    simple: github
+            - - left:
+                  iscontext: true
+                  value:
+                    simple: ExtractedIndicators.URL
+                operator: notContainsGeneral
+                right:
+                  value:
+                    simple: microsoft.com
+            root: ExtractedIndicators.URL
+            transformers:
+            - operator: uniq
+        URLListName:
+          simple: Demisto Remediation - URL EDL
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "40"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      AutoCommit:
+        simple: "No"
+      CustomBlockRule:
+        simple: "True"
+      CustomURLCategory:
+        simple: Demisto Remediation - Malicious URLs
+      IP:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      MD5:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators.File
+              operator: stringHasLength
+              right:
+                value:
+                  simple: "32"
+          root: ExtractedIndicators.File
+          transformers:
+          - operator: uniq
+      SHA256:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: ExtractedIndicators.File
+              operator: stringHasLength
+              right:
+                value:
+                  simple: "64"
+          root: ExtractedIndicators.File
+          transformers:
+          - operator: uniq
+      URL:
+        complex:
+          accessor: URL
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      URLListName:
+        simple: Demisto Remediation - URL EDL
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |+
+        This playbook blocks malicious Indicators using all integrations that are enabled, using the following sub-playbooks:
+
+        - Block URL - Generic
+        - Block Account - Generic
+        - Block IP - Generic v2
+        - Block File - Generic v2
+
+      id: ce62d3e2-595e-401e-8970-8a84cbce9776
+      iscommand: false
+      name: Block Indicators - Generic v2
+      playbookId: Block Indicators - Generic v2
+      type: playbook
+      version: -1
+    taskid: ce62d3e2-595e-401e-8970-8a84cbce9776
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 2980
+        }
+      }
+  "42":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.BlockIndicatorsAutomatically
+          operator: isEqualString
+          right:
+            value:
+              simple: "True"
+      label: "yes"
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "43"
+      "yes":
+      - "62"
+      - "41"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether IOCs associated with the incident can be blocked
+        automatically.
+      id: fac2da1a-f625-402c-813c-d09829b57943
+      iscommand: false
+      name: Block indicators automatically?
+      type: condition
+      version: -1
+    taskid: fac2da1a-f625-402c-813c-d09829b57943
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 2770
+        }
+      }
+  "43":
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "40"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Manually block the IOCs in the relevant systems.
+      id: cad558f6-c891-4e50-843c-d488cf77bcd8
+      iscommand: false
+      name: Block indicators manually
+      type: regular
+      version: -1
+    taskid: cad558f6-c891-4e50-843c-d488cf77bcd8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 900,
+          "y": 2980
+        }
+      }
+  "44":
+    continueonerrortype: ""
+    id: "44"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      earliest_time:
+        complex:
+          root: inputs.SplunkEarliestTime
+      latest_time:
+        complex:
+          root: inputs.SplunkLatestTime
+      query:
+        complex:
+          root: inputs.SplunkAdvancedSearch4FilesandReg
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: SplunkPy
+      description: Searches Splunk for events related to REvil Kaseya breach file
+        names and registry hives.
+      id: 8a4dec9b-dd6c-456d-8cdd-a9a463b85cdb
+      iscommand: true
+      name: Splunk Search Related Activity Based on Files and Registry
+      script: SplunkPy|||splunk-search
+      type: regular
+      version: -1
+    taskid: 8a4dec9b-dd6c-456d-8cdd-a9a463b85cdb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 150,
+          "y": 1810
+        }
+      }
+  "45":
+    continueonerrortype: ""
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "49"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 38efd78b-4473-44c0-81e5-a7c8a1191bec
+      iscommand: false
+      name: Splunk Advanced Hunting
+      type: title
+      version: -1
+    taskid: 38efd78b-4473-44c0-81e5-a7c8a1191bec
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -330,
+          "y": 1160
+        }
+      }
+  "46":
+    continueonerrortype: ""
+    id: "46"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      earliest_time:
+        complex:
+          root: inputs.SplunkEarliestTime
+      latest_time:
+        complex:
+          root: inputs.SplunkLatestTime
+      query:
+        complex:
+          root: inputs.SplunkAdvancedSearch4PSCMD
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: SplunkPy
+      description: Searches Splunk for events related to REvil Kaseya breach Powershell
+        command lines.
+      id: 98cc27d0-5b21-4c4e-8d3b-a30d50b8969d
+      iscommand: true
+      name: Splunk Search Related Activity Based on Powershell Command Lines
+      script: SplunkPy|||splunk-search
+      type: regular
+      version: -1
+    taskid: 98cc27d0-5b21-4c4e-8d3b-a30d50b8969d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -330,
+          "y": 1810
+        }
+      }
+  "47":
+    continueonerrortype: ""
+    id: "47"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Based on the results returned by the Hunting phase, would you like
+          to run the Ransomware Investigation playbook?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: false
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "57"
+      "Yes":
+      - "33"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Ask the analyst if a Ransomware Investigation playbook should be
+        initiate according to the hunting results.
+      id: 599af737-7362-44ff-8d8e-a5debe3e2a63
+      iscommand: false
+      name: Should Initiate Ransomware Investigation playbook?
+      type: condition
+      version: -1
+    taskid: 599af737-7362-44ff-8d8e-a5debe3e2a63
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1430,
+          "y": 3440
+        }
+      }
+  "49":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: SplunkPy
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+      label: "Yes"
+    continueonerrortype: ""
+    id: "49"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "34"
+      "Yes":
+      - "46"
+      - "44"
+      - "65"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if Splunk instance is enabled.
+      id: 90a7e810-6469-4f95-8b4e-ea6392e5cbc9
+      iscommand: false
+      name: Is Splunk Enabled?
+      type: condition
+      version: -1
+    taskid: 90a7e810-6469-4f95-8b4e-ea6392e5cbc9
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -330,
+          "y": 1340
+        }
+      }
+  "51":
+    continueonerrortype: ""
+    id: "51"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "81"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        For Kaseya VSA On-Premises customers, Kaseya has published a runbook of the changes to make to your on-premises environment in order to be prepared for the patch release.
+
+        [Kaseya VSA On-Premises Runbook](https://helpdesk.kaseya.com/hc/en-gb/articles/4403709150993)
+      id: fd894a49-9774-4d29-81d0-28264dda0d44
+      iscommand: false
+      name: Run Kaseya Patch Release Preparation for VSA On-Premises
+      type: regular
+      version: -1
+    taskid: fd894a49-9774-4d29-81d0-28264dda0d44
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 160,
+          "y": 3590
+        }
+      }
+  "52":
+    continueonerrortype: ""
+    id: "52"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "53"
+      - "54"
+      - "55"
+      - "56"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ea2aac64-ae9a-42ef-8058-4251f9b85707
+      iscommand: false
+      name: Tag Indicators
+      type: title
+      version: -1
+    taskid: ea2aac64-ae9a-42ef-8058-4251f9b85707
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 380
+        }
+      }
+  "53":
+    continueonerrortype: ""
+    id: "53"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      indicatorsValues:
+        complex:
+          accessor: File
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "2"
+      tags:
+        simple: REvil, Kaseya, Sodinokibi, Ransomware
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.indicators
+      id: 42546fa5-7d15-460a-8067-be07b2244e4b
+      iscommand: true
+      name: Tag File indicators
+      script: Builtin|||setIndicators
+      type: regular
+      version: -1
+    taskid: 42546fa5-7d15-460a-8067-be07b2244e4b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1150,
+          "y": 620
+        }
+      }
+  "54":
+    continueonerrortype: ""
+    id: "54"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      indicatorsValues:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "2"
+      tags:
+        simple: REvil, Kaseya, Sodinokibi, Ransomware
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.indicators
+      id: 07279f0e-eb1c-4a09-8412-cf9eb738e48d
+      iscommand: true
+      name: Tag IP indicators
+      script: Builtin|||setIndicators
+      type: regular
+      version: -1
+    taskid: 07279f0e-eb1c-4a09-8412-cf9eb738e48d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 690,
+          "y": 620
+        }
+      }
+  "55":
+    continueonerrortype: ""
+    id: "55"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      indicatorsValues:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "2"
+      tags:
+        simple: REvil, Kaseya, Sodinokibi, Ransomware
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.indicators
+      id: ca1c64e4-8031-4433-88ce-8b45a755f89f
+      iscommand: true
+      name: Tag Domain indicators
+      script: Builtin|||setIndicators
+      type: regular
+      version: -1
+    taskid: ca1c64e4-8031-4433-88ce-8b45a755f89f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 200,
+          "y": 620
+        }
+      }
+  "56":
+    continueonerrortype: ""
+    id: "56"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      indicatorsValues:
+        complex:
+          accessor: URL
+          root: ExtractedIndicators
+          transformers:
+          - operator: uniq
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "2"
+      tags:
+        simple: REvil, Kaseya, Sodinokibi, Ransomware
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.indicators
+      id: 3f30ac52-bbc2-42ca-81ff-d4cb422e0241
+      iscommand: true
+      name: Tag URL indicators
+      script: Builtin|||setIndicators
+      type: regular
+      version: -1
+    taskid: 3f30ac52-bbc2-42ca-81ff-d4cb422e0241
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -250,
+          "y": 620
+        }
+      }
+  "57":
+    continueonerrortype: ""
+    id: "57"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "58"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8a93f1de-d92a-40ad-8128-f47cb858baed
+      iscommand: false
+      name: Resolution
+      type: title
+      version: -1
+    taskid: 8a93f1de-d92a-40ad-8128-f47cb858baed
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 3990
+        }
+      }
+  "58":
+    continueonerrortype: ""
+    id: "58"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Do you need to continue with the investigation?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: false
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "63"
+      "Yes":
+      - "61"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check with the analyst whether to continue with the investigation.
+      id: 1dd86169-908e-4986-883d-e19b48c18adc
+      iscommand: false
+      name: Analysis resolution - Should continue with the investigation?
+      type: condition
+      version: -1
+    taskid: 1dd86169-908e-4986-883d-e19b48c18adc
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 4130
+        }
+      }
+  "59":
+    continueonerrortype: ""
+    id: "59"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c639e55d-fb80-41c8-8308-071901714c2d
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: c639e55d-fb80-41c8-8308-071901714c2d
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 4590
+        }
+      }
+  "60":
+    continueonerrortype: ""
+    id: "60"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      exclude_indicators:
+        simple: www.huntress.com, 119acead668bad57a48b4f42f294f8f0, https://sectigo.com/,
+          127.0.0.1, truesec.com, blog.truesec.com
+      url:
+        simple: https://www.huntress.com/blog/rapid-response-kaseya-vsa-mass-msp-ransomware-incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This script will extract indicators from HTML and will handle bad
+        TLD to avoid file extensions false positives.
+      id: e2f39fa6-f813-47b1-8761-1b0bf26cc7e1
+      iscommand: false
+      name: Collect indicators from HUNTRESS
+      script: ParseHTMLIndicators
+      type: regular
+      version: -1
+    taskid: e2f39fa6-f813-47b1-8761-1b0bf26cc7e1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1130,
+          "y": -190
+        }
+      }
+  "61":
+    continueonerrortype: ""
+    id: "61"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "59"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Manual step for further incident investigation.
+      id: e1aaa6b7-c202-4f2f-85b4-f0ffcbb8b2d0
+      iscommand: false
+      name: Investigate Further
+      type: regular
+      version: -1
+    taskid: e1aaa6b7-c202-4f2f-85b4-f0ffcbb8b2d0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 0,
+          "y": 4380
+        }
+      }
+  "62":
+    continueonerrortype: ""
+    id: "62"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "40"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      AutoCommit:
+        simple: "No"
+      Domain:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+      DomainListName:
+        complex:
+          root: inputs.EDLDomainBlocklist
+      pre-post-rulebase:
+        simple: pre-rulebase
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 901e7a0b-84b9-4972-8e53-3927819d080a
+      iscommand: false
+      name: PAN-OS - Block Domain - External Dynamic List
+      playbookId: PAN-OS - Block Domain - External Dynamic List
+      type: playbook
+      version: -1
+    taskid: 901e7a0b-84b9-4972-8e53-3927819d080a
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 0,
+          "y": 2980
+        }
+      }
+  "63":
+    continueonerrortype: ""
+    id: "63"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "59"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closeReason:
+        simple: No further actions are required.
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Close the current incident
+      id: 53c5719c-758c-495d-8b50-e37127dc226b
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 53c5719c-758c-495d-8b50-e37127dc226b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 4380
+        }
+      }
+  "64":
+    continueonerrortype: ""
+    id: "64"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      url:
+        simple: https://helpdesk.kaseya.com/hc/en-gb/articles/4403584098961
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This script will extract indicators from HTML and will handle bad
+        TLD to avoid file extensions false positives.
+      id: e23e8e60-f9d2-4e4a-8900-f78ee045c5eb
+      iscommand: false
+      name: Collect indicators from Kaseya advisory
+      script: ParseHTMLIndicators
+      type: regular
+      version: -1
+    taskid: e23e8e60-f9d2-4e4a-8900-f78ee045c5eb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1580,
+          "y": -190
+        }
+      }
+  "65":
+    continueonerrortype: ""
+    id: "65"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      earliest_time:
+        complex:
+          root: inputs.SplunkEarliestTime
+      latest_time:
+        complex:
+          root: inputs.SplunkLatestTime
+      query:
+        complex:
+          root: inputs.SplunkAdvancedSearch4WebLog
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: SplunkPy
+      description: Searches Splunk for events related to REvil Kaseya breach Powershell
+        command lines.
+      id: 349afa95-60b4-47ce-8d12-ec16a5be53e9
+      iscommand: true
+      name: Splunk Search Related Activity Based on web logs
+      script: SplunkPy|||splunk-search
+      type: regular
+      version: -1
+    taskid: 349afa95-60b4-47ce-8d12-ec16a5be53e9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -810,
+          "y": 1810
+        }
+      }
+  "66":
+    continueonerrortype: ""
+    id: "66"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "68"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Retrieve issues
+      id: 76de6898-b755-482e-8b9f-233fc8a0acb0
+      iscommand: false
+      name: Xpanse Issues Hunt
+      type: title
+      version: -1
+    taskid: 76de6898-b755-482e-8b9f-233fc8a0acb0
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 2710,
+          "y": 1160
+        }
+      }
+  "67":
+    continueonerrortype: ""
+    id: "67"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      issue_type:
+        simple: Kaseya VSA
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Retrieve issues related to Kaseya VSA servers from Xpanse
+      id: a7b171f4-b5e0-43e6-879f-49579406def0
+      iscommand: true
+      name: Search for internet facing Kaseya VSA servers using Xpanse
+      script: '|||expanse-get-issues'
+      type: regular
+      version: -1
+    taskid: a7b171f4-b5e0-43e6-879f-49579406def0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 3020,
+          "y": 1870
+        }
+      }
+  "68":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: state
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: ExpanseV2
+                root: modules
+          operator: isEqualString
+          right:
+            value:
+              simple: active
+      label: "yes"
+    continueonerrortype: ""
+    id: "68"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "34"
+      "yes":
+      - "67"
+      - "69"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if Xpanse instance is enabled.
+      id: 43436271-2c6e-4c09-828f-c10ab9afa1de
+      iscommand: false
+      name: Is Xpanse Enabled?
+      type: condition
+      version: -1
+    taskid: 43436271-2c6e-4c09-828f-c10ab9afa1de
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2710,
+          "y": 1340
+        }
+      }
+  "69":
+    continueonerrortype: ""
+    id: "69"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "86"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query:
+        simple: type:"Expanse Issue" and name:Kaseya VSA
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Searches for Xpanse related incidents
+      id: 1d6d83ad-96e6-4af9-804e-8694e0ad50d4
+      iscommand: false
+      name: Search for related Xpanse incident
+      script: SearchIncidentsV2
+      type: regular
+      version: -1
+    taskid: 1d6d83ad-96e6-4af9-804e-8694e0ad50d4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2250,
+          "y": 1870
+        }
+      }
+  "70":
+    continueonerrortype: ""
+    id: "70"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      linkedIncidentIDs:
+        complex:
+          accessor: id
+          root: foundIncidents
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Link related Xpanse and Cortex XDR incident to Kaseya VSA incident,
+      id: 7d48e682-4ef5-41b3-8145-dffcb5101ac2
+      iscommand: true
+      name: Link related incidents
+      script: Builtin|||linkIncidents
+      type: regular
+      version: -1
+    taskid: 7d48e682-4ef5-41b3-8145-dffcb5101ac2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2020,
+          "y": 2385
+        }
+      }
+  "71":
+    continueonerrortype: ""
+    id: "71"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "74"
+      - "75"
+      - "51"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 43522372-ea42-4240-8639-7e88f84c9354
+      iscommand: false
+      name: Kaseya Detection and Mitigation
+      type: title
+      version: -1
+    taskid: 43522372-ea42-4240-8639-7e88f84c9354
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 3300
+        }
+      }
+  "72":
+    continueonerrortype: ""
+    id: "72"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "37"
+      - "36"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b3ac70a7-eb5d-43d9-8bd7-204e594c0c4d
+      iscommand: false
+      name: Deploy Detection Rules
+      type: title
+      version: -1
+    taskid: b3ac70a7-eb5d-43d9-8bd7-204e594c0c4d
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -490,
+          "y": 3300
+        }
+      }
+  "73":
+    continueonerrortype: ""
+    id: "73"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "47"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: afb18b44-3655-4dbe-8b98-e9badc8af870
+      iscommand: false
+      name: Ransomware Remediation
+      type: title
+      version: -1
+    taskid: afb18b44-3655-4dbe-8b98-e9badc8af870
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1430,
+          "y": 3300
+        }
+      }
+  "74":
+    continueonerrortype: ""
+    id: "74"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "81"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        For Kaseya VSA SaaS customers, Kaseya has published a runbook of the changes to make to your on-premises environment in order to be prepared for the patch release.
+
+        [Kaseya VSA SaaS Runbook](https://helpdesk.kaseya.com/hc/en-gb/articles/4403709476369)
+      id: 4bef0028-57b6-4b2c-8599-ae946a859822
+      iscommand: false
+      name: Run Kaseya Patch Release Preparation for VSA SaaS
+      type: regular
+      version: -1
+    taskid: 4bef0028-57b6-4b2c-8599-ae946a859822
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 740,
+          "y": 3580
+        }
+      }
+  "75":
+    continueonerrortype: ""
+    id: "75"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "81"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        This tool analyzes a system (either VSA server or managed endpoint) and determines whether any indicators of compromise (IoC) are present.
+
+        [Kaseya VSA Detection Tool](https://kaseya.app.box.com/s/0ysvgss7w48nxh8k1xt7fqhbcjxhas40)
+      id: 4fd01ad9-b981-4cca-8374-0195f006f8ea
+      iscommand: false
+      name: Download Kaseya Compromise Detection Tools
+      type: regular
+      version: -1
+    taskid: 4fd01ad9-b981-4cca-8374-0195f006f8ea
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 3450
+        }
+      }
+  "81":
+    continueonerrortype: ""
+    id: "81"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "57"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        The VSA 9.5.7a (9.5.7.2994) release includes enhancements and fixes described in the topics below:
+
+        [9.5.7a (9.5.7.2994) Feature Release – 11 July 2021
+        ](https://helpdesk.kaseya.com/hc/en-gb/articles/4403785889041)
+      id: 0fa1200a-e75d-4b2c-87b9-754d6525b5d5
+      iscommand: false
+      name: Install Kaseya Patch for VSA Servers
+      type: regular
+      version: -1
+    taskid: 0fa1200a-e75d-4b2c-87b9-754d6525b5d5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 3780
+        }
+      }
+  "82":
+    continueonerrortype: ""
+    id: "82"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "83"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      element_type:
+        simple: ALNIC
+      ref_name:
+        complex:
+          root: inputs.ReferenceListName
+      retry-count:
+        simple: "3"
+      retry-interval:
+        simple: "2"
+      time_to_live:
+        simple: 2 minutes
+      timeout_type:
+        simple: FIRST_SEEN
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Creates a new reference set. If the provided name is already in
+        use, this command will fail.
+      id: a82630d5-8895-46c9-8309-18dfa8093bf1
+      iscommand: true
+      name: Create Reference List of Domain Indicators
+      script: '|||qradar-create-reference-set'
+      type: regular
+      version: -1
+    taskid: a82630d5-8895-46c9-8309-18dfa8093bf1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -2340,
+          "y": 2135
+        }
+      }
+  "83":
+    continueonerrortype: ""
+    id: "83"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "84"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        complex:
+          root: inputs.ReferenceListName
+      value:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Add or update a value in a reference set.
+      id: 1792702c-98a4-482b-86c2-32abdf006da7
+      iscommand: true
+      name: Add Domain Indicators to the Reference List
+      script: '|||qradar-create-reference-set-value'
+      type: regular
+      version: -1
+    taskid: 1792702c-98a4-482b-86c2-32abdf006da7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -2130,
+          "y": 2310
+        }
+      }
+  "84":
+    continueonerrortype: ""
+    id: "84"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      interval:
+        simple: "1"
+      query_expression:
+        simple: SELECT * FROM events where REFERENCESETCONTAINS ('${inputs.ReferenceListName}',
+          ${inputs.QRadarDomainFieldName}) LAST 14 DAYS
+      timeout:
+        simple: "600"
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This playbook runs a QRadar query and return its results to the
+        context.
+      id: d14d10a5-77a9-44fd-89af-eaab8225bf8a
+      iscommand: false
+      name: QRadar Domain Indicators Hunting
+      playbookId: QRadarFullSearch
+      type: playbook
+      version: -1
+    taskid: d14d10a5-77a9-44fd-89af-eaab8225bf8a
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -1940,
+          "y": 2480
+        }
+      }
+  "85":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: QRadar_v2
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+      label: "Yes"
+    continueonerrortype: ""
+    id: "85"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "34"
+      "Yes":
+      - "24"
+      - "87"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if Splunk instance is enabled.
+      id: 43705203-7a0b-4c17-83d0-e88fcbf73986
+      iscommand: false
+      name: Is QRadar Enabled?
+      type: condition
+      version: -1
+    taskid: 43705203-7a0b-4c17-83d0-e88fcbf73986
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -2140,
+          "y": 1360
+        }
+      }
+  "86":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: id
+                root: foundIncidents
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "86"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "34"
+      "yes":
+      - "70"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if Xpanse or XDR incidents were found
+      id: 5009fb12-765a-486d-8c78-c1ce1e9c4313
+      iscommand: false
+      name: Found Related Incidents?
+      type: condition
+      version: -1
+    taskid: 5009fb12-765a-486d-8c78-c1ce1e9c4313
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2020,
+          "y": 2050
+        }
+      }
+  "87":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "87"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "88"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        complex:
+          root: inputs.ReferenceListName
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Information about the reference set that had data added or updated.
+        This returns the information set, but not the contained data. This feature
+        is supported from version 8.1 and upward.
+      id: efa2125d-5437-4561-845c-24b95eb24345
+      iscommand: true
+      name: Check if DomainIndicators Reference List Exists
+      script: '|||qradar-get-reference-by-name'
+      type: regular
+      version: -1
+    taskid: efa2125d-5437-4561-845c-24b95eb24345
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -2340,
+          "y": 1580
+        }
+      }
+  "88":
+    continueonerrortype: ""
+    id: "88"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "89"
+      "yes":
+      - "82"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryId:
+        complex:
+          accessor: Reference
+          root: QRadar
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check whether given entry/entries returned an error. Use ${lastCompletedTaskEntries}
+        to check the previous task entries. If array is provided, will return yes
+        if one of the entries returned an error.
+      id: 7194bdcc-0a7e-4d8f-8e40-9cd9e6d76f90
+      iscommand: false
+      name: Is KaseyaDomainIndicators Reference list exists?
+      script: isError
+      type: condition
+      version: -1
+    taskid: 7194bdcc-0a7e-4d8f-8e40-9cd9e6d76f90
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -2340,
+          "y": 1755
+        }
+      }
+  "89":
+    continueonerrortype: ""
+    id: "89"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "82"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        complex:
+          root: inputs.ReferenceListName
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Deletes a reference set corresponding to the name provided.
+      id: 6a267e11-ba07-4b1a-8cf7-c918ec35f5f1
+      iscommand: true
+      name: Delete DomainIndicators Reference List
+      script: '|||qradar-delete-reference-set'
+      type: regular
+      version: -1
+    taskid: 6a267e11-ba07-4b1a-8cf7-c918ec35f5f1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -2130,
+          "y": 1965
+        }
+      }
+  "90":
+    continueonerrortype: ""
+    id: "90"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 81d2b251-7b6f-4551-8574-407b9047beba
+      iscommand: false
+      name: Collect Indicators
+      type: title
+      version: -1
+    taskid: 81d2b251-7b6f-4551-8574-407b9047beba
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -1080,
+          "y": 210
+        }
+      }
+  "91":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Domain(s) To Hunt
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: Input domains for hunting
+        type: shortText
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "1"
+        label: ""
+        labelarg:
+          simple: URL(s) To Hunt
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: Input URLs for hunting
+        type: shortText
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "2"
+        label: ""
+        labelarg:
+          simple: IP Address(s) To Hunt
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: Input IP Address(s) for hunting
+        type: shortText
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "3"
+        label: ""
+        labelarg:
+          simple: Hash(s) To Hunt
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: Input Hash(s) for hunting
+        type: shortText
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "4"
+        label: ""
+        labelarg:
+          simple: CVE(s) To Hunt
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: Input CVEs for hunting
+        type: shortText
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "5"
+        label: ""
+        labelarg:
+          simple: Upload Sigma Rules (in .yml) format
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: attachments
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "6"
+        label: ""
+        labelarg:
+          simple: Upload Hunt Package (in .yar) format ?
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: attachments
+      sender: ""
+      title: Add More IOCs For Hunt
+      totalanswers: 0
+    id: "91"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: null
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "103"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 067859ae-b344-48ed-8baa-ecc5c4ada72d
+      iscommand: false
+      name: Add More IOCs For Hunt
+      type: collection
+      version: -1
+    taskid: 067859ae-b344-48ed-8baa-ecc5c4ada72d
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": -4220,
+          "y": 30
+        }
+      }
+  "92":
+    continueonerrortype: ""
+    id: "92"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "93"
+      - "95"
+      - "104"
+      - "105"
+      - "106"
+      - "107"
+      - "123"
+      - "129"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 63634061-160c-410c-867d-d21098984987
+      iscommand: false
+      name: Extract & Enrich Indicators If YARA or Sigma Rule Are Present
+      type: title
+      version: -1
+    taskid: 63634061-160c-410c-867d-d21098984987
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -4220,
+          "y": -1810
+        }
+      }
+  "93":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Extension
+                root: File
+          operator: isEqualString
+          right:
+            value:
+              simple: yar
+      label: "yes"
+    continueonerrortype: ""
+    id: "93"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "97"
+      "yes":
+      - "94"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a5435cd5-fcea-4828-88d1-fe5dd65cdf19
+      iscommand: false
+      name: Is There a YARA File ?
+      type: condition
+      version: -1
+    taskid: a5435cd5-fcea-4828-88d1-fe5dd65cdf19
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -4220,
+          "y": -1470
+        }
+      }
+  "94":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "94"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "97"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      entry_id:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Extension
+              operator: isEqualString
+              right:
+                value:
+                  simple: yar
+          root: File
+      extend-context:
+        simple: Yara.File=File::Yara.IP=ExtractedIndicators.IP::Yara.Domain=ExtractedIndicators.Domain::Yara.URL=ExtractedIndicators.URL
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: a0dd3941-7df8-431e-84d2-fb189de58afc
+      iscommand: false
+      name: Extract Indicators From YARA File
+      script: 346023da-377c-442d-8b02-3b94e335764a
+      tags:
+      - ioc
+      type: regular
+      version: -1
+    taskid: a0dd3941-7df8-431e-84d2-fb189de58afc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -4220,
+          "y": -1270
+        }
+      }
+  "95":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Extension
+                root: File
+          operator: isEqualString
+          right:
+            value:
+              simple: yml
+      label: "yes"
+    continueonerrortype: ""
+    id: "95"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "97"
+      "yes":
+      - "96"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f29477b3-a9e6-4719-8740-febab06a7efd
+      iscommand: false
+      name: Is There a Sigma Rule (.Yml) File ?
+      type: condition
+      version: -1
+    taskid: f29477b3-a9e6-4719-8740-febab06a7efd
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -3770,
+          "y": -1470
+        }
+      }
+  "96":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "96"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "97"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      entry_id:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Extension
+              operator: isEqualString
+              right:
+                value:
+                  simple: yml
+          root: File
+      extend-context:
+        simple: Yara.File=File::Yara.IP=ExtractedIndicators.IP::Yara.Domain=ExtractedIndicators.Domain::Yara.URL=ExtractedIndicators.URL
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: 8bc11dd8-249d-47de-8638-db2790c56969
+      iscommand: false
+      name: Extract Indicators From YML File
+      script: 10c3bd99-5aaf-4ed9-8d3e-dc3ed449a4d4
+      tags:
+      - ioc
+      type: regular
+      version: -1
+    taskid: 8bc11dd8-249d-47de-8638-db2790c56969
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -3770,
+          "y": -1270
+        }
+      }
+  "97":
+    continueonerrortype: ""
+    id: "97"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b4418105-9794-4352-8d93-d6553657a3b8
+      iscommand: false
+      name: 'Prompt To Check If Any More Indicators To Be Collected '
+      type: title
+      version: -1
+    taskid: b4418105-9794-4352-8d93-d6553657a3b8
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -4220,
+          "y": -845
+        }
+      }
+  "98":
+    continueonerrortype: ""
+    id: "98"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Any More IOCs To Add ?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "100"
+      "Yes":
+      - "91"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5f16ffb1-d222-4313-8893-c69499326417
+      iscommand: false
+      name: Any More IOCs To Add ?
+      type: condition
+      version: -1
+    taskid: 5f16ffb1-d222-4313-8893-c69499326417
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -4220,
+          "y": -380
+        }
+      }
+  "100":
+    continueonerrortype: ""
+    id: "100"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "113"
+      - "121"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e1a649f5-90d2-4766-86b1-51a0a8be78b7
+      iscommand: false
+      name: Hunt on QRadar
+      type: title
+      version: -1
+    taskid: e1a649f5-90d2-4766-86b1-51a0a8be78b7
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -4220,
+          "y": 455
+        }
+      }
+  "101":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: IP
+                root: ExtractedIndicators
+          operator: isExists
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Domain_Test_
+                root: ExtractedIndicators
+          operator: isExists
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Domain
+                root: ExtractedIndicators
+          operator: isExists
+        - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: File
+                root: ExtractedIndicators
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "101"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "yes":
+      - "102"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9eecfec9-fdbc-4503-8ccf-bf2f3e002f28
+      iscommand: false
+      name: Are There IoCs To Hunt ?
+      type: condition
+      version: -1
+    taskid: 9eecfec9-fdbc-4503-8ccf-bf2f3e002f28
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -4740,
+          "y": 580
+        }
+      }
+  "102":
+    continueonerrortype: ""
+    id: "102"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Domain:
+        complex:
+          accessor: Domain
+          root: ExtractedIndicators
+      File:
+        complex:
+          accessor: File
+          root: ExtractedIndicators
+      IP:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: eadcda8b-6bab-4860-8404-1d150a959369
+      iscommand: false
+      name: TCS-Qradar Hunt for IOC_V1.3_WIP
+      playbookId: dd1e4ee9-0732-432a-872a-75ced9ec83bc
+      type: playbook
+      version: -1
+    taskid: eadcda8b-6bab-4860-8404-1d150a959369
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -4740,
+          "y": 800
+        }
+      }
+  "103":
+    continueonerrortype: ""
+    id: "103"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "100"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      text:
+        complex:
+          root: Add More IOCs For Hunt
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 4ce13c35-ecf3-4ad2-81ac-6adc76c7cc5e
+      iscommand: true
+      name: Extract Indicators From Input
+      script: Builtin|||extractIndicators
+      tags:
+      - ioc
+      type: regular
+      version: -1
+    taskid: 4ce13c35-ecf3-4ad2-81ac-6adc76c7cc5e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -4220,
+          "y": 225
+        }
+      }
+  "104":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: huntingipaddress
+                root: incident
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "104"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "97"
+      "yes":
+      - "117"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 24376753-9533-4f8c-8ce7-8937194d04df
+      iscommand: false
+      name: Is There an IP IoC  ?
+      type: condition
+      version: -1
+    taskid: 24376753-9533-4f8c-8ce7-8937194d04df
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -4670,
+          "y": -1470
+        }
+      }
+  "105":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: huntingdomains
+                root: incident
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "105"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "97"
+      "yes":
+      - "116"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 64c8ccef-e423-4509-8324-d34b6e511858
+      iscommand: false
+      name: Is There a Domain IoC ?
+      type: condition
+      version: -1
+    taskid: 64c8ccef-e423-4509-8324-d34b6e511858
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -5100,
+          "y": -1470
+        }
+      }
+  "106":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: huntinghashs
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "106"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "97"
+      "yes":
+      - "118"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ee9582b3-e31c-4823-8d1a-a4fda4ec027c
+      iscommand: false
+      name: Is There a  Hash IoC ?
+      type: condition
+      version: -1
+    taskid: ee9582b3-e31c-4823-8d1a-a4fda4ec027c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -3320,
+          "y": -1470
+        }
+      }
+  "107":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: huntingcves
+                root: incident
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "107"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "97"
+      "yes":
+      - "119"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 31cfb9f5-b76a-4a0b-8566-1e2e88561df6
+      iscommand: false
+      name: Is There a  CVE To Hunt ?
+      type: condition
+      version: -1
+    taskid: 31cfb9f5-b76a-4a0b-8566-1e2e88561df6
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -2860,
+          "y": -1470
+        }
+      }
+  "112":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: threathuntingmethod
+                root: incident
+          operator: isEqualString
+          right:
+            value:
+              simple: Intel-Based:News Analysis
+      label: "yes"
+    continueonerrortype: ""
+    id: "112"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: dc91921c-9d17-4ae0-818c-6603cac0020a
+      iscommand: false
+      name: Is the Hunt Method Intel-Based:News Analysis ?
+      type: condition
+      version: -1
+    taskid: dc91921c-9d17-4ae0-818c-6603cac0020a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -5000,
+          "y": -1810
+        }
+      }
+  "113":
+    continueonerrortype: ""
+    id: "113"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "122"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 094931cb-baa1-4b9d-8dad-f41193fd8229
+      iscommand: false
+      name: Close Hunt
+      type: title
+      version: -1
+    taskid: 094931cb-baa1-4b9d-8dad-f41193fd8229
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -4460,
+          "y": 1090
+        }
+      }
+  "114":
+    continueonerrortype: ""
+    id: "114"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "115"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: b1baa319-6880-4b1a-89d1-b1a7946b9b2b
+      iscommand: true
+      name: Close Hunt
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: b1baa319-6880-4b1a-89d1-b1a7946b9b2b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -4460,
+          "y": 1580
+        }
+      }
+  "115":
+    continueonerrortype: ""
+    id: "115"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: aec1a8d5-1214-4651-8ef1-b96397d501dc
+      iscommand: false
+      name: The End
+      type: title
+      version: -1
+    taskid: aec1a8d5-1214-4651-8ef1-b96397d501dc
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -4460,
+          "y": 1810
+        }
+      }
+  "116":
+    continueonerrortype: ""
+    id: "116"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "97"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      text:
+        simple: ${incident.huntingdomains}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 667318e9-42ac-46e9-83c6-a1fde73cb031
+      iscommand: true
+      name: Extract & Enrich Domain
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 667318e9-42ac-46e9-83c6-a1fde73cb031
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -5100,
+          "y": -1270
+        }
+      }
+  "117":
+    continueonerrortype: ""
+    id: "117"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "97"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      text:
+        simple: ${incident.huntingipaddress}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 222f6450-dea9-4053-8d33-55fea153cccc
+      iscommand: true
+      name: Extract & Enrich IP Addresss
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 222f6450-dea9-4053-8d33-55fea153cccc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -4670,
+          "y": -1270
+        }
+      }
+  "118":
+    continueonerrortype: ""
+    id: "118"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "97"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      text:
+        simple: ${incident.huntinghashs}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: b3c60d74-930d-4ecb-8eb8-b47cf600b6df
+      iscommand: false
+      name: Extract & EnrichHash
+      script: 127b700b-6793-4207-8e51-e718ecb9e7d5
+      type: regular
+      version: -1
+    taskid: b3c60d74-930d-4ecb-8eb8-b47cf600b6df
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -3320,
+          "y": -1270
+        }
+      }
+  "119":
+    continueonerrortype: ""
+    id: "119"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "97"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      text:
+        simple: ${incident.huntingcves}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 6df781fe-17b6-44a7-86f9-8f058a09678f
+      iscommand: true
+      name: Extract & Enrich CVE
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 6df781fe-17b6-44a7-86f9-8f058a09678f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -2860,
+          "y": -1270
+        }
+      }
+  "120":
+    continueonerrortype: ""
+    id: "120"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "113"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b3dfabea-71cd-45dc-8992-3b26b2923f1b
+      iscommand: false
+      name: TCS-Respond Section Case Management v1.0_Kunal
+      playbookId: 76dc63ee-7a36-456c-8fe3-b1d4e9198c97
+      type: playbook
+      version: -1
+    taskid: b3dfabea-71cd-45dc-8992-3b26b2923f1b
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -3720,
+          "y": 860
+        }
+      }
+  "121":
+    continueonerrortype: ""
+    id: "121"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Do You Want To Block Any IoCs ?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "113"
+      "Yes":
+      - "120"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c5b3de67-390c-4f97-8f64-b86adedb327f
+      iscommand: false
+      name: Do You Want To Block Any IoCs ?
+      type: condition
+      version: -1
+    taskid: c5b3de67-390c-4f97-8f64-b86adedb327f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -3720,
+          "y": 600
+        }
+      }
+  "122":
+    continueonerrortype: ""
+    id: "122"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Have You Finished The Hunt ?
+      cc: null
+      format: ""
+      methods: []
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      "No":
+      - "115"
+      "Yes":
+      - "114"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ea57c295-2866-4c44-87b6-fc89f84a3a1d
+      iscommand: false
+      name: Have You Finished The Hunt ?
+      type: condition
+      version: -1
+    taskid: ea57c295-2866-4c44-87b6-fc89f84a3a1d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -4460,
+          "y": 1240
+        }
+      }
+  "123":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: mitreattckidentifiers
+                root: incident
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "123"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "97"
+      "yes":
+      - "124"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 53afa928-4cbf-44ec-82e9-8e4d3d843961
+      iscommand: false
+      name: Are There MITRE Identifiers ?
+      type: condition
+      version: -1
+    taskid: 53afa928-4cbf-44ec-82e9-8e4d3d843961
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -2410,
+          "y": -1470
+        }
+      }
+  "124":
+    continueonerrortype: ""
+    id: "124"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "97"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      text:
+        simple: ${incident.mitreattckidentifiers}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: 759bd67b-dd09-4cf3-870b-77363cb89459
+      iscommand: true
+      name: Extract & Enrich MITRE
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 759bd67b-dd09-4cf3-870b-77363cb89459
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -2410,
+          "y": -1270
+        }
+      }
+  "125":
+    continueonerrortype: ""
+    id: "125"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "92"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      name:
+        complex:
+          accessor: hunttitle
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: b7a10982-f85f-441e-8886-9dd5fb8ed1dc
+      iscommand: true
+      name: Set Name Context Field
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: b7a10982-f85f-441e-8886-9dd5fb8ed1dc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -4220,
+          "y": -2230
+        }
+      }
+  "126":
+    continueonerrortype: ""
+    id: "126"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "132"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4382c0f8-e1e8-45c2-878c-cdef0cc88b64
+      iscommand: false
+      name: Block IoC(s) With Risk Score > 65
+      type: title
+      version: -1
+    taskid: 4382c0f8-e1e8-45c2-878c-cdef0cc88b64
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -4730,
+          "y": -690
+        }
+      }
+  "129":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: huntingurls
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "129"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "97"
+      "yes":
+      - "130"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9afd9807-a5ac-4886-8d54-76d89910a346
+      iscommand: false
+      name: Is There a URL IoC ?
+      type: condition
+      version: -1
+    taskid: 9afd9807-a5ac-4886-8d54-76d89910a346
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -5530,
+          "y": -1470
+        }
+      }
+  "130":
+    continueonerrortype: ""
+    id: "130"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "97"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      text:
+        simple: ${incident.huntingurls}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      id: 935cbb1f-3539-417b-8fe4-994b0eea649c
+      iscommand: false
+      name: Extract & Enrich URL(s)
+      script: c8fe609c-85ab-4733-854d-03f5c988bdcf
+      type: regular
+      version: -1
+    taskid: 935cbb1f-3539-417b-8fe4-994b0eea649c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -5530,
+          "y": -1270
+        }
+      }
+  "131":
+    continueonerrortype: ""
+    id: "131"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 26ea2367-39d3-4275-84dc-f786053900f0
+      iscommand: false
+      name: TCS-Block IOC-Risk Score 65_Playbook Trigger v1.0_KK
+      playbookId: c3b9955a-8a87-4f2b-8ce3-d36420b1360d
+      type: playbook
+      version: -1
+    taskid: 26ea2367-39d3-4275-84dc-f786053900f0
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -5630,
+          "y": -900
+        }
+      }
+  "132":
+    continueonerrortype: ""
+    id: "132"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "100"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 85c7883a-bd88-443a-8a2d-3cfa949aa837
+      iscommand: false
+      name: TCS-Block IOC-Risk Score 65_Playbook Trigger v1.0_KK
+      playbookId: c3b9955a-8a87-4f2b-8ce3-d36420b1360d
+      type: playbook
+      version: -1
+    taskid: 85c7883a-bd88-443a-8a2d-3cfa949aa837
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": -4730,
+          "y": -530
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "104_97_#default#": 0.33,
+      "105_116_yes": 0.45,
+      "105_97_#default#": 0.2,
+      "106_118_yes": 0.42,
+      "106_97_#default#": 0.24,
+      "107_97_#default#": 0.22,
+      "122_114_Yes": 0.55,
+      "31_27_yes": 0.47,
+      "31_34_#default#": 0.17,
+      "47_33_Yes": 0.57,
+      "47_57_No": 0.12,
+      "49_34_#default#": 0.2,
+      "58_63_No": 0.71,
+      "68_34_#default#": 0.49,
+      "68_67_yes": 0.55,
+      "68_69_yes": 0.47,
+      "85_34_#default#": 0.19,
+      "86_34_#default#": 0.21,
+      "86_70_yes": 0.5,
+      "93_94_yes": 0.48,
+      "93_97_#default#": 0.84,
+      "95_96_yes": 0.58,
+      "95_97_#default#": 0.31
+    },
+    "paper": {
+      "dimensions": {
+        "height": 7065,
+        "width": 9030,
+        "x": -5630,
+        "y": -2410
+      }
+    }
+  }
