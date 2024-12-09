@@ -1,0 +1,841 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: |-
+  Detonate one or more files using the Wildfire integration. This playbook
+  returns relevant reports to the War Room and file reputations to the context data.
+  The detonation supports the following file types -
+  APK, JAR, DOC, DOCX, RTF, XLS, XLSX, PPT, PPTX, OOXML, PE32, PDF, DMG, PKG, RAR, 7Z
+hidden: true
+id: b14d1bd5-5ed2-4563-8df7-4ca78b081904
+inputs:
+- description: File object of the file to detonate. The File is taken from the context.
+  key: File
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      root: File
+- description: Duration for executing the pooling (in minutes)
+  key: Interval
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "1"
+- description: The duration after which to stop pooling and to resume the playbook
+    (in minutes)
+  key: Timeout
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "15"
+- description: The resource type to download. Default is pdf. xml is also possible.
+  key: ReportFileType
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: TCS_WildFire - Detonate file_Email_copy
+outputs:
+- contextPath: DBotScore.Score
+  description: The actual score
+  type: string
+- contextPath: DBotScore.Type
+  description: The type of the indicator
+  type: string
+- contextPath: File.Type
+  description: File type e.g. "PE"
+  type: string
+- contextPath: File.Size
+  description: File size
+  type: number
+- contextPath: File.MD5
+  description: MD5 hash of the file
+  type: string
+- contextPath: File.Name
+  description: Filename
+  type: string
+- contextPath: File.SHA1
+  description: SHA1 hash of the file
+  type: string
+- contextPath: File
+  description: The File object
+  type: unknown
+- contextPath: File.SHA256
+  description: SHA256 hash of the file
+  type: string
+- contextPath: File.Malicious
+  description: The Malicious object
+  type: unknown
+- contextPath: File.Malicious.Vendor
+  description: For malicious files, the vendor that made the decision
+  type: string
+- contextPath: DBotScore
+  description: The DBot object
+  type: unknown
+- contextPath: DBotScore.Indicator
+  description: The indicator we tested
+  type: string
+- contextPath: DBotScore.Vendor
+  description: Vendor used to calculate the score
+  type: string
+- contextPath: WildFire.Report
+  description: The submission object
+  type: unknown
+- contextPath: WildFire.Report.Status
+  description: The status of the submission
+  type: string
+- contextPath: WildFire.Report.SHA256
+  description: SHA256 of the submission
+  type: string
+- contextPath: InfoFile
+  description: The report file object
+  type: unknown
+- contextPath: InfoFile.EntryID
+  description: The EntryID of the report file
+  type: string
+- contextPath: InfoFile.Extension
+  description: The extension of the report file
+  type: string
+- contextPath: InfoFile.Name
+  description: The name of the report file
+  type: string
+- contextPath: InfoFile.Info
+  description: The info of the report file
+  type: string
+- contextPath: InfoFile.Size
+  description: The size of the report file
+  type: number
+- contextPath: InfoFile.Type
+  description: The type of the report file
+  type: string
+- contextPath: WildFire.Report.MD5
+  description: MD5 of the submission
+  type: string
+- contextPath: WildFire.Report.FileType
+  description: The type of the submission
+  type: string
+- contextPath: WildFire.Report.Size
+  description: The size of the submission
+  type: number
+sourceplaybookid: WildFire - Detonate file
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f7b032e8-7ac6-47e3-8e76-5cf4b71ab1c4
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: f7b032e8-7ac6-47e3-8e76-5cf4b71ab1c4
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 520,
+          "y": -160
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 0
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Ids:
+        complex:
+          accessor: Report.SHA256
+          root: WildFire
+      Interval:
+        complex:
+          root: inputs.Interval
+      PollingCommandArgName:
+        simple: hash
+      PollingCommandName:
+        simple: wildfire-report
+      Timeout:
+        complex:
+          root: inputs.Timeout
+      dt:
+        simple: WildFire.Report(val.Status != 'Success').SHA256
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Use as a sub-playbook to block execution of the master playbook until a remote action is complete.
+        This playbook implements polling by continually running the command in Step #2 until the operation completes.
+        The remote action should have the following structure:
+
+        1. Initiate the operation.
+        2. Poll to check if the operation completed.
+        3. (optional) Get the results of the operation.
+      id: 84f7e95f-fa09-4dd6-859d-a2a581f0961d
+      iscommand: false
+      name: GenericPolling
+      playbookId: GenericPolling
+      type: playbook
+      version: -1
+    taskid: 84f7e95f-fa09-4dd6-859d-a2a581f0961d
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 120,
+          "y": 850
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      format:
+        complex:
+          root: inputs.ReportFileType
+      hash:
+        complex:
+          accessor: Report.SHA256
+          root: WildFire
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Retrieve results for a file hash using WildFire.
+      id: 0832a1c3-5d2f-4775-8978-c6a574a329d7
+      iscommand: true
+      name: WildFire Get Report
+      script: '|||wildfire-report'
+      type: regular
+      version: -1
+    taskid: 0832a1c3-5d2f-4775-8978-c6a574a329d7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 120,
+          "y": 1050
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d5e50048-2854-4712-8763-b6615b26dd82
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: d5e50048-2854-4712-8763-b6615b26dd82
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 530,
+          "y": 1630
+        }
+      }
+  "10":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: EntryID
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: File.Type
+                    operator: match
+                    right:
+                      value:
+                        simple: .*(?:APK|JAR|DOC|DOCX|RTF|XLS|XLSX|PPT|PPTX|OOXML|PE32|PDF|DMG|PKG|RAR|7Z)\b
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: File.Info
+                    operator: match
+                    right:
+                      value:
+                        simple: .*(?:APK|JAR|DOC|DOCX|RTF|XLS|XLSX|PPT|PPTX|OOXML|PE32|PDF|DMG|PKG|RAR|7Z)\b
+                root: File
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "17"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if file type is supported
+      id: 79bf7f32-e743-42e1-8856-09c74440d578
+      iscommand: false
+      name: Is the file type supported?
+      type: condition
+      version: -1
+    taskid: 79bf7f32-e743-42e1-8856-09c74440d578
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 930,
+          "y": 630
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      upload:
+        complex:
+          accessor: EntryID
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: inputs.File.Info
+              operator: match
+              right:
+                value:
+                  simple: .*(?:APK|JAR|DOC|DOCX|RTF|XLS|XLSX|PPT|PPTX|OOXML|PE32|PDF|DMG|PKG|RAR|7Z)\b
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: inputs.File.Type
+              operator: match
+              right:
+                value:
+                  simple: .*(?:APK|JAR|DOC|DOCX|RTF|XLS|XLSX|PPT|PPTX|OOXML|PE32|PDF|DMG|PKG|RAR|7Z)\b
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: inputs.File.Extension
+              operator: match
+              right:
+                value:
+                  simple: .*(?:APK|JAR|DOC|DOCX|RTF|XLS|XLSX|PPT|PPTX|OOXML|PE32|PDF|DMG|PKG|RAR|7Z)\b
+          root: inputs.File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Uploads a file to WildFire for analysis.
+      id: 446e6995-e9cc-4031-818a-d8f03cd9f02f
+      iscommand: true
+      name: WildFire Upload File
+      script: '|||wildfire-upload'
+      type: regular
+      version: -1
+    taskid: 446e6995-e9cc-4031-818a-d8f03cd9f02f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 490,
+          "y": 480
+        }
+      }
+  "13":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Report.SHA256
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: WildFire.Report.Status
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Pending
+                root: WildFire
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b693baea-bf5c-4bba-80dd-5b7ae2708df7
+      iscommand: false
+      name: Was upload finished successfully?
+      type: condition
+      version: -1
+    taskid: b693baea-bf5c-4bba-80dd-5b7ae2708df7
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 490,
+          "y": 640
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 0
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Email/cc:
+        complex:
+          accessor: labels.CC
+          root: incident
+      Email/from:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+      Email/subject:
+        complex:
+          accessor: labels.Email/subject
+          root: incident
+      File:
+        complex:
+          root: File
+      GetOriginalEmail:
+        simple: "False"
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Add email details to the relevant context entities and handle the
+        case where original emails are attached.
+      id: b78134da-35fc-4634-8abf-67cb23a4a49b
+      iscommand: false
+      name: TCS - Process Email - Generic
+      playbookId: 3d54551f-efc4-420a-8b21-ac3ae034714d
+      type: playbook
+      version: -1
+    taskid: b78134da-35fc-4634-8abf-67cb23a4a49b
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 520,
+          "y": -25
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${InfoFile.EntryID}
+      body:
+        simple: |
+          Dear Team,
+
+          Please find the attached report for the following file.
+
+          ${ExtractedFiles}
+
+          Thanks & Regards,
+          Automation assistance.
+      cc:
+        simple: ${Email.CC}
+      subject:
+        complex:
+          accessor: Subject
+          root: Email
+          transformers:
+          - args:
+              prefix:
+                value:
+                  simple: Analysis-
+              suffix: {}
+            operator: concat
+      to:
+        simple: ${Email.From}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: a9c81537-db29-4ca1-81b0-f9d325e8f22b
+      iscommand: true
+      name: Send Report
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: a9c81537-db29-4ca1-81b0-f9d325e8f22b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 120,
+          "y": 1235
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${InfoFile.EntryID}
+      body:
+        simple: |
+          Dear Team,
+
+          Could not fetch the report for following file.
+
+          ${ExtractedFiles}
+
+          The file format is not supported by sandbox.
+
+          Thanks & Regards,
+          Automation assistance.
+      cc:
+        simple: ${Email.CC}
+      replyTo:
+        simple: ${Email.From}
+      subject:
+        complex:
+          accessor: Subject
+          root: Email
+          transformers:
+          - args:
+              prefix:
+                value:
+                  simple: Analysis-
+              suffix: {}
+            operator: concat
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 81e7114e-ff1c-45be-8793-33fcb3b80e87
+      iscommand: true
+      name: Send Error Mail
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 81e7114e-ff1c-45be-8793-33fcb3b80e87
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 950,
+          "y": 1220
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${InfoFile.EntryID}
+      body:
+        simple: |
+          Dear Team,
+
+          Could not fetch the report for following file.
+
+          ${ExtractedFiles}
+
+          The file upload to sandbox failed. Please try again later.
+
+          Thanks & Regards,
+          Automation assistance.
+      cc:
+        simple: ${Email.CC}
+      subject:
+        complex:
+          accessor: Subject
+          root: Email
+          transformers:
+          - args:
+              prefix:
+                value:
+                  simple: Analysis-
+              suffix: {}
+            operator: concat
+      to:
+        simple: ${Email.From}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 22f8d93c-ef85-46e2-8e50-b7f89f2ca142
+      iscommand: true
+      name: Send Error Mail-file upload failed
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 22f8d93c-ef85-46e2-8e50-b7f89f2ca142
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 540,
+          "y": 1040
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 8bb84a7e-4f22-4560-873c-775cd924992c
+      iscommand: true
+      name: close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 8bb84a7e-4f22-4560-873c-775cd924992c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 530,
+          "y": 1430
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Extension
+              operator: inList
+              right:
+                value:
+                  simple: zip,7z,txt
+          root: File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Unzip a file using fileName or entryID to specify a file. Unzipped
+        files will be loaded to the War Room and names will be put into the context.
+      id: 98d97361-3f1b-46b9-84ed-3a22b81bb3b4
+      iscommand: false
+      name: Unzip file
+      script: UnzipFile
+      type: regular
+      version: -1
+    taskid: 98d97361-3f1b-46b9-84ed-3a22b81bb3b4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 490,
+          "y": 270
+        }
+      }
+  "22":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Name
+                root: File
+                transformers:
+                - args:
+                    regex:
+                      value:
+                        simple: .txt
+                    replaceWith: {}
+                  operator: replaceMatch
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Pretty-print the contents of the playbook context
+      id: b8f4689c-426a-49dc-828c-8fbab0c71f4c
+      iscommand: false
+      name: txt
+      type: condition
+      version: -1
+    taskid: b8f4689c-426a-49dc-828c-8fbab0c71f4c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1000,
+          "y": 140
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1855,
+        "width": 1260,
+        "x": 120,
+        "y": -160
+      }
+    }
+  }
