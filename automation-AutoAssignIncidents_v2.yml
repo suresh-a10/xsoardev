@@ -1,0 +1,227 @@
+args:
+- description: tactics or rule name of qradar
+  name: desc
+  required: true
+- description: current incident id
+  name: incidentid
+  required: true
+commonfields:
+  id: 36aaebbb-f4e7-4c28-82ad-2cb5d7f7449a
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: docker.io/demisto/python3:3.10.14.91134
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: AutoAssignIncidents_v2
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  """
+  This script will be called in both malware investigation and qradar genric playbook seperately and will take tactics and rule name respectively
+
+  This script will hanndle the issue if there is no more people in scan team or senior l1 team it will assign the alerts to l1 team.
+  if there is no l1 team member it will assign the scan team member to l1 team but thats it.
+
+  For now the the alert will be assined to only perfect condition people those who are facing any network or electric issue will be exempted.this logic will be implemented later.
+
+
+  """
+  import time
+  import random
+  import datetime
+
+  args=demisto.args()
+  description=args.get("desc").lower()  #this will contain tactics fetched if malware playbook and rule name if qradar playbook
+  incidentid=args.get("incidentid") #incident id of the current incident
+
+  context=demisto.incident()
+  emailfrom=context.get('CustomFields').get('emailfrom')
+  if context.get('CustomFields').get('subject'):
+      subject=context.get('CustomFields').get('subject').lower()
+  else:
+      subject=""
+
+  #Condition for GRA aLerts.. IF Case Risk score is > 90 then assign to senior
+  assignToSenior=False
+  if context.get("type")=="GRA Alert":
+      if context.get("CustomFields").get("gracaseriskscore"):
+          assignToSenior=True if int(context.get("CustomFields").get("gracaseriskscore")) > 90 else False
+
+  def fetchIndex(role,profiles):
+      for e in profiles:
+          if e.get('role')==role:
+              return profiles.index(e)
+      return "No opLead found"
+
+
+  #condition for prisma alerts
+
+  if context.get("type")=="Prisma Cloud" or context.get("type")=="CrowdStrike Falcon IDP Detection" or context.get("type")=="Phishing Investigation" or context.get("type")=="Recorded_Future_Alert" or context.get("type")=="Recorded Future Domain Abuse" or context.get("type")=="CSP Alerts":
+      assignToSenior=True
+
+
+  """Below code will triggren and Will search and assign alert to senior l1 whenever tactis will be one of falcon intel/overwarch/fireeye/attivio """
+
+  def assignSenior(count,profiles,incidentid):
+      sencount=count
+      if sencount+1 >=len(profiles):
+          sencount=0
+          profiles=assignSenior(sencount,profiles,incidentid)
+          return profiles
+      else:
+          sencount+=1
+          if profiles[int(sencount)].get('role')=='Senior' and profiles[int(sencount)].get('condition')=='Perfect':
+              oldinc=profiles[int(sencount)].get('assigned')
+              set_owner_res = demisto.executeCommand("setOwner", {"owner": profiles[int(sencount)].get('name')})
+              ##set_owner_res = demisto.executeCommand("setIncident", {"owner": profiles[int(sencount)].get('name'),"id":int(incidentid)})
+              if isError(set_owner_res):
+                  return_error(f'Failed to set as owner: {str(get_error(set_owner_res))}')
+              oldinc.append(incidentid)
+              profiles[int(sencount)]['assigned']=oldinc
+              profiles[0]['seniorl1']=int(sencount)
+              return profiles
+          else:
+              profiles=assignSenior(sencount,profiles,incidentid)
+              return profiles
+
+  """Below code will triggren and Will search and assign alert to scan team member whenever rule name will contain  one of recon activity,scan """
+
+  def assignScanTeam(scan,profiles,incidentid):
+      scancount=scan
+      if scancount+1 >=len(profiles):
+          scancount=0
+          profiles=assignScanTeam(scancount,profiles,incidentid)
+          return profiles
+      else:
+          scancount+=1
+          if profiles[int(scancount)].get('role')=='Scan' and profiles[int(scancount)].get('condition')=='Perfect':
+              oldinc=profiles[int(scancount)].get('assigned')
+              set_owner_res = demisto.executeCommand("setOwner", {"owner": profiles[int(scancount)].get('name')})
+              ##set_owner_res = demisto.executeCommand("setIncident", {"owner": profiles[int(scancount)].get('name'),"id":int(incidentid)})
+              if isError(set_owner_res):
+                  return_error(f'Failed to set as owner: {str(get_error(set_owner_res))}')
+              oldinc.append(incidentid)
+              profiles[int(scancount)]['assigned']=oldinc
+              profiles[0]['scan']=int(scancount)
+              return profiles
+          else:
+              profiles=assignScanTeam(scancount,profiles,incidentid)
+              return profiles
+
+  """Below code will triggren and Will search and assign alert to L1 team member whenever no upper secified alerts match is done so it will assign all alerts except the ones at top to l1 with perfect condition"""
+
+  def assignL1Team(count,profiles,incidentid):
+      l1count=count
+      if l1count+1 >=len(profiles):
+          l1count=0
+          profiles=assignL1Team(l1count,profiles,incidentid)
+          return profiles
+      else:
+          l1count+=1
+          if profiles[int(l1count)].get('role')=='L1' and profiles[int(l1count)].get('condition')=='Perfect':
+              oldinc=profiles[int(l1count)].get('assigned')
+              set_owner_res = demisto.executeCommand("setOwner", {"owner": profiles[int(l1count)].get('name')})
+              #set_owner_res = demisto.executeCommand("setIncident", {"owner": profiles[int(l1count)].get('name'),"id":incidentid})
+              if isError(set_owner_res):
+                  return_error(f'Failed to set as owner: {str(get_error(set_owner_res))}')
+              oldinc.append(incidentid)
+              profiles[int(l1count)]['assigned']=oldinc
+              profiles[0]['assigned']=int(l1count)
+              return profiles
+          else:
+              profiles=assignL1Team(l1count,profiles,incidentid)
+              return profiles
+
+
+
+  """Below code will call the funcition as per the condition specified so the incident triggered will be mapped to the respective people """
+
+  def chooseOperator(profiles,description,incidentid):
+      lis=profiles[0].get('assigned')
+      count=int(lis)
+
+
+  #check for the condition for the first time for the value defiend by counstructor
+
+      sen=profiles[0].get('seniorl1')
+      if sen==0 or sen==None:
+          senior=0
+      else:
+          senior=int(profiles[0].get('seniorl1'))
+
+
+      st=profiles[0].get('scan')
+      if st==0 or st==None:
+          scan=0
+      else:
+          scan=int(profiles[0].get('scan'))
+
+
+
+  #    if "falcon intel" in description or "falcon overwatch" in description or "fireeye" in description or "fire_eye_smart_vision_alert" in description or "attivio" in description:  or emailfrom=="google-workspace-alerts-noreply@google.com"
+      if "falcon intel" in description or "lateral movement" in description or "falcon overwatch" in description or "fireeye" in description or "fire_eye_smart_vision_alert" in description or "smartvision event" in description or "credential access" in description or "malware-callback" in description or "attivio" in description or "recon activity" in description and not "recon activity_firewall" in description and not "recon activity from vdi segment_without port 53_389" in description or "reported spam/phishing email" in description or "ironport:possible phishing email" in description or "mailserver info receive" in description or "access attempt to login" in description or "alert on inbound email with suspicious subject name" in description or "detection on possible phishing domain for authentication failed" in description or "alert detected on possible phishing email" in description or "inbound delivered" in description or "alert: user-reported phishing" in description or "alert: user-reported phishing" in subject or assignToSenior:
+          try:
+              profiles=assignSenior(senior,profiles,incidentid)
+          except RecursionError as re:
+              day = datetime.datetime.now().strftime("%A")
+              if day=="Saturday" or day=="Sunday":
+                  index=fetchIndex("OPLead",profiles)
+                  if index=="No opLead found":
+                      profiles=assignL1Team(count,profiles,incidentid)
+                  else:
+                      profiles[int(index)]['role']="Senior"
+
+              print("There is no user currently available in senior L1 team to take the incidents hence assigning it to L1 Team")
+              profiles=assignL1Team(count,profiles,incidentid)
+
+      elif "recon activity" in description or "scan" in description or "recon activity_firewall" in description or "recon detected on dmz" in description or "critical alert on suspicious ip activity" in description or "recon activity from vdi segment_without port 53_389" in description:
+          try:
+              profiles=assignScanTeam(scan,profiles,incidentid)
+          except RecursionError as re:
+              print("There is no user currently available in scan team to take the scan incidents Hence assigning it to L1 Team")
+              profiles=assignL1Team(count,profiles,incidentid)
+
+      else:
+          try:
+              profiles=assignL1Team(count,profiles,incidentid)
+          except RecursionError as re:
+              print("There is no user currently available in L1 team to take the incidents")
+              print("hence moving the scan team member to L1 group and assigning the alert")
+              profiles[scan]['role']="L1"
+              profiles=chooseOperator(profiles,description,incidentid)
+              return profiles
+
+      return profiles
+
+
+
+
+
+
+  def main():
+      random_number = random.randint(1, 10)
+      time.sleep(random_number)
+      profiles=json.loads(demisto.executeCommand('getList', {'listName':"Operators Profile"})[0]['Contents'])
+      profiles=chooseOperator(profiles,description,incidentid)
+      demisto.results(demisto.executeCommand('setList', {'listName':"Operators Profile",'listData':profiles}))
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags: []
+timeout: 180ns
+type: python
