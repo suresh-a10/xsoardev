@@ -1,0 +1,424 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 816e2bf5-0fba-4192-8697-ac9667fcd7b2
+inputs: []
+name: MasterIOC updation above 65_copy
+outputs: []
+sourceplaybookid: 6ade50e3-c5a7-410e-8bb2-f026a0c12832
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7ba7de5c-a4cc-457f-8a90-7646f567138c
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 7ba7de5c-a4cc-457f-8a90-7646f567138c
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 65
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      execution-timeout:
+        simple: "36000000"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2.1
+      description: Gets the IP risk list as a CSV file from Recorded Future.
+      id: 7da5fef0-b910-45d2-8c08-9c9c5b83b9fb
+      iscommand: true
+      name: Fetch recorded future IP risk list via Integration
+      script: Recorded Future v2.1|||recorded-future-get-ip-risklist
+      type: regular
+      version: -1
+    taskid: 7da5fef0-b910-45d2-8c08-9c9c5b83b9fb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 225
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entry_id:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: InfoFile.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: ip_risk_list.csv
+          root: InfoFile
+      ioc_type:
+        simple: ip
+      threshold:
+        simple: "65"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f5616cf7-4473-457f-8907-e245d5748f3e
+      iscommand: false
+      name: Retrieve IPs with reputation >=65 and add to a CSV file
+      script: 40fd8ee0-fb65-4904-8f41-b67431f89af9
+      type: regular
+      version: -1
+    taskid: f5616cf7-4473-457f-8907-e245d5748f3e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 400
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      left:
+        simple: ${FileData}
+      right:
+        simple: ${lists.MasterIOCList_IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Compare  two lists and put the differences in context.
+      id: a298439f-c348-41fb-89a4-fc815dd7f342
+      iscommand: false
+      name: Compare IP's
+      script: CompareLists
+      type: regular
+      version: -1
+    taskid: a298439f-c348-41fb-89a4-fc815dd7f342
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1290
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: cb7c9cf0-1129-4af8-8300-3260fa3e38f0
+      iscommand: false
+      name: Download Recorded Future IP List and Save to Demisto Lists
+      type: title
+      version: -1
+    taskid: cb7c9cf0-1129-4af8-8300-3260fa3e38f0
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 65
+        }
+      }
+  "14":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: count
+                root: CSVReputationToList
+                transformers:
+                - operator: LastArrayElement
+          operator: greaterThan
+          right:
+            value:
+              simple: "0"
+      label: IPs Exist
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      IPs Exist:
+      - "16"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6ca1e138-ce31-4019-82da-99bf3340fe56
+      iscommand: false
+      name: Are there any IP's with replutation >=65?
+      type: condition
+      version: -1
+    taskid: 6ca1e138-ce31-4019-82da-99bf3340fe56
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 575
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: reduced_csv_ip.csv
+          root: File
+          transformers:
+          - args:
+              limit: {}
+              replaceWith:
+                value:
+                  simple: ','
+              toReplace:
+                value:
+                  simple: '""'
+            operator: replace
+      extend-context:
+        simple: extractedIPList=FileData
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: 18430921-202c-4fdf-8830-6441cfc15d6e
+      iscommand: false
+      name: Read extracted list (only IP Column) into context key
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: 18430921-202c-4fdf-8830-6441cfc15d6e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 750
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bc77d46b-6b1e-428c-8f5a-b3f5765bd7b2
+      iscommand: false
+      name: Download Recorded Future IP List and Save to Demisto Lists
+      type: title
+      version: -1
+    taskid: bc77d46b-6b1e-428c-8f5a-b3f5765bd7b2
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 65
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      listData:
+        complex:
+          root: ${FileData}
+          transformers:
+          - operator: LastArrayElement
+          - args:
+              limit: {}
+              replaceWith: {}
+              toReplace:
+                value:
+                  simple: '"'
+            operator: replace
+      listName:
+        simple: TestList
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.list.set
+      id: ff843694-2fdf-4c7b-8719-0068301b14fa
+      iscommand: true
+      name: Overwrite Recorded Future IPRiskList List with new CSV
+      script: Builtin|||setList
+      type: regular
+      version: -1
+    taskid: ff843694-2fdf-4c7b-8719-0068301b14fa
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 920
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      data:
+        simple: ${lists.MasterIOCList_IP}
+      filename:
+        simple: komal.txt
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        Will create a file (using the given data input or entry ID) and upload it to current investigation war room.
+      id: a2e77013-f2e6-480a-81d8-d2766aada8db
+      iscommand: false
+      name: Grab Recorded Future IP Risk List and place into context
+      script: FileCreateAndUpload
+      type: regular
+      version: -1
+    taskid: a2e77013-f2e6-480a-81d8-d2766aada8db
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1105
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1320,
+        "width": 1240,
+        "x": 50,
+        "y": 65
+      }
+    }
+  }
