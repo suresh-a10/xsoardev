@@ -9,7 +9,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 6.10.0
-    itemVersion: 1.7.4
+    itemVersion: 1.7.7
     packID: CommonDashboards
     packName: Common Dashboards
     packPropagationLabels:
@@ -17,7 +17,7 @@ contentitemexportablefields:
     prevname: ""
     propagationLabels: []
     toServerVersion: ""
-dockerimage: demisto/python3:3.10.14.97374
+dockerimage: demisto/python3:3.11.10.115186
 enabled: true
 engineinfo: {}
 mainengineinfo: {}
@@ -27,7 +27,7 @@ runas: DBotWeakRole
 runonce: false
 script: |
   register_module_line('AdoptionMetrics', 'start', __line__())
-  ### pack version: 1.7.4
+  demisto.debug('pack name = Common Dashboards, pack version = 1.7.7')
 
 
 
@@ -56,6 +56,9 @@ script: |
       try:
           res = demisto.executeCommand("core-api-get", {"uri": "/contentpacks/metadata/installed"})
           if res:
+              for entry in res:
+                  if is_error(entry):
+                      return_error(get_error(entry))
               installed_packs = res[0].get("Contents", {}).get("response")
               return any(pack["name"] == "Rapid Breach Response" for pack in installed_packs)
           return False
@@ -100,10 +103,9 @@ script: |
           category = details.get('category', '').lower()
           brand = details.get('brand', '').lower()
           state = details.get('state')
-          incident_types = details.get('incident_types', [])
 
           if brand != 'builtin' and state == 'active' and category != 'utilities':
-              if category in ['email', 'messaging', 'messaging and conferencing'] and 'phishing' in incident_types:
+              if category in ['email', 'messaging', 'messaging and conferencing']:
                   if phishing_incidents:
                       use_cases_in_production.add('Business Email Compromise Coverage')
                   else:
