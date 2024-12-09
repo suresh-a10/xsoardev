@@ -1,0 +1,81 @@
+commonfields:
+  id: 825ebcb2-8cdb-43dd-8f78-6aff68530cae
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: netmiko:latest
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Testfw_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  # import netmiko
+  from netmiko import ConnectHandler
+
+
+  try:
+
+      ##Input the EDL Block List
+      # edl=argToList(demisto.args().get('edl'))
+      edl=['0.0.0.0']
+
+      ##Fetch the creds to login on fw with sa
+      res = demisto.executeCommand("fetch-credentials", {'using':'Credentials TCS_instance_1'})
+
+      username = res[0]['Contents']['username']
+      password = res[0]['Contents']['password']
+
+      ##List of firewalls
+      fw_list=["10.17.14.101"]
+      bad_fw=[]
+      pass_fw=[]
+      result=None
+      ##Loop through the firewalls and login
+
+      for fw in fw_list:
+          try:
+              Firewall={
+              "host": fw,
+              "username": username,
+              "password": password,
+              "device_type": "cisco_ios",
+              "secret":password
+              }
+
+              ##Connect to firewall
+              connect= ConnectHandler(**Firewall)
+              connect.enable()
+
+              ##Configuration commands
+              config_args=["conf t","object-group netwrk Dummy"]
+              for ip in edl:
+                  config_args.append(f"network-object host {ip}")
+              result=connect.send_config_set(config_args)
+              if result:
+                  # demisto.results("RESULTS")
+                  demisto.results(result)
+                  # demisto.results("DONE")
+                  demisto.results(connect.send_config_set("show object-group id Dummy"))
+          except:
+              demisto.results(f"{fw} not connected. Failed to execute Script. Error: {str(Exception)}")
+
+  except Exception as ex:
+      demisto.results(f'Failed to execute Script. Error: {str(ex)}')
+      # demisto.error(traceback.format_exc())  # print the traceback
+      # return_error(f'Failed to execute Script. Error: {str(ex)}')
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
