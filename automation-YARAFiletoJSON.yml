@@ -1,0 +1,63 @@
+args:
+- isArray: true
+  name: entry_id
+  required: true
+commonfields:
+  id: 74f084ad-c267-4840-8b28-fa9492305c61
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: plyara:latest
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: YARAFiletoJSON
+outputs:
+- contextPath: YARA.JSON
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |+
+  import plyara
+  import json
+
+  parser = plyara.Plyara()
+
+
+  def main():
+      entry_ids = argToList(demisto.args().get("entry_id"))
+
+      for entry_id in entry_ids:
+          file_info = {}  # type: dict
+          try:
+              file_info = demisto.getFilePath(entry_id)
+          except Exception as e:
+              return_error('Failed to get the file path for entry: {} the error message was {}'.format(entry_id, str(e)))
+
+          file_path = file_info['path']
+
+          with open(file_path) as infile:
+              data = infile.read()
+          infile.close()
+          mylist=parser.parse_string(data)
+
+
+      return_results(CommandResults(outputs_prefix='YARA.JSON',outputs=mylist))
+
+
+  if __name__ in ('__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
