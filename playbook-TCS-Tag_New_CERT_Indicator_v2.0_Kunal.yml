@@ -1,0 +1,594 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: ea428224-a443-408f-82ea-be094d71220d
+inputs:
+- description: ""
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: TCS-Tag New CERT Indicator v2.0_Kunal
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 24e35757-cadc-4fd3-8661-825a0f4eecb6
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 24e35757-cadc-4fd3-8661-825a0f4eecb6
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": -410
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: indicator.value=value::indicator.tag=CustomFields.tags::indicator.status=expirationStatus
+      using:
+        simple: InnerServicesModule
+      value:
+        simple: ${inputs.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.find.indicators
+      id: c351cb34-3692-413a-8668-6807456b66d5
+      iscommand: true
+      name: Check If Indicator Exists
+      script: Builtin|||findIndicators
+      type: regular
+      version: -1
+    taskid: c351cb34-3692-413a-8668-6807456b66d5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 210
+        }
+      }
+  "2":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: value
+                root: indicator
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f7e3f818-e9c1-4fd2-8281-274632b9f9b2
+      iscommand: false
+      name: Found Indicator ?
+      type: condition
+      version: -1
+    taskid: f7e3f818-e9c1-4fd2-8281-274632b9f9b2
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 390
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+                transformers:
+                - operator: toLowerCase
+          operator: isEqualString
+          right:
+            value:
+              simple: certblockipaddress
+      label: "yes"
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "10"
+      "yes":
+      - "11"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1b66c58a-3e0f-4e82-825d-042b16f94675
+      iscommand: false
+      name: Is This Indicator CERT Tagged ?
+      type: condition
+      version: -1
+    taskid: 1b66c58a-3e0f-4e82-825d-042b16f94675
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 640
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      execution-timeout:
+        simple: "1000000"
+      retry-count:
+        simple: "3"
+      source:
+        simple: ${incident.id}
+      tags:
+        simple: certblockipaddress
+      type:
+        simple: IP
+      value:
+        simple: ${inputs.IP}
+      verdict:
+        simple: Malicious
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.new.indicator
+      id: 71cf80b9-bbe3-4cf0-8326-3ad611c98639
+      iscommand: true
+      name: Tag The Indicator With 'certblockipaddress'
+      script: Builtin|||createNewIndicator
+      type: regular
+      version: -1
+    taskid: 71cf80b9-bbe3-4cf0-8326-3ad611c98639
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -30,
+          "y": 1430
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 41479a3a-84d6-40d6-88be-1f9f053afac6
+      iscommand: false
+      name: The End
+      type: title
+      version: -1
+    taskid: 41479a3a-84d6-40d6-88be-1f9f053afac6
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 870,
+          "y": 1840
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      field:
+        simple: tags
+      fieldValue:
+        simple: ${indicator.tag}
+      indicatorsValues:
+        simple: ${inputs.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.remove.values.to.indicator.multi.select.field
+      id: 062730ea-e925-4fa6-87ac-15fa526d01ab
+      iscommand: true
+      name: Remove Old Tag
+      script: Builtin|||removeIndicatorField
+      type: regular
+      version: -1
+    taskid: 062730ea-e925-4fa6-87ac-15fa526d01ab
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1050
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      tags:
+        simple: certblockipaddress
+      value:
+        simple: ${inputs.IP}
+      verdict:
+        simple: Malicious
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.indicator
+      id: 1a58aacc-8cd7-4d03-8dea-52cac57668c2
+      iscommand: true
+      name: Add New CERT Tag
+      script: Builtin|||setIndicator
+      type: regular
+      version: -1
+    taskid: 1a58aacc-8cd7-4d03-8dea-52cac57668c2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1430
+        }
+      }
+  "8":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: indicator
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "1"
+      "yes":
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6d62f430-c266-412f-8763-f112f14fd6a7
+      iscommand: false
+      name: Is Indicator Context Set ?
+      type: condition
+      version: -1
+    taskid: 6d62f430-c266-412f-8763-f112f14fd6a7
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": -230
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: indicator
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Delete field from context
+      id: 0025bf94-8d5b-453f-8714-16137159b958
+      iscommand: false
+      name: Delete 'Indicator' Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 0025bf94-8d5b-453f-8714-16137159b958
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": -10
+        }
+      }
+  "10":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: tag
+                root: indicator
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "7"
+      "yes":
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f67cf864-1dd7-4485-8ad2-279edb9e965a
+      iscommand: false
+      name: Is Indicator Tag Context Defined ?
+      type: condition
+      version: -1
+    taskid: f67cf864-1dd7-4485-8ad2-279edb9e965a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 850
+        }
+      }
+  "11":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: status
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: expired
+      label: Expired
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: status
+                root: indicator
+          operator: isEqualString
+          right:
+            value:
+              simple: active
+      label: Active
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "13"
+      Active:
+      - "5"
+      Expired:
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 18f86c2f-ceb0-4669-842d-f8b0ee127016
+      iscommand: false
+      name: Is Indicator Active or Expired ?
+      type: condition
+      version: -1
+    taskid: 18f86c2f-ceb0-4669-842d-f8b0ee127016
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 870,
+          "y": 850
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      expiration:
+        simple: Never
+      indicatorsValues:
+        simple: ${inputs.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.indicators
+      id: 0c31b02a-5fb2-46bd-80b3-0367bd84e6aa
+      iscommand: true
+      name: Change Expiry Status
+      script: Builtin|||setIndicators
+      type: regular
+      version: -1
+    taskid: 0c31b02a-5fb2-46bd-80b3-0367bd84e6aa
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1110,
+          "y": 1430
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 941df919-cf23-42b1-88e0-2c1e09217acc
+      iscommand: false
+      name: End Automation
+      type: title
+      version: -1
+    taskid: 941df919-cf23-42b1-88e0-2c1e09217acc
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 660,
+          "y": 2000
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "10_6_yes": 0.42,
+      "11_12_Expired": 0.71,
+      "11_13_#default#": 0.35,
+      "11_5_Active": 0.34,
+      "2_4_#default#": 0.1
+    },
+    "paper": {
+      "dimensions": {
+        "height": 2475,
+        "width": 1520,
+        "x": -30,
+        "y": -410
+      }
+    }
+  }
