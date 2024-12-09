@@ -1,0 +1,759 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 4d977d15-5b9c-4529-837d-356d71a53463
+inputs:
+- description: ""
+  key: email
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Add the name of the QRadar reference set where the leaked email address
+    for inactive or invalid will be added.
+  key: QRadarRefSetInvalidUser
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: leaked-emails-inactive
+- description: Add the name of the QRadar reference set where the leaked email address
+    for active users will be added.
+  key: QRadarRefSetValidUser
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: leaked-emails-active
+name: Process leaked creds
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ef39e3e4-5277-4355-83a0-6aba859d491b
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: ef39e3e4-5277-4355-83a0-6aba859d491b
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      email:
+        simple: ${inputs.email}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Retrieves detailed information about a user account. The user can
+        be specified by name, email address, or as an Active Directory Distinguished
+        Name (DN). If no filter is specified, all users are returned.
+      id: b1edfc77-fb89-45f9-80ba-9e3994d6b1f3
+      iscommand: true
+      name: Query AD
+      script: '|||ad-get-user'
+      type: regular
+      version: -1
+    taskid: b1edfc77-fb89-45f9-80ba-9e3994d6b1f3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 545
+        }
+      }
+  "2":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ActiveDirectory.Users
+          operator: isNotEmpty
+      - - left:
+            iscontext: true
+            value:
+              simple: ActiveDirectory.Users.mail
+          operator: isEqualString
+          right:
+            iscontext: true
+            value:
+              simple: inputs.email
+      label: "yes"
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "11"
+      "yes":
+      - "18"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 0e74ae40-0ec7-4e8b-882f-629e0e953c88
+      iscommand: false
+      name: Is the user present in organisation's AD?
+      type: condition
+      version: -1
+    taskid: 0e74ae40-0ec7-4e8b-882f-629e0e953c88
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 720
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: |-
+          Hi,
+
+          Our Threat Intel Provider has discovered that you are using TCS email ID on non-TCS portals. We cannot share you the details of the portal for now .
+
+          We request you to stop using work Email ID  on public portals and kindly reset your password on all sources where you share the same details.
+
+          Leaked Credentials:
+          Email Address: ${inputs.email}
+          Password: ${Credentials.password}
+
+          Thanks,
+          Your Automated Security Operator
+      subject:
+        simple: Your credentials were found available  on Non-TCS Portals
+      to:
+        simple: sonam.bhandari@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 35da89e3-818c-4672-81c4-131ceda80661
+      iscommand: true
+      name: Send email
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 35da89e3-818c-4672-81c4-131ceda80661
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 725,
+          "y": 1595
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Credentials
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Delete field from context
+      id: 01123dbc-02bb-4e28-8d25-7f2f2a30c7ae
+      iscommand: false
+      name: DeleteCredential
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 01123dbc-02bb-4e28-8d25-7f2f2a30c7ae
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 195
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: ${inputs.QRadarRefSetValidUser}
+      value:
+        simple: ${inputs.email}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar
+      description: Adds or updates a value in a reference set.
+      id: 0666a5cc-ba4d-45a0-83b0-2e4c12e51b6c
+      iscommand: true
+      name: Add leaked emails in QRadar
+      script: QRadar|||qradar-update-reference-set-value
+      type: regular
+      version: -1
+    taskid: 0666a5cc-ba4d-45a0-83b0-2e4c12e51b6c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 725,
+          "y": 1945
+        }
+      }
+  "8":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.QRadarRefSetValidUser
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "9"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f6fdacfb-3233-437b-875e-3b844dff7a00
+      iscommand: false
+      name: Is a QRadar reference set available?
+      type: condition
+      version: -1
+    taskid: f6fdacfb-3233-437b-875e-3b844dff7a00
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 500,
+          "y": 1770
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 0e5aaf8a-a772-4b9b-872d-b9b3271ec504
+      iscommand: false
+      name: End Task
+      type: title
+      version: -1
+    taskid: 0e5aaf8a-a772-4b9b-872d-b9b3271ec504
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 275,
+          "y": 2295
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      reputation:
+        simple: Suspicious
+      tags:
+        simple: QRadar-invalid-user
+      value:
+        simple: ${inputs.email}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.new.indicator
+      id: c7cb17c3-809e-4d89-88de-b9f5b2ad1b98
+      iscommand: true
+      name: Set Indicator
+      script: Builtin|||createNewIndicator
+      type: regular
+      version: -1
+    taskid: c7cb17c3-809e-4d89-88de-b9f5b2ad1b98
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 275,
+          "y": 2120
+        }
+      }
+  "11":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.QRadarRefSetInvalidUser
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "9"
+      "yes":
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ca52cfe4-8420-4023-8395-3b2157279a2a
+      iscommand: false
+      name: Is a QRadar reference set available?
+      type: condition
+      version: -1
+    taskid: ca52cfe4-8420-4023-8395-3b2157279a2a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1770
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ref_name:
+        simple: ${inputs.QRadarRefSetInvalidUser}
+      value:
+        simple: ${inputs.email}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar
+      description: Adds or updates a value in a reference set.
+      id: 3d327e04-30fc-48ee-8c5e-034e06ca8337
+      iscommand: true
+      name: Add leaked emails in QRadar
+      script: QRadar|||qradar-update-reference-set-value
+      type: regular
+      version: -1
+    taskid: 3d327e04-30fc-48ee-8c5e-034e06ca8337
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 275,
+          "y": 1945
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      reputation:
+        simple: Good
+      tags:
+        simple: QRadar-valid-user
+      value:
+        simple: ${inputs.email}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.new.indicator
+      id: eade00ab-b890-4141-8cfe-c9538eb0c8a7
+      iscommand: true
+      name: Set Indicator
+      script: Builtin|||createNewIndicator
+      type: regular
+      version: -1
+    taskid: eade00ab-b890-4141-8cfe-c9538eb0c8a7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 725,
+          "y": 2120
+        }
+      }
+  "14":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: state
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Mail Sender (New)
+                root: modules
+          operator: isEqualString
+          right:
+            value:
+              simple: active
+      label: "yes"
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "8"
+      "yes":
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 08cac947-b930-479f-8865-fe172c61d6af
+      iscommand: false
+      name: Is mail sender active?
+      type: condition
+      version: -1
+    taskid: 08cac947-b930-479f-8865-fe172c61d6af
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 725,
+          "y": 1420
+        }
+      }
+  "15":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Verdict
+          operator: isEqualString
+          right:
+            value:
+              simple: Valid Password
+      label: "yes"
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "8"
+      "yes":
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8e117d28-cb99-430c-8139-322ee977dc43
+      iscommand: false
+      name: Does the password meet policy?
+      type: condition
+      version: -1
+    taskid: 8e117d28-cb99-430c-8139-322ee977dc43
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 612.5,
+          "y": 1245
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      password:
+        complex:
+          accessor: password
+          root: Credentials
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: fcf3c7f6-122e-46a1-8b75-a21025d00741
+      iscommand: false
+      name: Check Password Policy
+      script: c2b23250-2549-444c-875c-a6f87625903d
+      type: regular
+      version: -1
+    taskid: fcf3c7f6-122e-46a1-8b75-a21025d00741
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 612.5,
+          "y": 1070
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Verdict
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Delete field from context
+      id: e1745797-e6f3-4e8b-87d7-3decd6d7e4b1
+      iscommand: false
+      name: Delete Verdict
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: e1745797-e6f3-4e8b-87d7-3decd6d7e4b1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 387.5,
+          "y": 370
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "false"
+      key:
+        simple: Credentials.password
+      stringify:
+        simple: "false"
+      value:
+        complex:
+          accessor: Email/text
+          root: incident.labels
+          transformers:
+          - args:
+              delimiter:
+                iscontext: true
+                value:
+                  simple: inputs.email
+            operator: splitAndTrim
+          - args:
+              index:
+                value:
+                  simple: "1"
+            operator: atIndex
+          - args:
+              delimiter:
+                value:
+                  simple: ”
+            operator: split
+          - args:
+              delimiter:
+                value:
+                  simple: ':'
+            operator: split
+          - args:
+              index:
+                value:
+                  simple: "1"
+            operator: atIndex
+          - args:
+              delimiter:
+                value:
+                  simple: <
+            operator: split
+          - args:
+              index:
+                value:
+                  simple: "0"
+            operator: atIndex
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered. If no value is
+        entered, the script doesn't do anything.
+      id: 804a3adb-e8c9-4742-802a-5d7e5c17d088
+      iscommand: false
+      name: Parse password
+      script: SetAndHandleEmpty
+      type: regular
+      version: -1
+    taskid: 804a3adb-e8c9-4742-802a-5d7e5c17d088
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 600,
+          "y": 890
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 2310,
+        "width": 1055,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
