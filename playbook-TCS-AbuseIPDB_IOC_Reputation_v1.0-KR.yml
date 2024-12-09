@@ -1,0 +1,310 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 5ee32c7c-5830-4fee-8936-05851eb3c530
+inputs:
+- description: ""
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: IP
+      root: ExtractedIndicators
+name: TCS-AbuseIPDB IOC Reputation v1.0-KR
+outputs:
+- contextPath: AbuseIPDB.IP.Address
+  description: IP address
+  type: string
+- contextPath: AbuseIPDB.IP.AbuseConfidenceScore
+  description: Confidence score fetched from AbuseIPDB
+  type: number
+quiet: true
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b5173d8c-591e-4cce-82d4-a4cbf5cbdc90
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: b5173d8c-591e-4cce-82d4-a4cbf5cbdc90
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 410
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.IP
+          operator: isExists
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "9"
+      "yes":
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: 130e4b0e-ed3f-43f7-8d85-a43eb4224adc
+      iscommand: false
+      name: Is there an IP address to get reputation of?
+      type: condition
+      version: -1
+    taskid: 130e4b0e-ed3f-43f7-8d85-a43eb4224adc
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 555
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: aecf1eb3-e3c2-423a-819a-6160965c0382
+      iscommand: false
+      name: Get Reputation using AbuseIPDB API
+      type: title
+      version: -1
+    taskid: aecf1eb3-e3c2-423a-819a-6160965c0382
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 730
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      ip:
+        complex:
+          root: inputs.IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: AbuseIPDB
+      description: Checks the specified IP address against the AbuseIP database.
+      id: dfbe5bdf-d360-4c01-8d92-fabdeb4c0550
+      iscommand: true
+      name: Get IP reputation from AbuseIPDB
+      script: AbuseIPDB|||ip
+      tags:
+      - threatintel
+      type: regular
+      version: -1
+    taskid: dfbe5bdf-d360-4c01-8d92-fabdeb4c0550
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 870
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: AbuseConfidenceScore
+                root: AbuseIPDB.IP
+          operator: lessThan
+          right:
+            value:
+              simple: "100"
+      label: "yes"
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "9"
+      "yes":
+      - "8"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 790f2890-7510-4a9c-84ab-38fae9a611f4
+      iscommand: false
+      name: Are There Any IPs  With AbuseIPDB Confidence Score  100
+      type: condition
+      version: -1
+    taskid: 790f2890-7510-4a9c-84ab-38fae9a611f4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1030
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: ConfidenceScorebelow100
+      value:
+        complex:
+          accessor: Address
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: AbuseIPDB.IP.AbuseConfidenceScore
+              operator: lessThan
+              right:
+                value:
+                  simple: "100"
+          root: AbuseIPDB.IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 8cc4b00a-3303-4912-8406-f7682af4e0a7
+      iscommand: false
+      name: 'Set IP To Context '
+      script: Set
+      type: regular
+      version: -1
+    taskid: 8cc4b00a-3303-4912-8406-f7682af4e0a7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1230
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2d0fa125-f599-4b0a-87ab-4da0856e2ee3
+      iscommand: false
+      name: End
+      type: title
+      version: -1
+    taskid: 2d0fa125-f599-4b0a-87ab-4da0856e2ee3
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1420
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1075,
+        "width": 380,
+        "x": 450,
+        "y": 410
+      }
+    }
+  }
