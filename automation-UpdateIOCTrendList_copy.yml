@@ -1,0 +1,71 @@
+args:
+- description: Gets the Qradar Search Count
+  name: getCount
+  required: true
+- description: Get the IOC list to be updated
+  name: ioc_list_name
+commonfields:
+  id: 6824ac5f-7729-4216-8755-317339f0448d
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.6.22912
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: UpdateIOCTrendList_copy
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  import datetime
+  import pytz
+
+  search_count=demisto.args().get('getCount')
+  ioc_list_name=demisto.args().get('ioc_list_name')
+
+  #Get Yesterday's Date,
+  yester=datetime.datetime.now(pytz.timezone('Asia/Kolkata'))-datetime.timedelta(days=1)
+  yesterday=str(yester).split()[0]
+
+  # Get the timeline List
+  timeline = json.loads(demisto.executeCommand('getList', {'listName':ioc_list_name})[0]['Contents'])
+
+  #Going over the data to see if data is already set for today, if so, override
+  Exists = None
+  for k,v in timeline.items():
+      if yesterday in k:
+          Exists = k
+
+
+  # Checking if the data is already set
+  setter = ''
+  if Exists:
+      setter = Exists
+  else:
+      setter = yesterday
+
+  # Getting the data and setting the timeline
+  timeline[setter] = search_count
+
+  # Putting the timeline back
+  res = demisto.executeCommand('setList', {'listName':ioc_list_name, 'listData':timeline})
+
+
+  if is_error(res[0]):
+      return_error(res[0])
+  else:
+      return_results('done')
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
