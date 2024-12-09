@@ -1,0 +1,1775 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.5.0
+    itemVersion: 1.7.11
+    packID: ""
+    packName: Recorded Future Intelligence
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: Template playbook utilizing Hatching.io to sandbox a given file and generate
+  an analysis report. Indicators from the given report are then extracted and enriched
+  with Recorded Future data.
+id: e5b53dea-3033-41c9-8437-78ade2144bc8
+inputs:
+- description: ""
+  key: File
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: EntryID
+      root: File
+name: TCS-Recorded Future Sandbox_PG_v1.0
+outputs:
+- contextPath: DBotScore
+  description: The DBotScore object.
+  type: unknown
+- contextPath: DBotScore.Indicator
+  description: Triage analysis target
+- contextPath: DBotScore.Type
+  description: The indicator type - File or URL
+- contextPath: DBotScore.Vendor
+  description: The integration used to generate the indicator
+- contextPath: DBotScore.Score
+  description: Analysis verdict as score from 1 to 10
+sourceplaybookid: Recorded Future Sandbox
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "47"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1c752ae1-036c-4933-86d6-ddb6fc5159ca
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 1c752ae1-036c-4933-86d6-ddb6fc5159ca
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 1712.5,
+          "y": -3250
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    evidencedata:
+      customfields: {}
+      description:
+        simple: File result
+    fieldMapping:
+    - incidentfield: Malware Family
+      output:
+        complex:
+          accessor: family}
+          root: ${Triage.sample.reports.triage.extracted.config
+          transformers:
+          - operator: uniq
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "45"
+      - "48"
+    note: true
+    quietmode: 0
+    scriptarguments:
+      sample_id:
+        simple: ${Triage.submissions.id}
+      task_id:
+        simple: behavioral1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Hatching Triage
+      description: Retrieves the generated Triage Report for a single task
+      id: ab143453-6e18-4190-8950-31e788eb33dc
+      iscommand: true
+      name: Get Report (behavioral1)
+      script: Hatching Triage|||triage-get-report-triage
+      type: regular
+      version: -1
+    taskid: ab143453-6e18-4190-8950-31e788eb33dc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1712.5,
+          "y": -1980
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "15"
+      - "16"
+      - "17"
+      - "19"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      text:
+        simple: ${Triage.sample.reports.triage}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Extract all indicators according to server indicators configuration
+      id: b060c492-b0cb-4561-82d7-bd09776b9d65
+      iscommand: true
+      name: Extract Indicators from Report
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: b060c492-b0cb-4561-82d7-bd09776b9d65
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 725,
+          "y": 1245
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        simple: ${ExtractedIndicators.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with an IP address.
+      id: 57234da4-c5d2-44a0-8a51-f31bd56fe74f
+      iscommand: true
+      name: Recorded Future IP Enrich
+      script: Recorded Future v2|||ip
+      type: regular
+      version: -1
+    taskid: 57234da4-c5d2-44a0-8a51-f31bd56fe74f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 612.5,
+          "y": 1595
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      data:
+        complex:
+          root: inputs.File
+      kind:
+        simple: file
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Hatching Triage
+      description: Submits a file or url for analysis
+      id: 07a08581-e170-4167-8ae3-2fa41c939486
+      iscommand: true
+      name: Submit File Sample
+      script: Hatching Triage|||triage-submit-sample
+      type: regular
+      version: -1
+    taskid: 07a08581-e170-4167-8ae3-2fa41c939486
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1712.5,
+          "y": -2925
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      freetext:
+        simple: ${incident.malwarefamily}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Search for a malware by specified filters.
+      id: 23547e9e-6882-48d0-8704-a18c68374305
+      iscommand: true
+      name: Recorded Future Malware Lookup
+      script: Recorded Future v2|||recordedfuture-malware-search
+      type: regular
+      version: -1
+    taskid: 23547e9e-6882-48d0-8704-a18c68374305
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1062.5,
+          "y": 1595
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domain:
+        simple: ${ExtractedIndicators.Domain}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with a domain.
+      id: 5b20a1f8-60c6-4af9-81b0-ccde09a2e5d3
+      iscommand: true
+      name: Recorded Future Domain Enrich
+      script: Recorded Future v2|||domain
+      type: regular
+      version: -1
+    taskid: 5b20a1f8-60c6-4af9-81b0-ccde09a2e5d3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1595
+        }
+      }
+  "15":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${ExtractedIndicators.Domain}
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d735fa02-7964-4354-867b-68ae82c69c8d
+      iscommand: false
+      name: Is there a domain?
+      type: condition
+      version: -1
+    taskid: d735fa02-7964-4354-867b-68ae82c69c8d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1420
+        }
+      }
+  "16":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${ExtractedIndicators.IP}
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "8"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a36dc011-8c41-4304-8720-bdc400fd9367
+      iscommand: false
+      name: Is there an ip?
+      type: condition
+      version: -1
+    taskid: a36dc011-8c41-4304-8720-bdc400fd9367
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 500,
+          "y": 1420
+        }
+      }
+  "17":
+    conditions:
+    - condition:
+      - - left:
+            value:
+              simple: ${incident.malwarefamily}
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 27898914-3358-4c18-87a3-37c55178878c
+      iscommand: false
+      name: Is there a malware family?
+      type: condition
+      version: -1
+    taskid: 27898914-3358-4c18-87a3-37c55178878c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 950,
+          "y": 1420
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 92109576-ec75-439d-8bff-62de52660c3a
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 92109576-ec75-439d-8bff-62de52660c3a
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1710,
+          "y": 2440
+        }
+      }
+  "19":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${ExtractedIndicators.URL}
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "20"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a9b22cf7-c8ac-4c20-8366-5be95dfa403f
+      iscommand: false
+      name: Is there a URL?
+      type: condition
+      version: -1
+    taskid: a9b22cf7-c8ac-4c20-8366-5be95dfa403f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1400,
+          "y": 1420
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      url:
+        simple: ${ExtractedIndicators.URL}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with a URL.
+      id: 1da41c32-b9fe-4f5b-83f3-fa8c13690c76
+      iscommand: true
+      name: Recorded Future URL Enrich
+      script: Recorded Future v2|||url
+      type: regular
+      version: -1
+    taskid: 1da41c32-b9fe-4f5b-83f3-fa8c13690c76
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1512.5,
+          "y": 1595
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 0
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Ids:
+        simple: ${Triage.submissions.id}
+      Interval:
+        simple: "10"
+      PollingCommandArgName:
+        simple: sample_id
+      PollingCommandName:
+        simple: triage-get-sample-summary
+      Timeout:
+        simple: "7200"
+      dt:
+        simple: Triage.sample-summaries(val.status!=='reported').sample
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Use this playbook as a sub-playbook to block execution of the master playbook until a remote action is complete.
+        This playbook implements polling by continuously running the command in Step \#2 until the operation completes.
+        The remote action should have the following structure:
+
+        1. Initiate the operation.
+        2. Poll to check if the operation completed.
+        3. (optional) Get the results of the operation.
+      id: 3681f644-afd3-4c3d-84dd-7832be66e8fa
+      iscommand: false
+      name: GenericPolling
+      playbookId: GenericPolling
+      type: playbook
+      version: -1
+    taskid: 3681f644-afd3-4c3d-84dd-7832be66e8fa
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1712.5,
+          "y": -2750
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "25"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      sample_id:
+        simple: ${Triage.submissions.id}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Hatching Triage
+      description: Gets a summary report of the sample id provided
+      id: a578cb4b-1aaa-4748-8cc9-932b31db2e0c
+      iscommand: true
+      name: Get Sample Summary
+      script: Hatching Triage|||triage-get-sample-summary
+      type: regular
+      version: -1
+    taskid: a578cb4b-1aaa-4748-8cc9-932b31db2e0c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1712.5,
+          "y": -2575
+        }
+      }
+  "23":
+    continueonerrortype: ""
+    evidencedata:
+      customfields: {}
+      description:
+        simple: File result
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: true
+    quietmode: 0
+    scriptarguments:
+      sample_id:
+        simple: ${Triage.submissions.id}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Hatching Triage
+      description: Get the static analysis of a sample
+      id: 13232776-2109-46cf-8fd2-970a36be366a
+      iscommand: true
+      name: Get Report (static)
+      script: Hatching Triage|||triage-get-static-report
+      type: regular
+      version: -1
+    taskid: 13232776-2109-46cf-8fd2-970a36be366a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2255,
+          "y": -2030
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    evidencedata:
+      customfields: {}
+      description:
+        simple: File result
+    fieldMapping:
+    - incidentfield: Malware Family
+      output:
+        complex:
+          accessor: family}
+          root: ${Triage.sample.reports.triage.extracted.config
+          transformers:
+          - operator: uniq
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "48"
+    note: true
+    quietmode: 0
+    scriptarguments:
+      sample_id:
+        simple: ${Triage.submissions.id}
+      task_id:
+        simple: behavioral2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Hatching Triage
+      description: Retrieves the generated Triage Report for a single task
+      id: 3072b160-a29c-42d2-8954-0a0a6f93417a
+      iscommand: true
+      name: Get Report (behavioral2)
+      script: Hatching Triage|||triage-get-report-triage
+      type: regular
+      version: -1
+    taskid: 3072b160-a29c-42d2-8954-0a0a6f93417a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1105,
+          "y": -2010
+        }
+      }
+  "25":
+    continueonerrortype: ""
+    form:
+      description: ""
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: ${Triage.sample-summaries.tasks}
+        options: []
+        optionsarg:
+        - {}
+        - simple: static
+        - simple: behavioral1
+        - simple: behavioral2
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: ""
+        type: singleSelect
+      sender: ""
+      title: Choose Hatching Report Type
+      totalanswers: 0
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body: {}
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d0ed876f-141a-4711-8463-20762919ec0d
+      iscommand: false
+      name: Choose Report Type
+      type: collection
+      version: -1
+    taskid: d0ed876f-141a-4711-8463-20762919ec0d
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 1712.5,
+          "y": -2400
+        }
+      }
+  "26":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: "0"
+                root: Choose Hatching Report Type.Answers
+          operator: isEqualString
+          right:
+            value:
+              simple: static
+      label: static
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: "0"
+                root: Choose Hatching Report Type.Answers
+          operator: isEqualString
+          right:
+            value:
+              simple: behavioral1
+      label: behavioral1
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "24"
+      behavioral1:
+      - "1"
+      static:
+      - "23"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e3b6f0ad-1f30-468b-8108-4a57272fbf85
+      iscommand: false
+      name: Which Report Type?
+      type: condition
+      version: -1
+    taskid: e3b6f0ad-1f30-468b-8108-4a57272fbf85
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1712.5,
+          "y": -2225
+        }
+      }
+  "27":
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+      - "29"
+      - "28"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      text:
+        simple: ${Triage.sample.reports.static}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Extract all indicators according to server indicators configuration
+      id: 1d07aafc-c101-4310-879b-fc994e0e172c
+      iscommand: true
+      name: Extract Indicators from Report
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: 1d07aafc-c101-4310-879b-fc994e0e172c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2505,
+          "y": 1245
+        }
+      }
+  "28":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${ExtractedIndicators.Domain}
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "31"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 17fb7a30-731d-4e25-8e5a-cec456944254
+      iscommand: false
+      name: Is there a domain?
+      type: condition
+      version: -1
+    taskid: 17fb7a30-731d-4e25-8e5a-cec456944254
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2955,
+          "y": 1420
+        }
+      }
+  "29":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${ExtractedIndicators.IP}
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "32"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 594d2587-1416-4476-8b07-11162ff9fa18
+      iscommand: false
+      name: Is there an ip?
+      type: condition
+      version: -1
+    taskid: 594d2587-1416-4476-8b07-11162ff9fa18
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2505,
+          "y": 1420
+        }
+      }
+  "30":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${ExtractedIndicators.URL}
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "33"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: eb3ecb1f-5598-42b7-8889-174a86a23e15
+      iscommand: false
+      name: Is there a URL?
+      type: condition
+      version: -1
+    taskid: eb3ecb1f-5598-42b7-8889-174a86a23e15
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2055,
+          "y": 1420
+        }
+      }
+  "31":
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domain:
+        simple: ${ExtractedIndicators.Domain}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with a domain.
+      id: 76578903-89b6-4a42-80b6-e484ccb8678e
+      iscommand: true
+      name: Recorded Future Domain Enrich
+      script: Recorded Future v2|||domain
+      type: regular
+      version: -1
+    taskid: 76578903-89b6-4a42-80b6-e484ccb8678e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2842.5,
+          "y": 1595
+        }
+      }
+  "32":
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        simple: ${ExtractedIndicators.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with an IP address.
+      id: 709b7ba5-a3c3-46e1-8350-37d5684c88c9
+      iscommand: true
+      name: Recorded Future IP Enrich
+      script: Recorded Future v2|||ip
+      type: regular
+      version: -1
+    taskid: 709b7ba5-a3c3-46e1-8350-37d5684c88c9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2392.5,
+          "y": 1595
+        }
+      }
+  "33":
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      url:
+        simple: ${ExtractedIndicators.URL}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with a URL.
+      id: 2e7a3cfb-1515-4497-8a82-711f61aff93c
+      iscommand: true
+      name: Recorded Future URL Enrich
+      script: Recorded Future v2|||url
+      type: regular
+      version: -1
+    taskid: 2e7a3cfb-1515-4497-8a82-711f61aff93c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1942.5,
+          "y": 1595
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 24fe8265-fb64-48c3-851f-78f23779dbfa
+      iscommand: false
+      name: END
+      type: title
+      version: -1
+    taskid: 24fe8265-fb64-48c3-851f-78f23779dbfa
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": -680
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "41"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      actionnotification:
+        simple: '<h2 style="text-align: center;"><em><span style="color: #008000;">Likely
+          Benign</span><br /></em></h2>'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 04404ede-923a-4a9b-8d17-d02f9fd74e55
+      iscommand: true
+      name: Set the incident as 'Benign'
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 04404ede-923a-4a9b-8d17-d02f9fd74e55
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1150,
+          "y": -1140
+        }
+      }
+  "37":
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "41"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      actionnotification:
+        simple: '<h2 style="text-align: center;"><em><span style="color: #008000;">Shows
+          suspicious behavior</span><br /></em></h2>'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: d7cddb22-4df9-4ae2-8b49-780cf0bd51f4
+      iscommand: true
+      name: Set the incident as 'Shows suspicious behavior'
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: d7cddb22-4df9-4ae2-8b49-780cf0bd51f4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 570,
+          "y": -1140
+        }
+      }
+  "38":
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "41"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      actionnotification:
+        simple: '<h2 style="text-align: center;"><em><span style="color: #008000;">Likely
+          Malicious</span><br /></em></h2>'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: ec57f6c7-1549-45c5-8d3e-e4d0e6d46e39
+      iscommand: true
+      name: Set the incident as 'Likely Malicious'
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: ec57f6c7-1549-45c5-8d3e-e4d0e6d46e39
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": -1140
+        }
+      }
+  "39":
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "41"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      actionnotification:
+        simple: '<h2 style="text-align: center;"><em><span style="color: #008000;">Malware
+          family detected</span><br /></em></h2>'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: f4c3c11a-396b-4218-8a5f-3ce8947d4e95
+      iscommand: true
+      name: Set the incident as 'Malware family detected'
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: f4c3c11a-396b-4218-8a5f-3ce8947d4e95
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2530,
+          "y": -1140
+        }
+      }
+  "40":
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "41"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      actionnotification:
+        simple: '<h2 style="text-align: center;"><em><span style="color: #008000;">No
+          malicious behavior detected</span><br /></em></h2>'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 6e62e42c-ae39-4871-8908-bfc4f8922043
+      iscommand: true
+      name: Set the incident as 'No malicious behavior detected'
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 6e62e42c-ae39-4871-8908-bfc4f8922043
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2055,
+          "y": -1140
+        }
+      }
+  "41":
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 751a3407-9fba-4c10-8143-318979357e2d
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 751a3407-9fba-4c10-8143-318979357e2d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": -860
+        }
+      }
+  "42":
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "45"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Key
+      value:
+        complex:
+          accessor: score
+          root: Triage.sample.reports.static.analysis
+          transformers:
+          - operator: trim
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 0a4f972b-ae4b-4bff-8b5d-4cebdc0e0fe2
+      iscommand: false
+      name: Set Score value
+      script: Set
+      type: regular
+      version: -1
+    taskid: 0a4f972b-ae4b-4bff-8b5d-4cebdc0e0fe2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2255,
+          "y": -1885
+        }
+      }
+  "43":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Key
+          operator: InRange
+          right:
+            value:
+              simple: 2,5
+      label: Benign
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Key
+          operator: InRange
+          right:
+            value:
+              simple: 6,7
+      label: suspicious behavior
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Key
+          operator: InRange
+          right:
+            value:
+              simple: 8,9
+      label: Likely Malicious
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Key
+          operator: InRange
+          right:
+            value:
+              simple: 0,1
+      label: 'No malicious '
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Key
+          operator: InRange
+          right:
+            value:
+              simple: 10,11
+      label: Malware family
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "41"
+      Benign:
+      - "36"
+      Likely Malicious:
+      - "38"
+      'Malware family detected ':
+      - "39"
+      'No malicious ':
+      - "40"
+      suspicious behavior:
+      - "37"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ae07aafe-5f8f-4397-801d-4323edb59595
+      iscommand: false
+      name: Check the verdict of the sandbox
+      type: condition
+      version: -1
+    taskid: ae07aafe-5f8f-4397-801d-4323edb59595
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1485,
+          "y": -1460
+        }
+      }
+  "44":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Key
+          operator: isEqualNumber
+          right:
+            value:
+              simple: "1"
+      label: 'No malicious '
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Key
+          operator: InRange
+          right:
+            value:
+              simple: 2,5
+      label: condition-2
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Key
+          operator: InRange
+          right:
+            value:
+              simple: 6,7
+      label: condition-3
+    continueonerrortype: ""
+    id: "44"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: af9b9577-a687-48b6-8cc0-7f35765e70d4
+      iscommand: false
+      name: Check the verdict of the sandbox
+      type: condition
+      version: -1
+    taskid: af9b9577-a687-48b6-8cc0-7f35765e70d4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 4280,
+          "y": -1350
+        }
+      }
+  "45":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: "0"
+                root: Choose Hatching Report Type.Answers
+          operator: isEqualString
+          right:
+            value:
+              simple: static
+      label: "yes"
+    continueonerrortype: ""
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "43"
+      "yes":
+      - "46"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 70945d99-c1f8-4a25-89c5-eff49ff01486
+      iscommand: false
+      name: Check whether it is static
+      type: condition
+      version: -1
+    taskid: 70945d99-c1f8-4a25-89c5-eff49ff01486
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1710,
+          "y": -1640
+        }
+      }
+  "46":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Key
+          operator: InRange
+          right:
+            value:
+              simple: 2,5
+      label: Benign
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Key
+          operator: InRange
+          right:
+            value:
+              simple: 6,7
+      label: suspicious behavior
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Key
+          operator: InRange
+          right:
+            value:
+              simple: 8,9
+      label: Likely Malicious
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Key
+          operator: InRange
+          right:
+            value:
+              simple: 10,11
+      label: 'Malware family detected '
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: Key
+          operator: InRange
+          right:
+            value:
+              simple: 0,1
+      label: 'No malicious '
+    continueonerrortype: ""
+    id: "46"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "41"
+      Benign:
+      - "36"
+      Likely Malicious:
+      - "38"
+      'Malware family detected ':
+      - "39"
+      'No malicious ':
+      - "40"
+      suspicious behavior:
+      - "37"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 706d2c18-2711-4743-8723-c5afaa6a21cf
+      iscommand: false
+      name: Check the verdict of the sandbox
+      type: condition
+      version: -1
+    taskid: 706d2c18-2711-4743-8723-c5afaa6a21cf
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2040,
+          "y": -1470
+        }
+      }
+  "47":
+    continueonerrortype: ""
+    id: "47"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      severity:
+        simple: Low
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 43cfce28-0ba2-4465-84a8-b30e0aed6861
+      iscommand: true
+      name: Set severity as 'low'
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 43cfce28-0ba2-4465-84a8-b30e0aed6861
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1712.5,
+          "y": -3100
+        }
+      }
+  "48":
+    continueonerrortype: ""
+    id: "48"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "45"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Key
+      value:
+        complex:
+          accessor: score
+          root: Triage.sample.reports.triage.analysis
+          transformers:
+          - operator: trim
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: b8f1a922-95e8-446e-80a6-3f41fe33af8e
+      iscommand: false
+      name: Set Score value
+      script: Set
+      type: regular
+      version: -1
+    taskid: b8f1a922-95e8-446e-80a6-3f41fe33af8e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1105,
+          "y": -1790
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "15_14_yes": 0.62,
+      "15_18_#default#": 0.2,
+      "16_18_#default#": 0.3,
+      "16_8_yes": 0.59,
+      "17_12_yes": 0.61,
+      "17_18_#default#": 0.3,
+      "19_18_#default#": 0.19,
+      "19_20_yes": 0.59,
+      "30_18_#default#": 0.2
+    },
+    "paper": {
+      "dimensions": {
+        "height": 5755,
+        "width": 4610,
+        "x": 50,
+        "y": -3250
+      }
+    }
+  }
