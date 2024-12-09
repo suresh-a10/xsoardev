@@ -1,0 +1,114 @@
+args:
+- name: counts
+- name: stackListName
+- description: List to update Total Count
+  name: totalList
+commonfields:
+  id: a72fa6bd-c1b9-44f6-82db-d2f6b43161dc
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.7.3.286
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: UpdateStackList
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  import datetime
+  import pytz
+
+
+  subCounts=demisto.args().get('counts')
+  ioc_list_name=demisto.args().get('stackListName')
+  totalList=demisto.args().get('totalList')
+
+  #Get Yesterday's Date,
+  yester=datetime.datetime.now(pytz.timezone('Asia/Kolkata'))-datetime.timedelta(days=1)
+  yesterday=str(yester).split()[0]
+  day=yester.strftime("%A")
+
+
+  # Get the timeline List
+  timeline = json.loads(demisto.executeCommand('getList', {'listName':ioc_list_name})[0]['Contents'])
+  totalTimeline = json.loads(demisto.executeCommand('getList', {'listName':totalList})[0]['Contents'])
+
+  #Going over the data to see if data is already set for today, if so, override
+  Exists = None
+  # ExistsTotal=None
+  for k,v in timeline.items():
+      if yesterday in k:
+          Exists = k
+
+  # for k,v in totalTimeline.items():
+  #     if yesterday in k:
+  #         ExistsTotal = k
+
+
+  # Checking if the data is already set
+  setter = ''
+  # setterTotal=''
+  if Exists:
+      setter = Exists
+  else:
+      setter = yesterday
+
+  # if ExistsTotal:
+  #     setterTotal = ExistsTotal
+  # else:
+  #     setterTotal = yesterday
+  totalSum=0
+  # Check if results were fetched from Qradar
+  if subCounts=='0':
+      data={"name": setter, "data": [0], "groups": [{"name": "No results returned","data": [0]}]}
+  else:
+      events=subCounts.get("events")
+      sublist=[]
+      # print(type(events))
+
+      for i in events:
+          # print(i)
+          sublist.append({"name":i.get('Lowcategory'),"data": [i.get('eventcount')]})
+          totalSum+=i.get('eventcount')
+
+      data={"name": setter, "data": [totalSum], "groups": sublist}
+
+
+  # Getting the data and setting the timeline
+  timeline[setter] = data
+  totalTimeline[setter]=totalSum
+
+  # Putting the timeline back
+  res = demisto.executeCommand('setList', {'listName':ioc_list_name, 'listData':timeline})
+  resTotal = demisto.executeCommand('setList', {'listName':totalList, 'listData':totalTimeline})
+
+
+  if is_error(res[0]):
+      return_error(res[0])
+  else:
+      return_results('done')
+
+
+  if is_error(resTotal[0]):
+      return_error(resTotal[0])
+  else:
+      return_results('done')
+
+  demisto.setContext('Date', setter)
+  demisto.setContext('EventSum', totalSum)
+  demisto.setContext("Day",day)
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
