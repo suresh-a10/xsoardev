@@ -1,0 +1,406 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+hidden: true
+id: 1277d1f9-5ef1-4573-85df-d9b97fd2e1af
+inputs: []
+name: TCS Investigate email risk score
+outputs: []
+sourceplaybookid: 7d2006fb-6cdf-40db-8728-22f53cc4b085
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: da459f11-2a5f-4d71-8e53-6fd3e14ebc82
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: da459f11-2a5f-4d71-8e53-6fd3e14ebc82
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 280,
+          "y": -90
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      domains:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: inputs.DomainColumn
+              operator: isNotEmpty
+          root: inputs.DomainColumn
+      entryID:
+        simple: ${File.EntryID}
+      ips:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: inputs.IPColumn
+              operator: isNotEmpty
+          root: inputs.IPColumn
+      parseAll:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This script will parse a CSV file and place the unique IPs, Domains
+        and Hashes into the context.
+      id: 9201329b-a41d-4f4c-853e-19020873708e
+      iscommand: false
+      name: parse CSV
+      script: ParseCSV
+      type: regular
+      version: -1
+    taskid: 9201329b-a41d-4f4c-853e-19020873708e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 760,
+          "y": 80
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        simple: ${File.EntryID}
+      text:
+        complex:
+          accessor: ParsedCSV.ioc
+          root: ParseCSV
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.extract.indicators
+      id: e4d365e4-897b-45d0-82b2-f4f5e8769ceb
+      iscommand: true
+      name: Extract Indicators
+      script: Builtin|||extractIndicators
+      type: regular
+      version: -1
+    taskid: e4d365e4-897b-45d0-82b2-f4f5e8769ceb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 780,
+          "y": 260
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: 'IOC List:  ${incident.filename}'
+      subject:
+        simple: Indicator Score List
+      to:
+        simple: v.ghule@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Send an email
+      id: 0811ffc1-4d79-4352-8bfe-4b24225f71df
+      iscommand: true
+      name: send email
+      script: '|||send-mail'
+      type: regular
+      version: -1
+    taskid: 0811ffc1-4d79-4352-8bfe-4b24225f71df
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 280,
+          "y": 515
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: ${DBotScore.Indicator}
+      value:
+        simple: ${DBotScore.Score}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: d193bef3-46fd-49a1-86ce-0045c118d9a3
+      iscommand: false
+      name: context
+      script: Set
+      type: regular
+      version: -1
+    taskid: d193bef3-46fd-49a1-86ce-0045c118d9a3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 870,
+          "y": 810
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      indicator:
+        simple: ${ExtractedIndicators}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Add into the incident's context the system internal DBot score
+        for the input indicator
+      id: 8a578561-6318-49a9-87b1-a9c07cab19d7
+      iscommand: false
+      name: DBot score
+      script: GetIndicatorDBotScore
+      type: regular
+      version: -1
+    taskid: 8a578561-6318-49a9-87b1-a9c07cab19d7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 780,
+          "y": 595
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 0
+      wait: 1
+    note: false
+    quietmode: 0
+    scriptarguments:
+      DBotScore:
+        complex:
+          root: DBotScore
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b79d68bb-768d-44c6-8a71-b8fb667f6853
+      iscommand: false
+      name: Calculate Severity - Generic v2
+      playbookId: Calculate Severity - Generic v2
+      type: playbook
+      version: -1
+    taskid: b79d68bb-768d-44c6-8a71-b8fb667f6853
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 780,
+          "y": 430
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    reputationcalc: 2
+    scriptarguments:
+      entryID:
+        simple: ${File.EntryID}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Extract indicators from a text-based file.
+        Indicators that can be extracted:
+        * IP
+        * Domain
+        * URL
+        * File Hash
+        * Email Address
+      id: add8eb17-7e0f-446c-804a-d9fb6d155e5c
+      iscommand: false
+      name: extract IOC
+      script: ExtractIndicatorsFromTextFile
+      type: regular
+      version: -1
+    taskid: add8eb17-7e0f-446c-804a-d9fb6d155e5c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 280,
+          "y": 40
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      indicator:
+        simple: '{Account.Email.Address}'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Add into the incident's context the system internal DBot score
+        for the input indicator
+      id: 597224a6-18b8-48c8-85e6-1c017ea537b2
+      iscommand: false
+      name: get dbot score
+      script: GetIndicatorDBotScore
+      type: regular
+      version: -1
+    taskid: 597224a6-18b8-48c8-85e6-1c017ea537b2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 280,
+          "y": 200
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      csvArray:
+        simple: ${DBotScore}
+      fileName:
+        simple: DBot-score-EmailAddress.csv
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Export given array to csv file
+      id: b069831d-39a0-4c2e-88aa-8bd05753a117
+      iscommand: false
+      name: Extract Score, Vendor
+      script: ExportToCSV
+      type: regular
+      version: -1
+    taskid: b069831d-39a0-4c2e-88aa-8bd05753a117
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 280,
+          "y": 355
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 995,
+        "width": 970,
+        "x": 280,
+        "y": -90
+      }
+    }
+  }
