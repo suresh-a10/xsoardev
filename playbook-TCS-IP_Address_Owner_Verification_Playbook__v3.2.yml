@@ -1,0 +1,1820 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+hidden: true
+id: d2925c25-8145-4075-8db0-98584cfc6d79
+inputs:
+- description: ""
+  key: IP Address
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: IP
+      root: ExtractedIndicators
+name: TCS-IP Address Owner Verification_Playbook  v3.2
+outputs: []
+sourceplaybookid: 10a892d4-e4b5-4b5e-80ea-dcaccb53541a
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6ab2a608-79dd-40a2-8a35-a1a99f6120ba
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 6ab2a608-79dd-40a2-8a35-a1a99f6120ba
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": -210,
+          "y": -100
+        }
+      }
+  "2":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.IP
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "50"
+      "yes":
+      - "48"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f85807e3-70cd-4f40-8bee-b7d5d83b1cbe
+      iscommand: false
+      name: Are there any IP addresses ?
+      type: condition
+      version: -1
+    taskid: f85807e3-70cd-4f40-8bee-b7d5d83b1cbe
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -210,
+          "y": 120
+        }
+      }
+  "3":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "13"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      ip:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+      ipRanges:
+        simple: ${lists.Microsoft Public IP Addresses}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns yes if the IP is in one of the ranges provided, returns
+        no otherwise.
+      id: de1d7f2d-3779-4373-84c4-b7c26cd03bcf
+      iscommand: false
+      name: Does IP Address Belong To Microsoft ?
+      script: b502efb7-b0a1-449b-8d9e-31e8fe70f470
+      type: condition
+      version: -1
+    taskid: de1d7f2d-3779-4373-84c4-b7c26cd03bcf
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 20,
+          "y": 380
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      attachIDs:
+        simple: ${.=val.File.filter(function(f){return f.EntryID;}).reduce(function(acc,
+          f) {return f;}, null).EntryID}
+      body:
+        simple: "Hello Human,\n\nI found Microsoft IP Addresses in this file ${incident.attachment.name}.
+          \nPFA Risk Score report.\n\nMicrosoft:\n\n${Address.MIP} \n\n\nRegards,\nCSOC
+          CyberAutoBot"
+      subject:
+        simple: Found Microsoft IP Addresses in this file ${incident.attachment.name}
+      to:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 38637c70-d4d4-44f3-83e8-70f1811f5880
+      iscommand: true
+      name: Send Email Notification That Microsoft IP Address Found
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 38637c70-d4d4-44f3-83e8-70f1811f5880
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -630,
+          "y": 1500
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "40"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: Address.MIP
+      value:
+        complex:
+          accessor: Address
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: IP.InRange
+              operator: isEqualString
+              right:
+                value:
+                  simple: "yes"
+          root: IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 6e4b51f5-9e2d-4b52-87ab-1b2ff2bef64c
+      iscommand: false
+      name: Set Microsoft IP Address into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 6e4b51f5-9e2d-4b52-87ab-1b2ff2bef64c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 20,
+          "y": 580
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "51"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: Address1.IP
+      value:
+        complex:
+          accessor: Address
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: IP.InRange
+              operator: isEqualString
+              right:
+                value:
+                  simple: "no"
+          root: IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 0eaa5539-4987-46cf-85f0-e73f2004a122
+      iscommand: false
+      name: Set Output into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 0eaa5539-4987-46cf-85f0-e73f2004a122
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 490,
+          "y": 570
+        }
+      }
+  "11":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "no":
+      - "10"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      ip:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+      ipRanges:
+        simple: ${lists.Google Public IP Addresses},${lists.Microsoft Public IP Addresses},${lists.TCS
+          Public IP Addresses}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns yes if the IP is in one of the ranges provided, returns
+        no otherwise.
+      id: 90785f70-6a2b-40bf-8f80-24e3ce2d3323
+      iscommand: false
+      name: Does IP Address Belong To Microsoft, Google or TCS ?
+      script: b502efb7-b0a1-449b-8d9e-31e8fe70f470
+      type: condition
+      version: -1
+    taskid: 90785f70-6a2b-40bf-8f80-24e3ce2d3323
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 490,
+          "y": 380
+        }
+      }
+  "12":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "34"
+      "yes":
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+      ipRanges:
+        simple: ${lists.TCS Public IP Addresses}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns yes if the IP is in one of the ranges provided, returns
+        no otherwise.
+      id: ed02e50e-3b62-4c45-8498-46d261e00222
+      iscommand: false
+      name: Does IP Address Belong To TCS ?
+      script: b502efb7-b0a1-449b-8d9e-31e8fe70f470
+      type: condition
+      version: -1
+    taskid: ed02e50e-3b62-4c45-8498-46d261e00222
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -890,
+          "y": 380
+        }
+      }
+  "13":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "12"
+      "yes":
+      - "15"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+      ipRanges:
+        simple: ${lists.Google Public IP Addresses}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns yes if the IP is in one of the ranges provided, returns
+        no otherwise.
+      id: 6a7dcd1c-fbfa-42be-8c5e-2d028932d4d4
+      iscommand: false
+      name: Does IP Address Belong To Google ?
+      script: b502efb7-b0a1-449b-8d9e-31e8fe70f470
+      type: condition
+      version: -1
+    taskid: 6a7dcd1c-fbfa-42be-8c5e-2d028932d4d4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -440,
+          "y": 380
+        }
+      }
+  "14":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.TIP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.MIP
+          operator: isNotExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.GIP
+          operator: isNotExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "33"
+      "yes":
+      - "20"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 03c3bf7f-b2a8-4a7a-8f80-dfd1bd3ab736
+      iscommand: false
+      name: Is There a TCS IP Address ?
+      type: condition
+      version: -1
+    taskid: 03c3bf7f-b2a8-4a7a-8f80-dfd1bd3ab736
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 240,
+          "y": 1260
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "41"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: Address.GIP
+      value:
+        complex:
+          accessor: Address
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: IP.InRange
+              operator: isEqualString
+              right:
+                value:
+                  simple: "yes"
+          root: IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: e9d324d5-2030-40dd-86e8-14431694e3b5
+      iscommand: false
+      name: Set Google IP Address into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: e9d324d5-2030-40dd-86e8-14431694e3b5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -440,
+          "y": 580
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: Address.TIP
+      value:
+        complex:
+          accessor: Address
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: IP.InRange
+              operator: isEqualString
+              right:
+                value:
+                  simple: "yes"
+          root: IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 60a6e388-080c-452c-8149-bf3edd6d7252
+      iscommand: false
+      name: Set TCS IP Address into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 60a6e388-080c-452c-8149-bf3edd6d7252
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -890,
+          "y": 580
+        }
+      }
+  "17":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.GIP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.MIP
+          operator: isNotExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.TIP
+          operator: isNotExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "33"
+      "yes":
+      - "19"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 63b7523d-d0b6-4f55-883f-8cbadc87aca3
+      iscommand: false
+      name: Is There a Google IP Address ?
+      type: condition
+      version: -1
+    taskid: 63b7523d-d0b6-4f55-883f-8cbadc87aca3
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -200,
+          "y": 1260
+        }
+      }
+  "18":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.MIP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.GIP
+          operator: isNotExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.TIP
+          operator: isNotExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "33"
+      "yes":
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: fc44e063-ed3c-4a92-8d30-fa9bebfab74e
+      iscommand: false
+      name: Is There a  Microsoft           IP Address ?
+      type: condition
+      version: -1
+    taskid: fc44e063-ed3c-4a92-8d30-fa9bebfab74e
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -630,
+          "y": 1260
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      attachIDs:
+        simple: ${.=val.File.filter(function(f){return f.EntryID;}).reduce(function(acc,
+          f) {return f;}, null).EntryID}
+      body:
+        simple: "Hello Human,\n\nI found Google IP Addresses in this file ${incident.attachment.name}.
+          \nPFA Risk Score report.\n\nGoogle:\n\n${Address.GIP}\n\n\nRegards,\nCSOC
+          CyberAutoBot"
+      subject:
+        simple: Found Google IP Addresses in this file ${incident.attachment.name}
+      to:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 14e9fc2f-6d3b-46af-82ce-55a15ebdc49e
+      iscommand: true
+      name: Send Email Notification That Google IP Address Found
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 14e9fc2f-6d3b-46af-82ce-55a15ebdc49e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -200,
+          "y": 1500
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      attachIDs:
+        simple: ${.=val.File.filter(function(f){return f.EntryID;}).reduce(function(acc,
+          f) {return f;}, null).EntryID}
+      body:
+        simple: "Hello Human,\n\nI found TCS IP Addresses in this file ${incident.attachment.name}.
+          \nPFA Risk Score report.\n\nTCS:\n\n${Address.TIP} \n\n\nRegards,\nCSOC
+          CyberAutoBot"
+      subject:
+        simple: Found TCS IP Addresses in this file ${incident.attachment.name}
+      to:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 22601b3e-e4b9-426d-8775-bf69d3df048a
+      iscommand: true
+      name: Send Email Notification That TCS IP Address Found
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 22601b3e-e4b9-426d-8775-bf69d3df048a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 240,
+          "y": 1500
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${.=val.File.filter(function(f){return f.EntryID;}).reduce(function(acc,
+          f) {return f;}, null).EntryID}
+      body:
+        simple: "Hello Human,\n\nI found Microsoft and TCS IP Addresses in this file
+          ${incident.attachment.name}. \nPFA Risk Score Report.\n\nMicrosoft:\n\n${Address.MIP}
+          \n\nTCS:\n\n${Address.TIP}\n\nRegards,\nCSOC CyberAutoBot"
+      subject:
+        simple: Found Microsoft and TCS IP Addresses in this file ${incident.attachment.name}
+      to:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 0e91e2d9-4069-4924-8acd-f6e9aa80679b
+      iscommand: true
+      name: Send Email Notification That TCS & Microsoft IP Address Found
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 0e91e2d9-4069-4924-8acd-f6e9aa80679b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -1070,
+          "y": 1500
+        }
+      }
+  "22":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.GIP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.TIP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.MIP
+          operator: isNotExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "33"
+      "yes":
+      - "30"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5f3c8665-d307-490b-8aac-c6c49ba7d56e
+      iscommand: false
+      name: Is There a Google & TCS  IP Address ?
+      type: condition
+      version: -1
+    taskid: 5f3c8665-d307-490b-8aac-c6c49ba7d56e
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 680,
+          "y": 1260
+        }
+      }
+  "23":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.GIP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.MIP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.TIP
+          operator: isNotExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "33"
+      "yes":
+      - "31"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a01150ce-ba8b-41ea-8c1f-4d41728871da
+      iscommand: false
+      name: Is There a Google & Microsoft  IP Address ?
+      type: condition
+      version: -1
+    taskid: a01150ce-ba8b-41ea-8c1f-4d41728871da
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 1260
+        }
+      }
+  "24":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.GIP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.MIP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.TIP
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "33"
+      "yes":
+      - "32"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a0a52b75-3871-49c5-8b14-3acf4dac4dfb
+      iscommand: false
+      name: Is There a Google, Microsoft & TCS  IP Address ?
+      type: condition
+      version: -1
+    taskid: a0a52b75-3871-49c5-8b14-3acf4dac4dfb
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -1510,
+          "y": 1260
+        }
+      }
+  "25":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.MIP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.TIP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.GIP
+          operator: isNotExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "33"
+      "yes":
+      - "21"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c0cdc944-6a17-455f-8a98-09bd50af0916
+      iscommand: false
+      name: Is There a Microsoft & TCS  IP Address ?
+      type: condition
+      version: -1
+    taskid: c0cdc944-6a17-455f-8a98-09bd50af0916
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -1070,
+          "y": 1260
+        }
+      }
+  "30":
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${.=val.File.filter(function(f){return f.EntryID;}).reduce(function(acc,
+          f) {return f;}, null).EntryID}
+      body:
+        simple: "Hello Human,\n\nI found TCS and Google IP Addresses in this file
+          ${incident.attachment.name}. \nPFA Risk Score report.\n\nTCS:\n\n${Address.TIP}
+          \n\nGoogle:\n\n${Address.GIP}\n\n\nRegards,\nCSOC CyberAutoBot"
+      subject:
+        simple: Found TCS and Google IP Addresses in this file ${incident.attachment.name}
+      to:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 7b574dba-c856-4184-844b-d5bca201f123
+      iscommand: true
+      name: Send Email Notification That Google & TCS IP Address Found
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 7b574dba-c856-4184-844b-d5bca201f123
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 680,
+          "y": 1500
+        }
+      }
+  "31":
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      attachIDs:
+        simple: ${.=val.File.filter(function(f){return f.EntryID;}).reduce(function(acc,
+          f) {return f;}, null).EntryID}
+      body:
+        simple: "Hello Human,\n\nI found Google and Microsoft IP Addresses in this
+          file ${incident.attachment.name}.\nPFA Risk Score report.\n\nMicrosoft:\n\n${Address.MIP}
+          \n\nGoogle:\n\n${Address.GIP}\n\nRegards,\nCSOC CyberAutoBot "
+      subject:
+        simple: Found Google and Microsoft IP Addresses in this file ${incident.attachment.name}
+      to:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 6e8cc603-0067-4dc8-89bb-c63bfd66c9f9
+      iscommand: true
+      name: Send Email Notification That Google & Microsoft IP Address Found
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 6e8cc603-0067-4dc8-89bb-c63bfd66c9f9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1120,
+          "y": 1500
+        }
+      }
+  "32":
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${.=val.File.filter(function(f){return f.EntryID;}).reduce(function(acc,
+          f) {return f;}, null).EntryID}
+      body:
+        simple: "Hello Human,\n\nI found Google, Microsoft and TCS  IP Addresses in
+          this file ${incident.attachment.name}. \nPFA Risk Score Report.\n\nGoogle:\n\n${Address.GIP}\n\nMicrosoft:\n\n${Address.MIP}
+          \n\nTCS:\n\n${Address.TIP}\n\n\nRegards,\nCSOC CyberAutoBot"
+      subject:
+        simple: Found Google, Microsoft and TCS  IP Addresses in this file ${incident.attachment.name}
+      to:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 83ee342b-9357-4144-8f1a-e789fa528903
+      iscommand: true
+      name: Send Email Notification That Google, Microsoft & TCS IP Address Found
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 83ee342b-9357-4144-8f1a-e789fa528903
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -1510,
+          "y": 1500
+        }
+      }
+  "33":
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 757bb02f-3a1c-44fc-8f74-46d082a89abe
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 757bb02f-3a1c-44fc-8f74-46d082a89abe
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -200,
+          "y": 1905
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "44"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5a10320f-1d5a-4752-85ef-5a8f3ba1c407
+      iscommand: false
+      name: Generate Report & Notify
+      type: title
+      version: -1
+    taskid: 5a10320f-1d5a-4752-85ef-5a8f3ba1c407
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -200,
+          "y": 930
+        }
+      }
+  "35":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.GIP
+          operator: isNotExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.MIP
+          operator: isNotExists
+      - - left:
+            iscontext: true
+            value:
+              simple: Address.TIP
+          operator: isNotExists
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Email/subject
+                root: incident.labels
+          operator: isEqualString
+          right:
+            value:
+              simple: Check For Trusted IOC
+      label: "yes"
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "33"
+      "yes":
+      - "36"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7bf29a42-57e4-45e1-85f4-e2444a053d0f
+      iscommand: false
+      name: Verify There Are No Customer IP Addresses In The List ?
+      type: condition
+      version: -1
+    taskid: 7bf29a42-57e4-45e1-85f4-e2444a053d0f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1560,
+          "y": 1260
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      body:
+        simple: "Hello Human,\n\nI did not find any customer IP Addresses in this
+          file ${incident.attachment.name}\n\n\nRegards,\nCSOC CyberAutoBot "
+      subject:
+        simple: No Customer IP Addresses Found In This File ${incident.attachment.name}
+      to:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 959986d1-8f2a-4943-8b9c-26dcf4dcce03
+      iscommand: true
+      name: Send Email Notification That No Customer IP Addresses Found
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 959986d1-8f2a-4943-8b9c-26dcf4dcce03
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1560,
+          "y": 1500
+        }
+      }
+  "40":
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        simple: ${Address.MIP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with an IP address.
+      id: 9a0691ae-050c-4acd-8faa-c3ba92db72b5
+      iscommand: true
+      name: Get Risk Score
+      script: Recorded Future v2|||ip
+      type: regular
+      version: -1
+    taskid: 9a0691ae-050c-4acd-8faa-c3ba92db72b5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 20,
+          "y": 760
+        }
+      }
+  "41":
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        simple: ${Address.GIP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with an IP address.
+      id: 8baec433-59ac-4f71-83bd-f5d732b934d0
+      iscommand: true
+      name: Get Risk Score
+      script: Recorded Future v2|||ip
+      type: regular
+      version: -1
+    taskid: 8baec433-59ac-4f71-83bd-f5d732b934d0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -440,
+          "y": 760
+        }
+      }
+  "42":
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        simple: ${Address.TIP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Recorded Future v2
+      description: Gets a quick indicator of the risk associated with an IP address.
+      id: 6662ef38-bcda-42b7-80b4-3b519e6c1c29
+      iscommand: true
+      name: Get Risk Score
+      script: Recorded Future v2|||ip
+      type: regular
+      version: -1
+    taskid: 6662ef38-bcda-42b7-80b4-3b519e6c1c29
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -890,
+          "y": 760
+        }
+      }
+  "43":
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "24"
+      - "25"
+      - "18"
+      - "17"
+      - "14"
+      - "22"
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      csvArray:
+        simple: ${RecordedFuture.IP}
+      fileName:
+        simple: Risk Score.csv
+      headers:
+        simple: name,riskScore
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Export given array to csv file
+      id: b976baa1-fb7f-4300-8e7c-6e516c57c1d5
+      iscommand: false
+      name: Generate CSV Report
+      script: ExportToCSV
+      type: regular
+      version: -1
+    taskid: b976baa1-fb7f-4300-8e7c-6e516c57c1d5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -200,
+          "y": 1080
+        }
+      }
+  "44":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: RecordedFuture
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "44"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "35"
+      "yes":
+      - "43"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 924bb399-45ec-4d11-86d0-4bfb399f8234
+      iscommand: false
+      name: Is There a Report To Generate
+      type: condition
+      version: -1
+    taskid: 924bb399-45ec-4d11-86d0-4bfb399f8234
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 250,
+          "y": 1080
+        }
+      }
+  "45":
+    continueonerrortype: ""
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      columns:
+        simple: IOC,Risk Score
+      context_path:
+        simple: RecordedFuture.IP
+      grid_id:
+        simple: recordedfutureriskscore
+      keys:
+        simple: name,riskScore
+      overwrite:
+        simple: "true"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Creates a Grid table from items or key-value pairs.
+      id: e2c17f25-4676-459d-8739-3e7c6d24466a
+      iscommand: false
+      name: Populate The Risk Grid
+      script: SetGridField
+      type: regular
+      version: -1
+    taskid: e2c17f25-4676-459d-8739-3e7c6d24466a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -640,
+          "y": 1080
+        }
+      }
+  "47":
+    continueonerrortype: ""
+    id: "47"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: |-
+          Hello Human,
+
+          You are not on my authorized list of senders to block these IP address. Please contact Your XSOAR Support team.
+
+          Regards,
+          CSOC Cyber AutoBot
+      subject:
+        simple: Not Authorized To Send Mail For Blocking IP Address
+      to:
+        simple: ${incident.labels.Email/from}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 840146f0-1e91-4968-8c80-eaab1bc73c9e
+      iscommand: true
+      name: Send Email Notification - Not Authorized User
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 840146f0-1e91-4968-8c80-eaab1bc73c9e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2000,
+          "y": 1500
+        }
+      }
+  "48":
+    continueonerrortype: ""
+    id: "48"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "11"
+      "yes":
+      - "49"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      ip:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+      ipRanges:
+        complex:
+          root: inputs.InternalRange
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns yes if the IP is in one of the ranges provided, returns
+        no otherwise.
+      id: 7fb9648a-3055-4233-87dc-f7138a29f86e
+      iscommand: false
+      name: Are There Any Internal IP Addresses ?
+      script: b502efb7-b0a1-449b-8d9e-31e8fe70f470
+      type: condition
+      version: -1
+    taskid: 7fb9648a-3055-4233-87dc-f7138a29f86e
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 940,
+          "y": 380
+        }
+      }
+  "49":
+    continueonerrortype: ""
+    id: "49"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+      - "52"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: InternalAddress.IP
+      value:
+        complex:
+          accessor: Address
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: IP.InRange
+              operator: isEqualString
+              right:
+                value:
+                  simple: "yes"
+          root: IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: b7e832f6-7bd5-4635-8ac3-c8a29fe799df
+      iscommand: false
+      name: Set Internal IP Address into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: b7e832f6-7bd5-4635-8ac3-c8a29fe799df
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 940,
+          "y": 570
+        }
+      }
+  "50":
+    continueonerrortype: ""
+    id: "50"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: "Hello Human,\n\nI did not find an IP Addresses in this file ${incident.attachment.name}.
+          \nPlease check your attachment and send it again.\n\nRegards,\nCSOC CyberAutoBot"
+      subject:
+        simple: Found Google, Microsoft and TCS  IP Addresses in this file ${incident.attachment.name}
+      to:
+        complex:
+          accessor: labels.Email/from
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: 52ae287b-4be6-4718-805b-16b40436ce40
+      iscommand: true
+      name: Send Email Notification That Google, Microsoft & TCS IP Address Found
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: 52ae287b-4be6-4718-805b-16b40436ce40
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -2420,
+          "y": 1500
+        }
+      }
+  "51":
+    continueonerrortype: ""
+    id: "51"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: Address2.IP
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: Address1.IP
+              operator: notIn
+              right:
+                iscontext: true
+                value:
+                  simple: InternalAddress.IP
+          root: Address1.IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 4278d7e1-bdd9-4327-806e-a5f6aa1399b4
+      iscommand: false
+      name: Set Non Customer IP Address into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 4278d7e1-bdd9-4327-806e-a5f6aa1399b4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 490,
+          "y": 760
+        }
+      }
+  "52":
+    continueonerrortype: ""
+    id: "52"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: "Hello Human,\n\nI found the following  internal IP addresses in this
+          list ${incident.attachment.name}. Will be excluding them from my tasks.\n\nInternal
+          IP Address: \n\n${InternalAddress.IP}\n\n\nRegards,\nCSOC Cyber AutoBot"
+      subject:
+        simple: Found Internal IP Addresses In This List ${incident.attachment.name}
+      to:
+        simple: ${incident.labels.Email/from}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: e1e45dfe-c91d-4255-8ca9-99a76f65f20c
+      iscommand: true
+      name: Send Email Notification - Internal IP Addresses Found
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: e1e45dfe-c91d-4255-8ca9-99a76f65f20c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2000,
+          "y": 1260
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 2070,
+        "width": 4800,
+        "x": -2420,
+        "y": -100
+      }
+    }
+  }
