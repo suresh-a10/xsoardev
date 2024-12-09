@@ -1,0 +1,55 @@
+commonfields:
+  id: fea4a899-f39a-4f4e-8fad-9bf4dc3ea570
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CrowdStrikeLinkAndClosePreProcess_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  result = True
+  incident = demisto.incidents()[0]
+  current_incident_id = incident['id']
+  hostname=incident.get('CustomFields').get('crowdstrikehostname')
+  csid=incident.get('CustomFields').get('crowdstrikedetectionid')
+  csinstance=incident.get('sourceInstance')
+
+  getincidents = json.loads(demisto.executeCommand("GetIncidentsByQuery", {"fromDate":"12 hours ago", "incidentTypes": "Malware Investigation", "query":"type:Malware Investigation and crowdstrikehostname:{}".format(hostname)})[0]['Contents'])
+  fetchedids=[]
+  if getincidents:
+      for i in getincidents:
+          fetchedids.append(i.get('id'))
+      duplicate_id=fetchedids[-1]
+
+
+      demisto.executeCommand("linkIncidents", {"incidentId":duplicate_id, "linkedIncidentIDs": current_incident_id})
+      res=demisto.executeCommand("cs-falcon-resolve-detection",{"ids":csid,"status":"closed","comment":"The incident is closed as duplicate by Autobot","using":csinstance})
+      if isError(res):
+          print("Could not update value in CS {str(get_error(res))}")
+      else:
+          # demisto.results(res)
+          print("Updated in cs")
+
+      demisto.executeCommand("setIncident",{"closeNotes":"Closed by #Link Duplicate CrowdStrike Incidents","closeReason":"Duplicate","investigationconclusion":"Duplicate","investigationanalysis":"The incident is closed as duplicate by Autobot","closingnote":"Closed by #Link Duplicate CrowdStrike Incidents"})
+      demisto.executeCommand("closeInvestigation",{})
+
+  #demisto.results(result)
+scripttarget: 0
+subtype: python3
+tags:
+- preProcessing
+type: python
