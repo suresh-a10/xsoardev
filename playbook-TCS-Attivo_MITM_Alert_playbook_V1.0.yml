@@ -1,0 +1,606 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+hidden: true
+id: 9009ecf5-4166-4e96-87f1-5feec5a12439
+inputs: []
+name: TCS-Attivo MITM Alert playbook V1.0
+outputs:
+- contextPath: Hostname
+  type: string
+sourceplaybookid: de9df75a-a6ae-491a-8d13-d39456c63434
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: fe822903-bb50-41d3-8ab6-dee7ca2abdd3
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: fe822903-bb50-41d3-8ab6-dee7ca2abdd3
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      filter:
+        simple: local_ip:'${incident.offensesource}'+mac_address:'${MAC_Address}'
+      using:
+        simple: CrowdstrikeFalcon_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: CrowdstrikeFalcon
+      description: Searches for a device that matches the query.
+      id: 9d189697-b775-499e-8d49-231ce0946f65
+      iscommand: true
+      name: search device
+      script: CrowdstrikeFalcon|||cs-falcon-search-device
+      type: regular
+      version: -1
+    taskid: 9d189697-b775-499e-8d49-231ce0946f65
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 720
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      dateFormat:
+        simple: UTC
+      daysAgo:
+        simple: "2"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        Retrieves the current date and time.
+      id: 6b31f1f7-1263-4ff3-876d-c3f91e5e8244
+      iscommand: false
+      name: GetTime 2 days ago
+      script: GetTime
+      type: regular
+      version: -1
+    taskid: 6b31f1f7-1263-4ff3-876d-c3f91e5e8244
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 1070
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: FirstSeen
+                root: CrowdStrike.Device
+                transformers:
+                - args:
+                    add_utc_timezone: {}
+                    dayfirst: {}
+                    fuzzy: {}
+                    yearfirst: {}
+                  operator: DateStringToISOFormat
+          operator: isAfter
+          right:
+            iscontext: true
+            value:
+              complex:
+                root: TimeNow
+                transformers:
+                - args:
+                    add_utc_timezone: {}
+                    dayfirst: {}
+                    fuzzy: {}
+                    yearfirst: {}
+                  operator: DateStringToISOFormat
+                - args:
+                    delimiter:
+                      value:
+                        simple: T
+                    fields:
+                      value:
+                        simple: "1"
+                  operator: Cut
+                - args:
+                    prefix: {}
+                    suffix:
+                      value:
+                        simple: T00:00:00+00:00
+                  operator: concat
+      label: "yes"
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "9"
+      "yes":
+      - "16"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c6366b23-1b53-4ce6-8bbe-2b75bd64079a
+      iscommand: false
+      name: is there a first seen in last 2 days ?
+      type: condition
+      version: -1
+    taskid: c6366b23-1b53-4ce6-8bbe-2b75bd64079a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 695,
+          "y": 1245
+        }
+      }
+  "4":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: CrowdStrike.Device.Hostname
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if a given value exists in the context. Will return 'no'
+        for empty empty arrays. To be used mostly with DQ and selectors.
+      id: bd2d2042-e48d-480c-8f3a-e6c72f6c9a80
+      iscommand: false
+      name: If host has crowdstrike ?
+      type: condition
+      version: -1
+    taskid: bd2d2042-e48d-480c-8f3a-e6c72f6c9a80
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 895
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: "Hi Team , \n\nThis Regarding MITM Multiple domain alert.\nOffence
+          ID : ${incident.labels.id}\nAttacker IP : ${incident.offensesource}\nMac
+          Address : ${MAC_Address}\nHost is not available on CS . Please proceed with
+          manual investigation .\n\nRegards,\nCyber AutoBot"
+      subject:
+        simple: 'Attivo MITM Alert need Attention - Offence id  :  ${incident.labels.id}'
+      to:
+        simple: internalis.cybersecurityops@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: a65ba9d5-39b6-4860-8c08-9d3c58270f74
+      iscommand: true
+      name: Inform Analyst that host is not under CS survillence
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: a65ba9d5-39b6-4860-8c08-9d3c58270f74
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1420
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: d0d4ef7e-849a-4808-8cb6-5808bc9d29a0
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: d0d4ef7e-849a-4808-8cb6-5808bc9d29a0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1940
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2319c41f-6701-41a4-8c8e-3dd044094848
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 2319c41f-6701-41a4-8c8e-3dd044094848
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 1775
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a233c70f-05cf-4782-8625-178b674c13ea
+      iscommand: false
+      name: The End
+      type: title
+      version: -1
+    taskid: a233c70f-05cf-4782-8625-178b674c13ea
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 2115
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: "Hi Team , \n\nThis is regarding Attivio MITM multiple domain alert.\n\nOffence
+          ID : ${incident.labels.id}\nAttacker IP : ${incident.offensesource}\nMac
+          Address : ${MAC_Address}\nFirst seen of the host is not within last 2 days
+          .  Please proceed with the investigation .\n\nRegards,\nCyber AutoBot"
+      subject:
+        simple: 'Attivo MITM Alert need Attention - Offence id  :  ${incident.labels.id}'
+      to:
+        simple: internalis.cybersecurityops@tcs.com
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Mail Sender (New)
+      description: Send an email
+      id: cb35c297-a5d2-4122-8482-254285bc2c77
+      iscommand: true
+      name: Inform Analyst that host is suspicious , need to investigate
+      script: Mail Sender (New)|||send-mail
+      type: regular
+      version: -1
+    taskid: cb35c297-a5d2-4122-8482-254285bc2c77
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1010,
+          "y": 1430
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: QradarQuery
+      value:
+        simple: select "Attivo_MAC" as 'Attivo_MAC (custom)' from events where ( "deviceType"='4016'
+          AND "sourceIP"='${incident.offensesource}' ) order by "startTime" desc LIMIT
+          1001 last 24 hours
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: b6e65979-cbba-49e8-8ed4-7f516ed44005
+      iscommand: false
+      name: create Qradar query
+      script: Set
+      type: regular
+      version: -1
+    taskid: b6e65979-cbba-49e8-8ed4-7f516ed44005
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 195
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      interval:
+        simple: "1"
+      query_expression:
+        simple: ${QradarQuery}
+      timeout:
+        simple: "600"
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b7ec3064-700c-46f8-8706-503e0f8c7946
+      iscommand: false
+      name: QRadarFullSearch_v1.0
+      playbookId: 1af6d691-c912-44b9-8502-2b9b2acc4e74
+      type: playbook
+      version: -1
+    taskid: b7ec3064-700c-46f8-8706-503e0f8c7946
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 370
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: MAC_Address
+      value:
+        complex:
+          accessor: events
+          root: QRadar.Search.Result
+          transformers:
+          - args:
+              field:
+                value:
+                  simple: Attivo_MAC (custom)
+            operator: getField
+          - args:
+              limit: {}
+              replaceWith:
+                value:
+                  simple: '-'
+              toReplace:
+                value:
+                  simple: ':'
+            operator: replace
+          - operator: toLowerCase
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 0ca2a7f5-8b12-4778-8dd4-6bb5e53ba567
+      iscommand: false
+      name: Set MAC address in Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 0ca2a7f5-8b12-4778-8dd4-6bb5e53ba567
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 545
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      closing_reason_id:
+        simple: "1"
+      offense_id:
+        simple: ${incident.labels.id}
+      status:
+        simple: CLOSED
+      using:
+        simple: QRadar_instance_1_Contain_Host
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: QRadar
+      description: Update an offense
+      id: d5103329-dd01-4cee-8811-d61a247b2fa8
+      iscommand: true
+      name: Falsepositive, Close Offence in Qradar
+      script: QRadar|||qradar-update-offense
+      type: regular
+      version: -1
+    taskid: d5103329-dd01-4cee-8811-d61a247b2fa8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 520,
+          "y": 1430
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 2130,
+        "width": 1340,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }
