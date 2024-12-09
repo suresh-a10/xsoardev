@@ -1,0 +1,842 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: bdf7e147-9958-4986-8435-5c0a101155a1
+inputs:
+- description: ""
+  key: Non Customer IP Address
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: IP
+      root: Address2
+- description: ""
+  key: Microsoft IP Address
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: MIP
+      root: Address
+- description: ""
+  key: Google IP Address
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: GIP
+      root: Address
+- description: ""
+  key: From User Info
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: Email/from
+      root: incident.labels
+name: TCS-Unblock IP Address From RF BlockList v1.0_Kunal
+outputs:
+- contextPath: EmailedDomains
+  description: Global Context Key for Domains received by Email
+  type: unknown
+- contextPath: EmailedIPs
+  description: Global Context Key for IPs received by Email
+  type: unknown
+- contextPath: EmailedHashs-MD5
+  description: Global Context Key for MD5 Hashs received by Email
+  type: unknown
+- contextPath: EmailedHashs-SHA1
+  description: Global Context Key for SHA1 Hashs received by Email
+  type: unknown
+- contextPath: EmailedHashs-SHA256
+  description: Global Context Key for SHA256 Hashs received by Email
+  type: unknown
+- contextPath: JoinedFilesUnique
+  description: Global Context Key for emailed IP's joined with IP Blocklist EDL and
+    deduped
+  type: unknown
+- contextPath: EmailedDomainsURLsUnique
+  description: Global Context Key for emailed Domains/URL's joined and deduped
+  type: unknown
+sourceplaybookid: dbc273f1-c131-4e07-80e6-4babc78a9e03
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "66"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a4c6268a-bd7b-421f-83d9-a4c83cfd5719
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: a4c6268a-bd7b-421f-83d9-a4c83cfd5719
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": -220
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      file:
+        simple: /var/lib/tomcat6/webapps/ROOT/Demisto_Block2.txt
+      using:
+        simple: remoteaccess_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: remoteaccess
+      description: commands.server.remoteacess.copyfrom.description
+      id: 038aeee1-1685-443a-8be8-77d4e0732f7c
+      iscommand: true
+      name: Download Email Block list from Webserver
+      script: remoteaccess|||copy-from
+      type: regular
+      version: -1
+    taskid: 038aeee1-1685-443a-8be8-77d4e0732f7c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": 475
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+      - "9"
+      - "68"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: /var/lib/tomcat6/webapps/ROOT/Demisto_Block2.txt
+          root: File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: 79ddfa97-657f-4225-81a8-e8348d9cf85a
+      iscommand: false
+      name: Read downloaded Email blocklist into context
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: 79ddfa97-657f-4225-81a8-e8348d9cf85a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": 630
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      dest-dir:
+        simple: /var/lib/tomcat6/webapps/ROOT
+      entry:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Name
+              operator: isEqualString
+              right:
+                value:
+                  simple: Demisto_Block2.txt
+          root: File
+      using:
+        simple: remoteaccess_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: remoteaccess
+      description: commands.server.remoteacess.copyto.description
+      id: 13d754c7-ec96-4e10-8fb9-26b3f598dcc9
+      iscommand: true
+      name: Upload updated Block Email file to Webserver
+      script: remoteaccess|||copy-to
+      type: regular
+      version: -1
+    taskid: 13d754c7-ec96-4e10-8fb9-26b3f598dcc9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 980,
+          "y": 950
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: JoinedFiles
+      value:
+        simple: |-
+          ${FileData}
+          ${Address2.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: ec1e1c4d-dfae-440a-8fa9-91149281c94e
+      iscommand: false
+      name: Append the list of IOC's from the email to the Email Block List
+      script: Set
+      type: regular
+      version: -1
+    taskid: ec1e1c4d-dfae-440a-8fa9-91149281c94e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 980,
+          "y": 475
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b04a397d-4693-4e7e-897b-617eafb2b740
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: b04a397d-4693-4e7e-897b-617eafb2b740
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 740,
+          "y": 1610
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+      - "5"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      data:
+        complex:
+          root: ${JoinedFilesUnique}
+          transformers:
+          - args:
+              separator:
+                value:
+                  simple: |2+
+
+            operator: join
+      filename:
+        simple: Demisto_Block2.txt
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        Will create a file (using the given data input or entry ID) and upload it to current investigation war room.
+      id: 2f9cda5e-5625-4db3-8f8c-b3ab8b5fef40
+      iscommand: false
+      name: Create final block ip file to be uploaded to webserver
+      script: FileCreateAndUpload
+      type: regular
+      version: -1
+    taskid: 2f9cda5e-5625-4db3-8f8c-b3ab8b5fef40
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 980,
+          "y": 800
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      data:
+        simple: ${FileData}
+      filename:
+        simple: Demisto_Block2-${incident.id}.txt
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |
+        Will create a file (using the given data input or entry ID) and upload it to current investigation war room.
+      id: 936c715f-2d04-446e-88ba-d4865a6542b6
+      iscommand: false
+      name: Create backup of downloaded Blocklist (appending IncidentID)
+      script: FileCreateAndUpload
+      type: regular
+      version: -1
+    taskid: 936c715f-2d04-446e-88ba-d4865a6542b6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": 800
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      dest-dir:
+        simple: /var/lib/tomcat6/webapps/ROOT/backup
+      entry:
+        complex:
+          accessor: EntryID
+          root: File
+          transformers:
+          - operator: LastArrayElement
+      using:
+        simple: remoteaccess_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: remoteaccess
+      description: commands.server.remoteacess.copyto.description
+      id: 37ba81c7-e426-431c-84ab-a78d250fdc0c
+      iscommand: true
+      name: Upload backup Block  copy of Email file to Webserver
+      script: remoteaccess|||copy-to
+      type: regular
+      version: -1
+    taskid: 37ba81c7-e426-431c-84ab-a78d250fdc0c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": 950
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+      - "67"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      key:
+        simple: JoinedFilesUnique
+      value:
+        complex:
+          root: JoinedFiles
+          transformers:
+          - args:
+              error_if_no_match: {}
+              ignore_case: {}
+              multi_line: {}
+              period_matches_newline: {}
+              regex:
+                value:
+                  simple: \b(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])(?:\[\.\]|\.)){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\b
+            operator: RegexExtractAll
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sets a value into the context with the given context key
+      id: fc4b35ce-1fda-4028-8916-3148fc922aaf
+      iscommand: false
+      name: Deduplicate new joined file
+      script: Set
+      type: regular
+      version: -1
+    taskid: fc4b35ce-1fda-4028-8916-3148fc922aaf
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 980,
+          "y": 640
+        }
+      }
+  "28":
+    continueonerrortype: ""
+    id: "28"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f25dfde5-20ab-415f-861c-747979e6dbfe
+      iscommand: false
+      name: Process Web Server Block List (Download Block List And Append New Data)
+      type: title
+      version: -1
+    taskid: f25dfde5-20ab-415f-861c-747979e6dbfe
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": 320
+        }
+      }
+  "66":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: IP
+                root: Address2
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "66"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "7"
+      "yes":
+      - "28"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e219d9c4-a10d-41cc-8c5f-f10403dd74d5
+      iscommand: false
+      name: Are There IP Addresses To Block ?
+      type: condition
+      version: -1
+    taskid: e219d9c4-a10d-41cc-8c5f-f10403dd74d5
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 510,
+          "y": 15
+        }
+      }
+  "67":
+    continueonerrortype: ""
+    id: "67"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      listData:
+        complex:
+          root: JoinedFilesUnique
+          transformers:
+          - args:
+              delimiter: {}
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      listName:
+        simple: Firewall IP Address Block List
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Set data in list
+      id: d5e3d672-0a2d-4cb3-8963-4754e5b0de84
+      iscommand: true
+      name: Update Firewall IP Address Block List
+      script: Builtin|||setList
+      tags:
+      - firewall block ip
+      type: regular
+      version: -1
+    taskid: d5e3d672-0a2d-4cb3-8963-4754e5b0de84
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1100,
+          "y": 1250
+        }
+      }
+  "68":
+    continueonerrortype: ""
+    id: "68"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "69"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: FWEDL
+      value:
+        complex:
+          root: FileData
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: |2+
+
+            operator: split
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 4f16fac1-5b62-4ba6-85e7-26d65ef6a7f5
+      iscommand: false
+      name: Set Firewall EDL Into Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 4f16fac1-5b62-4ba6-85e7-26d65ef6a7f5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1440,
+          "y": 475
+        }
+      }
+  "69":
+    continueonerrortype: ""
+    id: "69"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "71"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      left:
+        simple: ${FWEDL}
+      right:
+        simple: ${Address2.IP}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Compare  two lists and put the differences in context.
+      id: cf219449-652d-48b1-87a0-32dc2c3f43a3
+      iscommand: false
+      name: Compare The Firewall EDL With The Submitted IP Address
+      script: CompareLists
+      type: regular
+      version: -1
+    taskid: cf219449-652d-48b1-87a0-32dc2c3f43a3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1440,
+          "y": 640
+        }
+      }
+  "70":
+    continueonerrortype: ""
+    id: "70"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "72"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: NEWEDLDATA
+      value:
+        simple: ${ListCompare.RightOnly}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 53d16922-fe30-49a6-8ee5-f4475725f5fc
+      iscommand: false
+      name: Set Unique IP Address To Be Blocked In Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 53d16922-fe30-49a6-8ee5-f4475725f5fc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1440,
+          "y": 950
+        }
+      }
+  "71":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: RightOnly
+                root: ListCompare
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: RightOnly
+                root: ListCompare
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "71"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "7"
+      "yes":
+      - "70"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 38c1657f-881b-473b-86b9-d1d71cf3f522
+      iscommand: false
+      name: Check If New IPs Found
+      type: condition
+      version: -1
+    taskid: 38c1657f-881b-473b-86b9-d1d71cf3f522
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1440,
+          "y": 800
+        }
+      }
+  "72":
+    continueonerrortype: ""
+    id: "72"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      reputation:
+        simple: Suspicious
+      source:
+        simple: ${incident.id}
+      tags:
+        simple: blockedipaddress
+      type:
+        simple: IP
+      value:
+        simple: ${NEWEDLDATA}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Change the properties of an indicator
+      id: 4102fdad-555d-4afb-82ef-5f75390bc21f
+      iscommand: true
+      name: Tag the indicator
+      script: Builtin|||createNewIndicator
+      tags:
+      - firewall block ip
+      - blockedipaddress
+      type: regular
+      version: -1
+    taskid: 4102fdad-555d-4afb-82ef-5f75390bc21f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1440,
+          "y": 1130
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1895,
+        "width": 1310,
+        "x": 510,
+        "y": -220
+      }
+    }
+  }
