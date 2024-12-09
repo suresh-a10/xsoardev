@@ -54,6 +54,25 @@ configuration:
   required: false
   section: Collect
   type: 15
+- additionalinfo: When selected, closing the Cortex XDR incident is mirrored in Cortex
+    XSOAR.
+  advanced: true
+  defaultvalue: "true"
+  display: Close Mirrored XSOAR Incident
+  name: close_xsoar_incident
+  required: false
+  section: Collect
+  type: 8
+- additionalinfo: 'When selected, closing the Cortex XSOAR incident is mirrored in
+    Cortex XDR. Notice: If not selected, but ''Close all related alerts in XDR'' is
+    selected, the incident will automatically be closed in Cortex XDR.'
+  advanced: true
+  defaultvalue: "true"
+  display: Close Mirrored Cortex XDR Incident
+  name: close_xdr_incident
+  required: false
+  section: Collect
+  type: 8
 - additionalinfo: In the event of a delay in mirroring incoming changes from XDR,
     use the xdr_delay parameter to extend the look-back period. However, be aware
     that this may result in increased latency when updating incidents.
@@ -221,7 +240,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 6.1.65
+    itemVersion: 6.1.94
     packID: CortexXDR
     packName: Cortex XDR by Palo Alto Networks
     packPropagationLabels:
@@ -257,6 +276,8 @@ detaileddescription: |
   **Close-reason default mapping XSOAR -> XDR**: _Other=Other, Duplicate=Duplicate Incident, False Positive=False Positive, Resolved=True Positive_
 
   **Close-reason default mapping XDR -> XSOAR**: _Known Issue=Other, Duplicate Incident=Duplicate, False Positive=False Positive, True Positive=Resolved, Other=Other, Auto=Resolved_
+
+  **Close Mirrored Cortex XDR Incident**: In case this checkbox is not selected but **Close all related alerts in XDR** is selected, the incident will be closed automatically,
 
   [View Integration Documentation](https://xsoar.pan.dev/docs/reference/integrations/cortex-xdr---ir)
 display: Palo Alto Networks Cortex XDR - Investigation and Response
@@ -1065,6 +1086,21 @@ script:
         list of usernames.
       isArray: true
       name: username
+    - auto: PREDEFINED
+      defaultValue: "false"
+      description: Whether to return all endpoints. If true, will override the 'limit'
+        and 'page' arguments.
+      name: all_results
+      predefined:
+      - "false"
+      - "true"
+    - auto: PREDEFINED
+      defaultValue: "false"
+      description: Whether to return timestamp or date string values.
+      name: convert_timestamp_to_datestring
+      predefined:
+      - "false"
+      - "true"
     description: Gets a list of endpoints, according to the passed filters. If there
       are no filters, all endpoints are returned. Filtering by multiple fields will
       be concatenated using AND condition (OR is not supported). Maximum result set
@@ -3077,6 +3113,15 @@ script:
       predefined:
       - "true"
       - "false"
+    - auto: PREDEFINED
+      defaultValue: dict
+      description: Whether to return events_from_decider context output as a dictionary
+        (the raw API response) or as a list (improved for playbook automation) - relevant
+        only when filter_alert_fields is set to False.
+      name: events_from_decider_format
+      predefined:
+      - list
+      - dict
     description: Returns information about each alert ID.
     name: xdr-get-cloud-original-alerts
     outputs:
@@ -3738,7 +3783,7 @@ script:
       description: The score.
       type: Number
   - arguments:
-    - description: The name of the host.
+    - description: The host name of a specific host.
       name: host_id
     - defaultValue: "50"
       description: Limit the number of hosts that will appear in the list. By default,
@@ -3889,7 +3934,7 @@ script:
       Update one or more alerts with the provided arguments.
       Required license: Cortex XDR Prevent, Cortex XDR Pro per Endpoint, or Cortex XDR Pro per GB.
     name: xdr-update-alert
-  dockerimage: demisto/python3:3.11.9.107902
+  dockerimage: demisto/python3:3.11.10.115887
   isfetch: true
   ismappable: true
   isremotesyncin: true
@@ -3897,7 +3942,7 @@ script:
   runonce: false
   script: |
     register_module_line('Cortex XDR - IR', 'start', __line__())
-    ### pack version: 6.1.65
+    demisto.debug('pack name = Cortex XDR by Palo Alto Networks, pack version = 6.1.94')
 
 
     import hashlib
@@ -3905,7 +3950,6 @@ script:
     import string
     from itertools import zip_longest
     from datetime import datetime, timedelta
-    import pytz
 
 
     ### GENERATED CODE ###: from CoreIRApiModule import *
@@ -3941,7 +3985,8 @@ script:
         'resolved_true_positive': 'Resolved',
         'resolved_security_testing': 'Security Testing',
         'resolved_other': 'Other',
-        'resolved_auto': 'Resolved'
+        'resolved_auto': 'Resolved',
+        'resolved_auto_resolve': 'Resolved'
     }
 
     ALERT_GENERAL_FIELDS = {
@@ -4075,7 +4120,7 @@ script:
             self.timeout = timeout
             # For Xpanse tenants requiring direct use of the base client HTTP request instead of the _apiCall,
 
-        def _http_request(self, method, url_suffix='', full_url=None, headers=None, json_data=None,
+        def _http_request(self, method, url_suffix='', full_url=None, headers=None, json_data=None,  # type: ignore[override]
                           params=None, data=None, timeout=None, raise_on_status=False, ok_codes=None,
                           error_handler=None, with_metrics=False, resp_type='json'):
             '''
@@ -4156,7 +4201,7 @@ script:
             try:
                 decoder = base64.b64decode if response_data_type == "bin" else json.loads
                 demisto.debug(f'{response_data_type=}, {decoder.__name__=}')
-                return decoder(response['data'])   # type: ignore[operator]
+                return decoder(response['data'])  # type: ignore[operator]
             except json.JSONDecodeError:
                 demisto.debug(f"Converting data to json was failed. Return it as is. The data's type is {type(response['data'])}")
                 return response['data']
@@ -5484,6 +5529,52 @@ script:
                 }},
             )
 
+        def terminate_on_agent(self,
+                               url_suffix_endpoint: str,
+                               id_key: str,
+                               id_value: str,
+                               agent_id: str,
+                               process_name: Optional[str],
+                               incident_id: Optional[str]) -> dict[str, dict[str, str]]:
+            """
+                Terminate a specific process or a the causality on an agent.
+
+                :type url_suffix_endpoint: ``str``
+                :param agent_id: The endpoint of the command(terminate_causality or terminate_process).
+
+                :type agent_id: ``str``
+                :param agent_id: The ID of the agent.
+
+                :type id_key: ``str``
+                :param id_key: The key name ID- causality_id or process_id.
+
+                :type id_key: ``str``
+                :param id_key: The ID data- causality_id or process_id.
+
+                :type process_name: ``Optional[str]``
+                :param process_name: The name of the process. Optional.
+
+                :type incident_id: ``Optional[str]``
+                :param incident_id: The ID of the incident. Optional.
+
+                :return: The response from the API.
+                :rtype: ``dict[str, dict[str, str]]``
+            """
+            request_data: Dict[str, Any] = {
+                "agent_id": agent_id,
+                id_key: id_value,
+            }
+            if process_name:
+                request_data["process_name"] = process_name
+            if incident_id:
+                request_data["incident_id"] = incident_id
+            response = self._http_request(
+                method='POST',
+                url_suffix=f'/endpoints/{url_suffix_endpoint}/',
+                json_data={"request_data": request_data},
+            )
+            return response.get('reply')
+
 
     class AlertFilterArg:
         def __init__(self, search_field: str, search_type: Optional[str], arg_type: str, option_mapper: dict = None):
@@ -5563,7 +5654,8 @@ script:
                             results_function: Callable,
                             polling_field: str,
                             polling_value: List,
-                            stop_polling: bool = False) -> CommandResults:
+                            stop_polling: bool = False,
+                            values_raise_error: List = []) -> CommandResults:
         """
         Arguments:
         args: args
@@ -5576,6 +5668,7 @@ script:
         polling_value: list of values of the polling_field we want to check. The list can contain values to stop or
         continue polling on, not both.
         stop_polling: True - polling_value stops the polling. False - polling_value does not stop the polling.
+        values_raise_error: list of polling values that require raising an error.
 
         Return:
         command_results(CommandResults)
@@ -5620,6 +5713,8 @@ script:
         result = outputs_result_func.get(polling_field) if isinstance(outputs_result_func, dict) else \
             outputs_result_func[0].get(polling_field)
         cond = result not in polling_value if stop_polling else result in polling_value
+        if values_raise_error and result in values_raise_error:
+            raise DemistoException(f"The command {cmd} failed. Received status {result}")
         if cond:
             # schedule next poll
             polling_args = {
@@ -5818,7 +5913,7 @@ script:
     def action_status_get_command(client: CoreClient, args) -> CommandResults:
         action_id_list = argToList(args.get('action_id', ''))
         action_id_list = [arg_to_int(arg=item, arg_name=str(item)) for item in action_id_list]
-
+        demisto.debug(f'action_status_get_command {action_id_list=}')
         result = []
         for action_id in action_id_list:
             data = client.action_status_get(action_id)
@@ -5827,7 +5922,7 @@ script:
                 result.append({
                     'action_id': action_id,
                     'endpoint_id': endpoint_id,
-                    'status': status
+                    'status': status,
                 })
 
         return CommandResults(
@@ -5971,20 +6066,73 @@ script:
         return standard_endpoints
 
 
+    def retrieve_all_endpoints(client, endpoints, endpoint_id_list, dist_name, ip_list, public_ip_list,
+                               group_name, platform, alias_name, isolate, hostname, page_number,
+                               limit, first_seen_gte, first_seen_lte, last_seen_gte, last_seen_lte,
+                               sort_by_first_seen, sort_by_last_seen, status, username):
+        endpoints_page = endpoints
+        # Continue looping for as long as the latest page of endpoints retrieved is NOT empty
+        while endpoints_page:
+            page_number += 1
+            endpoints_page = client.get_endpoints(
+                endpoint_id_list=endpoint_id_list,
+                dist_name=dist_name,
+                ip_list=ip_list,
+                public_ip_list=public_ip_list,
+                group_name=group_name,
+                platform=platform,
+                alias_name=alias_name,
+                isolate=isolate,
+                hostname=hostname,
+                page_number=page_number,
+                limit=limit,
+                first_seen_gte=first_seen_gte,
+                first_seen_lte=first_seen_lte,
+                last_seen_gte=last_seen_gte,
+                last_seen_lte=last_seen_lte,
+                sort_by_first_seen=sort_by_first_seen,
+                sort_by_last_seen=sort_by_last_seen,
+                status=status,
+                username=username
+            )
+            endpoints += endpoints_page
+        return endpoints
+
+
+    def convert_timestamps_to_datestring(endpoints):
+        for endpoint in endpoints:
+            if endpoint.get('content_release_timestamp'):
+                endpoint['content_release_timestamp'] = timestamp_to_datestring(endpoint.get('content_release_timestamp'))
+            if endpoint.get('first_seen'):
+                endpoint['first_seen'] = timestamp_to_datestring(endpoint.get('first_seen'))
+            if endpoint.get('install_date'):
+                endpoint['install_date'] = timestamp_to_datestring(endpoint.get('install_date'))
+            if endpoint.get('last_content_update_time'):
+                endpoint['last_content_update_time'] = timestamp_to_datestring(endpoint.get('last_content_update_time'))
+            if endpoint.get('last_seen'):
+                endpoint['last_seen'] = timestamp_to_datestring(endpoint.get('last_seen'))
+        return endpoints
+
+
     def get_endpoints_command(client, args):
         integration_context_brand = args.pop('integration_context_brand', 'CoreApiModule')
         integration_name = args.pop("integration_name", "CoreApiModule")
-        page_number = arg_to_int(
-            arg=args.get('page', '0'),
-            arg_name='Failed to parse "page". Must be a number.',
-            required=True
-        )
-
-        limit = arg_to_int(
-            arg=args.get('limit', '30'),
-            arg_name='Failed to parse "limit". Must be a number.',
-            required=True
-        )
+        all_results = argToBoolean(args.get('all_results', False))
+        # When we want to get all endpoints, start at page 0 and use the max limit supported by the API (100)
+        if all_results:
+            page_number = 0
+            limit = 100
+        else:
+            page_number = arg_to_int(
+                arg=args.get('page', '0'),
+                arg_name='Failed to parse "page". Must be a number.',
+                required=True
+            )
+            limit = arg_to_int(
+                arg=args.get('limit', '30'),
+                arg_name='Failed to parse "limit". Must be a number.',
+                required=True
+            )
 
         endpoint_id_list = argToList(args.get('endpoint_id_list'))
         dist_name = argToList(args.get('dist_name'))
@@ -5996,6 +6144,7 @@ script:
         isolate = args.get('isolate')
         hostname = argToList(args.get('hostname'))
         status = argToList(args.get('status'))
+        convert_timestamp_to_datestring = argToBoolean(args.get('convert_timestamp_to_datestring', False))
 
         first_seen_gte = arg_to_timestamp(
             arg=args.get('first_seen_gte'),
@@ -6043,6 +6192,17 @@ script:
             status=status,
             username=username
         )
+
+        if all_results:
+            endpoints = retrieve_all_endpoints(client, endpoints, endpoint_id_list, dist_name,
+                                               ip_list, public_ip_list, group_name, platform,
+                                               alias_name, isolate, hostname, page_number,
+                                               limit, first_seen_gte, first_seen_lte,
+                                               last_seen_gte, last_seen_lte, sort_by_first_seen,
+                                               sort_by_last_seen, status, username)
+
+        if convert_timestamp_to_datestring:
+            endpoints = convert_timestamps_to_datestring(endpoints)
 
         standard_endpoints = generate_endpoint_by_contex_standard(endpoints, False, integration_name)
         endpoint_context_list = []
@@ -7255,7 +7415,10 @@ script:
 
             return PollResult(
                 response=get_script_execution_results_command(
-                    client, {'action_id': action_id, 'integration_context_brand': 'PaloAltoNetworksXDR'}
+                    client, {'action_id': action_id,
+                             'integration_context_brand': 'Core'
+                             if argToBoolean(args.get('is_core', False))
+                             else 'PaloAltoNetworksXDR'}
                 ),
                 continue_to_poll=general_status.upper() in ('PENDING', 'IN_PROGRESS')
             )
@@ -7459,12 +7622,13 @@ script:
                     continue
 
 
-    def filter_general_fields(alert: dict, filter_fields: bool = True) -> dict:
+    def filter_general_fields(alert: dict, filter_fields: bool = True, events_from_decider_as_list: bool = False) -> dict:
         """filter only relevant general fields from a given alert.
 
         Args:
           alert (dict): The alert to filter
           filter_fields (bool): Whether to return a subset of the fields.
+          events_from_decider_as_list (bool): Whether to return events_from_decider context endpoint as a dictionary or as a list.
 
         Returns:
           dict: The filtered alert
@@ -7474,6 +7638,9 @@ script:
             result = {k: v for k, v in alert.items() if k in ALERT_GENERAL_FIELDS}
         else:
             result = alert
+
+        if (events_from_decider := alert.get("stateful_raw_data", {}).get("events_from_decider", {})) and events_from_decider_as_list:
+            alert["stateful_raw_data"]["events_from_decider"] = list(events_from_decider.values())
 
         if not (event := alert.get('raw_abioc', {}).get('event', {})):
             return_warning('No XDR cloud analytics event.')
@@ -7514,6 +7681,14 @@ script:
 
     def get_original_alerts_command(client: CoreClient, args: Dict) -> CommandResults:
         alert_id_list = argToList(args.get('alert_ids', []))
+        for alert_id in alert_id_list:
+            if alert_id and re.match(r'^[a-fA-F0-9-]{32,36}\$&\$.+$', alert_id):
+                raise DemistoException(f"Error: Alert ID {alert_id} is invalid. This issue arises because the playbook is running in"
+                                       f" debug mode, which replaces the original alert ID with a debug alert ID, causing the task to"
+                                       f" fail. To run this playbook in debug mode, please update the 'alert_ids' value to the real "
+                                       f"alert ID in the relevant task. Alternatively, run the playbook on the actual alert "
+                                       f"(not in debug mode) to ensure task success.")
+        events_from_decider_as_list = bool(args.get('events_from_decider_format', '') == 'list')
         raw_response = client.get_original_alerts(alert_id_list)
         reply = copy.deepcopy(raw_response)
         alerts = reply.get('alerts', [])
@@ -7531,17 +7706,18 @@ script:
                 decode_dict_values(alert)
             except Exception as e:
                 demisto.debug("encountered the following while decoding dictionary values, skipping")
-                demisto.debug(e)
+                demisto.debug(f'{e}')
                 continue
 
             # Remove original_alert_json field and add its content to the alert body.
             alert.update(alert.pop('original_alert_json', {}))
 
             # Process the alert (with without filetring fields)
-            processed_alerts.append(filter_general_fields(alert, filter_fields=False))
+            processed_alerts.append(filter_general_fields(alert, filter_fields=False,
+                                                          events_from_decider_as_list=events_from_decider_as_list))
 
             # Create a filtered version (used either for output when filter_fields is False, or for readable output)
-            filtered_alert = filter_general_fields(alert, filter_fields=True)
+            filtered_alert = filter_general_fields(alert, filter_fields=True, events_from_decider_as_list=False)
             filter_vendor_fields(filtered_alert)  # changes in-place
 
             filtered_alerts.append(filtered_alert)
@@ -8307,6 +8483,87 @@ script:
             raw_incidents
         )
 
+
+    def terminate_process_command(client, args) -> CommandResults:
+        """
+        AVAILABLE ONLY TO XDR3.12 / XSIAM2.4
+        Terminate the process command for a specific agent and instance IDs.
+
+        :type client: ``Client``
+        :param client: The client to use for making API calls.
+
+        :type args: ``Dict[str, Any]``
+        :param args: The arguments for the command.
+
+        :return: The results of the command.
+        :rtype: ``CommandResults``
+        """
+        agent_id = args.get('agent_id')
+        instance_ids = argToList(args.get('instance_id'))
+        process_name = args.get('process_name')
+        incident_id = args.get('incident_id')
+        replies: List[Dict[str, Any]] = []
+        for instance_id in instance_ids:
+            reply_per_instance_id = client.terminate_on_agent(
+                url_suffix_endpoint='terminate_process',
+                id_key='instance_id',
+                id_value=instance_id,
+                agent_id=agent_id,
+                process_name=process_name,
+                incident_id=incident_id
+            )
+            action_id = reply_per_instance_id.get("group_action_id")
+            demisto.debug(f'Action terminate process succeeded with action_id={action_id}')
+            replies.append({"action_id": action_id})
+
+        return CommandResults(
+            readable_output=tableToMarkdown(f'Action terminate process created on instance ids: {", ".join(instance_ids)}', replies),
+            outputs={
+                f'{args.get("integration_context_brand", "CoreApiModule")}'
+                f'.TerminateProcess(val.actionId && val.actionId == obj.actionId)': replies},
+            raw_response=replies
+        )
+
+
+    def terminate_causality_command(client, args) -> CommandResults:
+        """
+        AVAILABLE ONLY TO XDR3.12 / XSIAM2.4
+        Terminate the causality command for a specific agent and causality IDs.
+
+        :type client: ``Client``
+        :param client: The client to use for making API calls.
+
+        :type args: ``Dict[str, Any]``
+        :param args: The arguments for the command.
+
+        :return: The results of the command.
+        :rtype: ``CommandResults``
+        """
+        agent_id = args.get('agent_id')
+        causality_ids = argToList(args.get('causality_id'))
+        process_name = args.get('process_name')
+        incident_id = args.get('incident_id')
+        replies: List[Dict[str, Any]] = []
+        for causality_id in causality_ids:
+            reply_per_instance_id = client.terminate_on_agent(
+                url_suffix_endpoint='terminate_causality',
+                id_key='causality_id',
+                id_value=causality_id,
+                agent_id=agent_id,
+                process_name=process_name,
+                incident_id=incident_id
+            )
+            action_id = reply_per_instance_id.get("group_action_id")
+            demisto.debug(f'Action terminate process succeeded with action_id={action_id}')
+            replies.append({"action_id": action_id})
+
+        return CommandResults(
+            readable_output=tableToMarkdown(f'Action terminate causality created on {",".join(causality_ids)}', replies),
+            outputs={f'{args.get("integration_context_brand", "CoreApiModule")}.TerminateProcess(val.actionId == obj.actionId)':
+                     replies},
+            raw_response=replies
+        )
+
     register_module_line('CoreIRApiModule', 'end', __line__(), wrapper=1)
     ### END GENERATED CODE ###
 
@@ -8325,7 +8582,6 @@ script:
         'network_artifacts',
         'file_artifacts'
     ]
-
 
     XDR_INCIDENT_FIELDS = {
         "status": {"description": "Current status of the incident: \"new\",\"under_"
@@ -9187,13 +9443,26 @@ script:
 
     def get_modified_remote_data_command(client, args, mirroring_last_update: str = '', xdr_delay: int = 1):
         remote_args = GetModifiedRemoteDataArgs(args)
-        last_update: str = mirroring_last_update or remote_args.last_update
+        last_update: str
+        if mirroring_last_update:
+            last_update = mirroring_last_update
+            demisto.debug(f"using {mirroring_last_update=} for last_update")
+        else:
+            last_update = remote_args.last_update
+            demisto.debug(f"using {remote_args.last_update=} for last_update")
+
+        if not last_update:
+            default_last_update = datetime_to_string(datetime.utcnow() - timedelta(minutes=xdr_delay + 1))
+            demisto.debug(f'Mirror last update is: {last_update=} will set it to {default_last_update=}')
+            last_update = default_last_update
+
         last_update_utc = dateparser.parse(last_update,
                                            settings={'TIMEZONE': 'UTC', 'RETURN_AS_TIMEZONE_AWARE': False})   # convert to utc format
+        if not last_update_utc:
+            raise DemistoException(f'Failed to parse {last_update=} got {last_update_utc=}')
 
-        if last_update_utc:
-            gte_modification_time_milliseconds = last_update_utc - timedelta(minutes=xdr_delay)
-            lte_modification_time_milliseconds = gte_modification_time_milliseconds + timedelta(minutes=1)
+        gte_modification_time_milliseconds = last_update_utc
+        lte_modification_time_milliseconds = datetime.utcnow() - timedelta(minutes=xdr_delay)
         demisto.debug(
             f'Performing get-modified-remote-data command {last_update=} | {gte_modification_time_milliseconds=} |'
             f'{lte_modification_time_milliseconds=}'
@@ -9203,14 +9472,12 @@ script:
             lte_modification_time_milliseconds=lte_modification_time_milliseconds,
             limit=100)
         last_run_mirroring = (lte_modification_time_milliseconds + timedelta(milliseconds=1))
-        # Format with milliseconds as string, truncate microseconds
-        last_run_mirroring_str = last_run_mirroring.replace(tzinfo=pytz.UTC).strftime(  # type: ignore
-            '%Y-%m-%d %H:%M:%S.%f')[:-3] + '+02:00'  # type: ignore
-        modified_incident_ids = []
-        for raw_incident in raw_incidents:
-            incident_id = raw_incident.get('incident_id')
-            modified_incident_ids.append(incident_id)
-        return GetModifiedRemoteDataResponse(modified_incident_ids), last_run_mirroring_str
+        last_run_mirroring_str = last_run_mirroring.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+
+        id_to_modification_time = {raw.get('incident_id'): raw.get('modification_time') for raw in raw_incidents}
+        demisto.debug(f"{last_run_mirroring_str=}, modified incidents {id_to_modification_time=}")
+
+        return GetModifiedRemoteDataResponse(list(id_to_modification_time.keys())), last_run_mirroring_str
 
 
     def get_remote_data_command(client, args):
@@ -9247,7 +9514,9 @@ script:
                     sync_incoming_incident_owners(incident_data)
 
                 # handle closed issue in XDR and handle outgoing error entry
-                entries = [handle_incoming_closing_incident(incident_data)]
+                entries = []
+                if argToBoolean(client._params.get('close_xsoar_incident', True)):
+                    entries = [handle_incoming_closing_incident(incident_data)]
 
                 reformatted_entries = []
                 for entry in entries:
@@ -9329,6 +9598,19 @@ script:
                 if is_closed and closed_without_status and not remote_is_already_closed:
                     update_args['status'] = XSOAR_RESOLVED_STATUS_TO_XDR.get('Other')
                 demisto.debug(f"After checking status {update_args=}")
+
+                close_xdr_incident = argToBoolean(client._params.get("close_xdr_incident", True))
+
+                status = ""
+                # If the client does not want to close the incident in XDR, temporarily remove the status from the arguments
+                # to update the incident, and add it back later to close the alerts.
+                if not close_xdr_incident and (update_args.get('status') in XSOAR_RESOLVED_STATUS_TO_XDR.values()):
+                    status = update_args.pop('status')
+                    resolve_comment = update_args.pop('resolve_comment', None)
+
+                    demisto.debug(f"Popped status {status} and {resolve_comment=} from update_args,"
+                                  f" incident status won't be updated in XDR.")
+
                 update_incident_command(client, update_args)
 
                 close_alerts_in_xdr = argToBoolean(client._params.get("close_alerts_in_xdr", False))
@@ -9337,6 +9619,9 @@ script:
                 if is_closed and closed_without_status and remote_is_already_closed:
                     update_args['status'] = current_remote_status
                 if close_alerts_in_xdr and is_closed:
+                    if status:
+                        update_args['status'] = status
+                        demisto.debug(f'Restored {status=} in order to update the alerts status.')
                     update_related_alerts(client, update_args)
 
             else:
@@ -9375,14 +9660,19 @@ script:
         global ALERTS_LIMIT_PER_INCIDENTS
         # Get the last fetch time, if exists
         last_fetch = last_run.get('time') if isinstance(last_run, dict) else None
+        demisto.debug(f"{last_fetch=}")
         incidents_from_previous_run = last_run.get('incidents_from_previous_run', []) if isinstance(last_run,
                                                                                                     dict) else []
+        demisto.debug(f"{incidents_from_previous_run=}")
         # Handle first time fetch, fetch incidents retroactively
         if last_fetch is None:
             last_fetch, _ = parse_date_range(first_fetch_time, to_timestamp=True)
+            demisto.debug(f"last_fetch after parsing date range {last_fetch}")
 
         if starred:
             starred_incidents_fetch_window, _ = parse_date_range(starred_incidents_fetch_window, to_timestamp=True)
+            demisto.debug(
+                f"starred_incidents_fetch_window after parsing date range {starred_incidents_fetch_window}")
 
         incidents = []
         if incidents_from_previous_run:
@@ -9406,6 +9696,8 @@ script:
                     starred=starred,
                     starred_incidents_fetch_window=starred_incidents_fetch_window,
                     exclude_artifacts=exclude_artifacts)
+
+        # demisto.debug(f"{raw_incidents=}") # uncomment to debug, otherwise spams the log
 
         # save the last 100 modified incidents to the integration context - for mirroring purposes
         client.save_modified_incidents_to_integration_context()
@@ -9635,16 +9927,23 @@ script:
 
             elif command == 'fetch-incidents':
                 integration_instance = demisto.integrationInstance()
+                last_run = demisto.getLastRun().get('next_run')
+                demisto.debug(
+                    f"Before starting a new cycle of fetch incidents\n{last_run=}\n{integration_instance=}")
                 next_run, incidents = fetch_incidents(client=client,
                                                       first_fetch_time=first_fetch_time,
                                                       integration_instance=integration_instance,
                                                       exclude_artifacts=exclude_artifacts,
-                                                      last_run=demisto.getLastRun().get('next_run'),
+                                                      last_run=last_run,
                                                       max_fetch=max_fetch,
                                                       statuses=statuses,
                                                       starred=starred,
                                                       starred_incidents_fetch_window=starred_incidents_fetch_window,
                                                       )
+                demisto.debug(f"Finished a fetch incidents cycle, {next_run=}."
+                              f"Fetched {len(incidents)} incidents.")
+                # demisto.debug(f"{incidents=}") # uncomment to debug, otherwise spams the log
+
                 last_run_obj = demisto.getLastRun()
                 last_run_obj['next_run'] = next_run
                 demisto.setLastRun(last_run_obj)
@@ -9861,7 +10160,8 @@ script:
                 return_results(action_status_get_command(client, args))
 
             elif command == 'get-modified-remote-data':
-                last_run_mirroring: Dict[str, Any] = demisto.getLastRun()
+                last_run_mirroring: Dict[Any, Any] = get_last_mirror_run() or {}
+                demisto.debug(f"before get-modified-remote-data, last run={last_run_mirroring}")
 
                 modified_incidents, next_mirroring_time = get_modified_remote_data_command(
                     client=client,
@@ -9870,7 +10170,8 @@ script:
                     xdr_delay=xdr_delay,
                 )
                 last_run_mirroring['mirroring_last_update'] = next_mirroring_time
-                demisto.setLastRun(last_run_mirroring)
+                set_last_mirror_run(last_run_mirroring)
+                demisto.debug(f"after get-modified-remote-data, last run={last_run_mirroring}")
                 return_results(modified_incidents)
 
             elif command == 'xdr-script-run':  # used with polling = true always
