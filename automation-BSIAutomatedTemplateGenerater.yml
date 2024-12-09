@@ -1,0 +1,96 @@
+args:
+- name: docfileid
+  required: true
+commonfields:
+  id: 60c73651-600c-4d7e-8b0d-5c9241b9a686
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: docker.io/demisto/customdocgenerator:latest
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: BSIAutomatedTemplateGenerater
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  from docxtpl import DocxTemplate, InlineImage, RichText
+  import io
+  import datetime as dt
+  from docx.shared import Mm
+  #from docx2pdf import convert
+
+  import json
+
+  def findFilePath(EntryID):
+      if EntryID:
+          resultEntries = demisto.executeCommand('getFilePath', {'id': EntryID})
+          filePath = resultEntries[0]["Contents"]["path"]
+          return filePath
+
+
+  incident = demisto.incidents()[0]
+  ctx = demisto.context()
+  args = demisto.args()
+
+  docfileEntryID = args['docfileid']
+
+  ## Prepare Files Path
+  docfilePath = findFilePath(docfileEntryID)
+
+
+
+  reportName = "EmailTemplate.docx"
+
+  # jsonfiledata = json.loads(jsonfiledata)
+
+
+  #Parse incident data
+
+  inc_id = incident.get('id')
+  username=incident['CustomFields']['username']
+  sourceip=incident['CustomFields']['sourceip']
+  urls=incident['CustomFields']['urls']
+
+
+
+
+  with open(docfilePath , 'rb') as file:
+      # create a document object
+      doc = DocxTemplate(docfilePath)
+      # create RichText object
+      #rt = RichText()
+      #rt.add(latestreleasenotelink, url_id=doc.build_url_id(latestreleasenotelink))
+      # create context dictionary
+      context = {
+          "id": inc_id,
+          "username": username,
+          "sourceip":sourceip,
+          "urls":urls
+      }
+
+      doc.render(context)
+
+      # save the document object as a word file
+      doc.save(reportName)
+
+      fileObj = open(reportName, "rb")
+      fileData = fileObj.read()
+      fileObj.close()
+      file_entry = fileResult(filename=reportName, data=fileData)
+      return_results(file_entry)
+scripttarget: 0
+subtype: python3
+tags: []
+timeout: 300ns
+type: python
