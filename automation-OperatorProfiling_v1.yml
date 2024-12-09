@@ -1,0 +1,98 @@
+commonfields:
+  id: 83ab04ac-2abc-42ae-89c7-75934f77a9d8
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: OperatorProfiling_v1
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  from datetime import datetime
+  import json
+  import pprint
+  import re
+
+  usernames=[0]
+  #seniorL1=["Medha Mannur","Ravi Gupta","Pallavi Barad","Kishor Bansi","Aamir Pasha","Kaustubh Bondane","Aman Sinha","Prathamesh Khande","Kamali Renganathan","Mustafa Rampurawala","Supriya Patil","PRAJAKTA MISAL","Nita Sahane","Mayuri Nikam","Hitesh Poojari"]
+  seniorL1=json.loads(demisto.executeCommand('getList', {'listName':"SeniorL1"})[0]['Contents'])
+  #incidents=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+
+  profile={}
+
+
+
+  AvailableAnalyst=demisto.executeCommand("GetUsersOnCall", { "include_OOO_users": "true" });
+  #AvailableAnalyst=demisto.executeCommand("getUsers",{"roles":"Second-Shift"})
+  table: List[Dict] =(AvailableAnalyst[0]['Contents'])
+
+
+
+
+  #wworking ====================================================================================================
+
+
+  #Create a profile of available candidate in shift with below details name,role(senior,l1,oplead,assignmentop,half day),assigned will contain the values of all the incident assigned to user
+  #and will dump it somewhere at the end of shift for logging and also when later if the user is not present in shift will reassign the given incident that are assigned
+  #to him before the op lead declares leaves. using the jobs that will run at the shift start time to get users and update the list outside.
+
+
+  def counter_func(name, role, assigned, condition,scan):
+          temp={}
+          temp["name"] = name
+          temp["role"] = role
+          temp["assigned"] = assigned
+          temp["seniorl1"] = condition
+          temp["scan"]=scan
+          return temp
+
+
+
+  def dict_func(name, role, assigned, condition):
+          temp={}
+          temp["name"] = name
+          temp["role"] = role
+          temp["assigned"] = assigned
+          temp["condition"] = condition
+          return temp
+
+  my_objects = [counter_func("Counter","indexing",0,0,0)]
+
+
+  data=table.split('\n')
+  for i in data:
+      res=re.sub(r'\|.*',"",i)
+      names=re.sub("[']","",res).strip()
+      if(names in ['On-Call Team members','Username','-']):
+          continue
+      else:
+          if names in seniorL1:
+              role="Senior"
+          else:
+              role="L1"
+          #my_objects.append(dict_func(names,role,"","Perfect"))
+          my_objects.append(dict_func(names,role,[],"Perfect"))
+
+
+  my_objects.pop()
+  res=demisto.executeCommand('setList', {'listName':"Operators Profile",'listData':my_objects})
+  if isError(res):
+      return_error(f'Failed to set list {str(get_error(res))}')
+  print(my_objects)
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
