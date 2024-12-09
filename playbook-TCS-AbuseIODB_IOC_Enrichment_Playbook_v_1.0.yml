@@ -1,0 +1,258 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 3814a004-f94f-4f0a-8586-a0e453056f44
+inputs:
+- description: ""
+  key: IP
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: IP
+      root: Address2
+      transformers:
+      - operator: uniq
+- description: ""
+  key: Domain
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: Domain
+      root: ExtractedIndicators
+name: TCS-AbuseIODB IOC Enrichment Playbook v 1.0
+outputs:
+- contextPath: ExtractedIndicators.IP
+  description: IP address
+- contextPath: DBotScore
+  description: DBot Score
+  type: unknown
+- contextPath: ExtractedIndicators.Domain
+  description: Domain
+sourceplaybookid: 08c3b260-77a7-4316-8c5d-802cc55f4e22
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 0e6fd7b1-444b-40c9-84c6-ae764e84ce64
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 0e6fd7b1-444b-40c9-84c6-ae764e84ce64
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 600
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bc0a66e4-9c62-46e8-83cf-d1ba7e42d671
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: bc0a66e4-9c62-46e8-83cf-d1ba7e42d671
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1390
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.IP
+          operator: isExists
+      - - left:
+            iscontext: true
+            value:
+              simple: ExtractedIndicators.IP
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "13"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determine whether the playbook's input contains at least one IP
+        address.
+      id: c22632f2-a15c-4022-8f2e-06cd5fabfa4b
+      iscommand: false
+      name: Are there any IP addresses ?
+      type: condition
+      version: -1
+    taskid: c22632f2-a15c-4022-8f2e-06cd5fabfa4b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 960
+        }
+      }
+  "12":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: brand
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: AbuseIPDB
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                root: modules
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "3"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if there is an active instance of the ThreatCrowd integration
+        enabled.
+      id: 8fe63393-1dbb-471c-81e8-82552f1ba5d9
+      iscommand: false
+      name: Is AbuseIPDB enabled?
+      type: condition
+      version: -1
+    taskid: 8fe63393-1dbb-471c-81e8-82552f1ba5d9
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 780
+        }
+      }
+  "13":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        complex:
+          accessor: IP
+          root: ExtractedIndicators
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: AbuseIPDB
+      description: Checks the specified IP address against the AbuseIP database.
+      id: e8bc5974-2c28-432c-8907-bce77119d713
+      iscommand: true
+      name: Get IP Report From AbuseIPDB
+      script: AbuseIPDB|||ip
+      type: regular
+      version: -1
+    taskid: e8bc5974-2c28-432c-8907-bce77119d713
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1140
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 855,
+        "width": 380,
+        "x": 50,
+        "y": 600
+      }
+    }
+  }
