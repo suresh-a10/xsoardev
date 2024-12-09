@@ -1,0 +1,103 @@
+args:
+- default: true
+  description: The War Room entryID of the .csv file
+  name: entry_id
+  required: true
+- description: the threshold in which the reputation will start at
+  name: threshold
+  required: true
+- auto: PREDEFINED
+  name: ioc_type
+  predefined:
+  - ip
+  - domain
+  - hash
+  - url
+  required: true
+commonfields:
+  id: 40fd8ee0-fb65-4904-8f41-b67431f89af9
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.8.1.6442
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CSVReputationToList
+outputs:
+- contextPath: CSVReputationToList.count
+  description: Total number of lines read from the CSV file
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import csv
+  entry_id = demisto.args()["entry_id"]
+  threshold = demisto.args()["threshold"]
+  ioc_type = demisto.args()["ioc_type"]
+
+  file_path = demisto.getFilePath(entry_id).get('path')
+
+  with open(file_path, 'r') as fh:
+    csv_in = fh.readlines()
+
+  csv_out = ""
+  count = 0
+  if ioc_type == "hash":
+    for row in csv_in[1:]:
+        rep = 0
+        row_split = row.split(',')
+        if len(row_split) > 1:
+            rep = row_split[2][1:-1]
+            # Try cast the second column with the quotes removed as int
+            try:
+                rep = int(rep)
+                if rep >= int(threshold):
+                    ip = row.split(",")[0]
+                    csv_out += ip + "\n"
+                    count = count + 1
+            # If row_split[1] is not castable as int
+            except ValueError:
+                pass
+  else:
+    for row in csv_in[1:]:
+        rep = 0
+        row_split = row.split(',')
+        if len(row_split) > 1:
+            rep = row_split[1][1:-1]
+            # Try cast the second column with the quotes removed as int
+            try:
+                rep = int(rep)
+                if rep >= int(threshold):
+                    ip = row.split(",")[0]
+                    csv_out += ip + "\n"
+                    count = count + 1
+            # If row_split[1] is not castable as int
+            except ValueError:
+                pass
+
+
+  demisto.results(fileResult(f'reduced_csv_{ioc_type}.csv', csv_out.encode("utf-8")))
+  demisto.results({"Type": entryTypes["note"],
+                    "ContentsFormat": formats["text"],
+                    "Contents": csv_out,
+                    "HumanReadable": "Parsed",
+                    "EntryContext": {
+                        "CSVReputationToList": {
+                            "count": count
+                        }}
+                    })
+scripttarget: 0
+subtype: python3
+tags: []
+timeout: 500ns
+type: python
