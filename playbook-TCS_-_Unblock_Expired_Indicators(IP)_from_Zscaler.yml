@@ -1,0 +1,408 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: adb966ce-2063-44da-8cf1-5b0829ca88bc
+inputs: []
+name: TCS - Unblock Expired Indicators(IP) from Zscaler
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5c53dcef-3ffb-42e4-866f-7b51f206a471
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 5c53dcef-3ffb-42e4-866f-7b51f206a471
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": -10
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: output=value
+      fromdate:
+        complex:
+          accessor: created
+          root: incident
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: T
+              fields:
+                value:
+                  simple: "1"
+            operator: Cut
+          - args:
+              item:
+                value:
+                  simple: 00:00:00+05:30
+            operator: append
+          - args:
+              separator:
+                value:
+                  simple: T
+            operator: join
+      query:
+        simple: expirationStatus:expired and type:IP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.find.indicators
+      id: 3e435412-5ebf-43b0-8a10-92edf1e2f344
+      iscommand: true
+      name: find expired indicators
+      script: Builtin|||findIndicators
+      type: regular
+      version: -1
+    taskid: 3e435412-5ebf-43b0-8a10-92edf1e2f344
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 125
+        }
+      }
+  "2":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_132
+      ip:
+        simple: ${output}
+      using:
+        simple: Zscaler_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Removes IP address from the specified category.
+      id: ee515599-7cbc-47bb-8a0c-735767b3376d
+      iscommand: true
+      name: Unblock IP from Zscaler Corporate tenant
+      script: Zscaler|||zscaler-category-remove-ip
+      type: regular
+      version: -1
+    taskid: ee515599-7cbc-47bb-8a0c-735767b3376d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 60,
+          "y": 570
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 0ff60cb3-c35a-4539-8522-8574a60a20bb
+      iscommand: true
+      name: Close investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 0ff60cb3-c35a-4539-8522-8574a60a20bb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 270,
+          "y": 930
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 16552b34-6379-450b-8879-b21ddcb59dbe
+      iscommand: false
+      name: End
+      type: title
+      version: -1
+    taskid: 16552b34-6379-450b-8879-b21ddcb59dbe
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 270,
+          "y": 1135
+        }
+      }
+  "6":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${output}
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 7269f014-b4d5-4786-879b-2bb07dabc6f5
+      iscommand: false
+      name: Is an expired indicator
+      type: condition
+      version: -1
+    taskid: 7269f014-b4d5-4786-879b-2bb07dabc6f5
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 290
+        }
+      }
+  "7":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      category-id:
+        simple: CUSTOM_241
+      ip:
+        simple: ${output}
+      using:
+        simple: Zscaler_instance_BPS
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Removes IP address from the specified category.
+      id: eeb28e27-c6a2-4e4b-877d-08502a0da8a0
+      iscommand: true
+      name: Unblock IP from Zscaler BPS tenant
+      script: Zscaler|||zscaler-category-remove-ip
+      type: regular
+      version: -1
+    taskid: eeb28e27-c6a2-4e4b-877d-08502a0da8a0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 60,
+          "y": 720
+        }
+      }
+  "8":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        simple: ${output}
+      using:
+        simple: Zscaler_instance_1,Zscaler_instance_BPS
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Zscaler
+      description: Removes the specified IP addresses from the allow list.
+      id: d437bcbf-bd51-4f3b-8f69-7eb78255349e
+      iscommand: true
+      name: Unblock IP from Zscaler Blacklist
+      script: Zscaler|||zscaler-undo-blacklist-ip
+      type: regular
+      version: -1
+    taskid: d437bcbf-bd51-4f3b-8f69-7eb78255349e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -460,
+          "y": 510
+        }
+      }
+  "9":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: error
+          operator: containsGeneral
+          right:
+            value:
+              simple: Given IP address is not blacklisted
+      label: "yes"
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check whether given entry/entries returned an error. Use ${lastCompletedTaskEntries}
+        to check the previous task entries. If array is provided, will return yes
+        if one of the entries returned an error.
+      id: e1bee2ab-014a-48b0-812c-6e1a3d7b7b76
+      iscommand: false
+      name: Is the error Given IP address is not blacklisted
+      type: condition
+      version: -1
+    taskid: e1bee2ab-014a-48b0-812c-6e1a3d7b7b76
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -360,
+          "y": 1040
+        }
+      }
+  "11":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5e85c75d-b9f0-4cf9-89ee-f0110609244d
+      iscommand: false
+      name: store error in context
+      script: dfaf73eb-0458-4817-86b5-7588ccf04c64
+      type: regular
+      version: -1
+    taskid: 5e85c75d-b9f0-4cf9-89ee-f0110609244d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -360,
+          "y": 880
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1210,
+        "width": 1110,
+        "x": -460,
+        "y": -10
+      }
+    }
+  }
