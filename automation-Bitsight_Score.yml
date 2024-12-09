@@ -1,0 +1,54 @@
+commonfields:
+  id: 76a130c2-6124-4563-8771-6e71922e87b6
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Bitsight_Score
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2-
+
+  #res=demisto.executeCommand("bitsight-get-company-details",{"guid":"6e47da08-bd49-4f6b-9fee-02595f0c5761", "using":"BitSight for Security Performance Management_instance_1"})
+  res=demisto.executeCommand("bitsight-company-details-get",{"guid":"6e47da08-bd49-4f6b-9fee-02595f0c5761", "using":"BitSight_TCSL"})
+
+  res=res[0]['Contents']
+  res=res.get('ratings')
+
+  wdata={}
+  wdata=json.loads(demisto.executeCommand("getList",{"listName":"BitSight_Score"})[0]['Contents'])
+  print("This is first data")
+  print(wdata)
+
+
+  for e in res:
+      date=e.get('rating_date')
+      rating=[]
+      rating.append(e.get('rating'))
+      value={}
+      value['name']=date
+      value['data']=rating
+      wdata[date]=value
+
+
+  print(type(wdata))
+  print(wdata)
+
+  demisto.executeCommand("setList",{"listName":"BitSight_Score" ,"listData":wdata})
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
