@@ -1,0 +1,82 @@
+commonfields:
+  id: 9e80e72b-2a39-470b-8603-83d8bd1c58b1
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.11.10.116949
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: IncidentInfoUpdate
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+  from typing import Dict, Any
+  import traceback
+  from datetime import datetime,timedelta
+
+
+  def convert_timestamp_to_localtime(modified_time):
+
+      timestamp= modified_time.split('.')
+
+      dt = datetime.strptime(timestamp[0], '%Y-%m-%dT%H:%M:%S')
+
+      time_delta = timedelta(hours=5, minutes=30)
+      local_time = dt + time_delta
+
+      human_readable = local_time.strftime('%Y-%m-%d %H:%M:%S')
+
+      return human_readable
+
+  ''' MAIN FUNCTION '''
+
+
+  def main():
+      Incident_Modifications=""
+      incident_data=demisto.incidents()[0]
+      entries=demisto.executeCommand("getEntries", {'id':incident_data['id'],"filter":{"categories":['procedural']}})
+      if len(entries)>1:
+          for entry in entries[1::]:
+              user=entry['Metadata']['user']
+              if len(user)>0:
+                  Content=(entry['Contents']).replace("\n","")
+                  modified_time= entry['Metadata']['modified']
+                  modified_at=convert_timestamp_to_localtime(modified_time)
+                  user=entry['Metadata']['user']
+                  result=f'{modified_at}-{user}: {Content}\n'
+                  Incident_Modifications+=result
+      print(Incident_Modifications)
+      demisto.executeCommand("setIncident", {"incidentinfodata":Incident_Modifications})
+
+      # res=demisto.executeCommand("getEntry", {"id":"51@71503"})
+      # Content=(res[0]['Contents']).replace("\n","")
+      # modified_time= res[0]['Metadata']['modified']
+      # modified_at=convert_timestamp_to_localtime(modified_time)
+      # user=res[0]['Metadata']['user']
+
+      # print(f"{modified_at}-{user}: {Content}")
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags:
+- Utility
+type: python
