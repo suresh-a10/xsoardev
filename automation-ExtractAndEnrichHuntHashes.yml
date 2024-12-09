@@ -1,0 +1,78 @@
+args:
+- description: Extract from specified entry
+  name: entryID
+- description: Transient file to extract indicators from
+  name: filePath
+- description: Investigation to apply to
+  name: investigationID
+- description: Transient text to extract indicators from
+  name: text
+commonfields:
+  id: 127b700b-6793-4207-8e51-e718ecb9e7d5
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: ExtractAndEnrichHuntHashes
+pswd: ""
+runas: DBotRole
+runonce: false
+script: |
+  import io
+
+  def main():
+      try:
+          args=demisto.incidents()[0].get('CustomFields').get('huntinghashs')
+          # args=demisto.context().get('huntinghashs')
+          args=args.split()
+          args1=args
+          ips=[]
+          # indicator= demisto.context().get('ExtractedIndicators')
+          # if indicator:
+          #     for i in indicator:
+          #         if i.get('File'):
+          #             for arg in args:
+          #                 if arg in i.get('File'):
+          #                     args1.remove(arg)
+
+          if args1:
+              res=demisto.executeCommand('extractIndicators', {'text':args1})
+              demisto.results(res)
+
+
+              extractedIOC=[]
+              result=json.loads(res[0]['Contents'])
+
+              for k,v in result.items():
+                  for i in v:
+                      extractedIOC.append(i)
+
+              demisto.results(demisto.executeCommand('enrichIndicators',{'indicatorsValues':extractedIOC}))
+
+          else:
+              demisto.results("No Hashes found.")
+
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+  if __name__ in ('__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags:
+- field-change-triggered
+timeout: 600ns
+type: python
