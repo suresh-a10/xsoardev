@@ -1,0 +1,1232 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 5e07d89e-b923-4d46-8d8a-bf387d2e8d35
+inputs: []
+name: TCS-OnDemand Lift Host Containment Playbook v2.0_JP
+outputs: []
+sourceplaybookid: dc7d02c4-9e4e-4e78-866e-35dde9c38272
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5da142d0-29f4-4568-83b1-d9d05d6f8a49
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 5da142d0-29f4-4568-83b1-d9d05d6f8a49
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 1095,
+          "y": 310
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: TCSHostname
+      value:
+        complex:
+          root: FileData
+          transformers:
+          - operator: trim
+          - args:
+              delimiter:
+                value:
+                  simple: |2+
+
+            operator: splitAndTrim
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: d25c5596-9e61-425a-8abb-bb6d5d735e27
+      iscommand: false
+      name: Set Data To Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: d25c5596-9e61-425a-8abb-bb6d5d735e27
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1280,
+          "y": 825
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      csvArray:
+        simple: ${HostLiftedContainReport}
+      fileName:
+        simple: Crowdstrike_Host_LiftedContainment_Report.csv
+      headers:
+        simple: Hostname,ID,FirstSeen,LastSeen,OS,ExternalIP,LocalIP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Export given array to csv file
+      id: ac237623-e8ec-436e-8ca0-84a7497edfea
+      iscommand: false
+      name: Create Excel Report For Host Lifted Containment
+      script: ExportToCSV
+      type: regular
+      version: -1
+    taskid: ac237623-e8ec-436e-8ca0-84a7497edfea
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2390,
+          "y": 1550
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Report
+      value:
+        simple: '${.=(val.File instanceof Array ? val.File[val.File.length-1].EntryID
+          : val.File.EntryID)}'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 66dd95b6-f3d7-4298-8af2-2309e0f19d7c
+      iscommand: false
+      name: Set Report To New Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 66dd95b6-f3d7-4298-8af2-2309e0f19d7c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 2390,
+          "y": 1720
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${Report}
+      body:
+        simple: "Hello Human,\n\nPlease find the report for all the hosts shared in
+          this list - ${incident.attachment.name}. \n\n\nRegards,\nCyber Autobot\nAutomation
+          id : ${incident.id}\n"
+      cc:
+        simple: kunal.krushev@tcs.com,internalis.cybersecurityops@tcs.com,InternalIS.SecurityCompliance@tcs.com
+      subject:
+        simple: ' Crowdstrike Host Lift Containment Report For Submitted File (Compliance
+          Team)- ${incident.attachment.name}'
+      to:
+        complex:
+          accessor: Email/from
+          root: incident.labels
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: e0b082f8-8400-485e-8b09-7dda7fc176d0
+      iscommand: true
+      name: 'Send Host Lift Containment Report '
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: e0b082f8-8400-485e-8b09-7dda7fc176d0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1610,
+          "y": 2100
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      body:
+        simple: |-
+          Hello Human,
+
+          You are not on my authorized list of senders. Please contact Your XSOAR Support team.
+
+          Regards,
+          CSOC Cyber AutoBot
+          Automation task id : ${incident.id}
+      cc:
+        simple: kunal.krushev@tcs.com,InternalIS.SecurityCompliance@tcs.com
+      subject:
+        simple: Not Authorized For This Task
+      to:
+        complex:
+          accessor: Email/from
+          root: incident.labels
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: 689413d4-3540-4525-8507-f40d3c57cfb1
+      iscommand: true
+      name: Send Notification 'Not Authorized Sender'
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: 689413d4-3540-4525-8507-f40d3c57cfb1
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 360,
+          "y": 1550
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 2c27ff7b-8008-430a-8ec3-1153615e96a7
+      iscommand: true
+      name: Close Playbook
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 2c27ff7b-8008-430a-8ec3-1153615e96a7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1125,
+          "y": 2265
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c7d3aa68-e3b8-488e-8145-11e9839bab3f
+      iscommand: false
+      name: The End
+      type: title
+      version: -1
+    taskid: c7d3aa68-e3b8-488e-8145-11e9839bab3f
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1125,
+          "y": 2445
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      context_key:
+        simple: HostNotFound
+      file_name:
+        simple: Host_Not_Found.csv
+      header:
+        simple: Hostname
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4139e81b-0b4b-4af6-83b5-83f946debb83
+      iscommand: false
+      name: Create Excel Report of Hosts Not Found
+      script: 98fd7176-124d-4739-8f9d-2f1edb20aa55
+      type: regular
+      version: -1
+    taskid: 4139e81b-0b4b-4af6-83b5-83f946debb83
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 840,
+          "y": 1540
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: Report
+      value:
+        simple: '${.=(val.File instanceof Array ? val.File[val.File.length-1].EntryID
+          : val.File.EntryID)}'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 746ef057-574e-49cd-8d75-8d1eb8d5e1ff
+      iscommand: false
+      name: Set Report To New Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 746ef057-574e-49cd-8d75-8d1eb8d5e1ff
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 840,
+          "y": 1700
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "37"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      arrayData:
+        simple: ${TCSHostname}
+      contextKey:
+        simple: TCSHostnameArray
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: 'Will create an array object in context from given string input '
+      id: cba40471-f310-41bb-8732-53ff579708df
+      iscommand: false
+      name: Create Array of Input Data
+      script: CreateArray
+      type: regular
+      version: -1
+    taskid: cba40471-f310-41bb-8732-53ff579708df
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1280,
+          "y": 1000
+        }
+      }
+  "33":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: komal.lugade@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: InternalIS.SecurityCompliance@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: kunal.krushev@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: komala.kp@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: ramprakash1.r@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: sonali.teli@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: manoharan.g@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: shreya.nayak@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: k.premanandhan@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: somraj.chakravarty@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: s.moharana@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: arunsastha.p@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: sala.e@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: vanita.gonjare@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: pawan.pavanje@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: umarshariff.a@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: Hemnath.V@tcs.com
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: ${lists.AuthorizedsendersCompliance}
+        - left:
+            iscontext: true
+            value:
+              simple: ${incident.emailfrom}
+          operator: isEqualString
+          right:
+            value:
+              simple: naeema.halim@tcs.com
+      label: "yes"
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "15"
+      "yes":
+      - "34"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 12c3eb28-4789-44d0-89f9-cbcb4647fb7b
+      iscommand: false
+      name: Is Email From Authorized Sender ?
+      type: condition
+      version: -1
+    taskid: 12c3eb28-4789-44d0-89f9-cbcb4647fb7b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1095,
+          "y": 465
+        }
+      }
+  "34":
+    continueonerror: true
+    continueonerrortype: errorPath
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#error#':
+      - "47"
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Extension
+              operator: isEqualString
+              right:
+                value:
+                  simple: txt
+          root: File
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: 24abccb6-fe53-435b-8cc5-c3289c8e221a
+      iscommand: false
+      name: Read The Text Attachment
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: 24abccb6-fe53-435b-8cc5-c3289c8e221a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1280,
+          "y": 655
+        }
+      }
+  "35":
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 1
+    note: false
+    quietmode: 0
+    scriptarguments:
+      host:
+        simple: ${TCSHostnameArray}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a957982d-5b63-47e9-8829-dde5dd44974d
+      iscommand: false
+      name: contain host_WIP
+      playbookId: 2fcc0312-3a92-4098-8e05-60568462eb35
+      type: playbook
+      version: -1
+    taskid: a957982d-5b63-47e9-8829-dde5dd44974d
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 2460,
+          "y": 560
+        }
+      }
+  "36":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${HostNotFound}
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "42"
+      "yes":
+      - "18"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2720afd4-ac46-46cc-8e9c-97c0bcb58f1f
+      iscommand: false
+      name: Is there any report to create for Hosts Not Found
+      type: condition
+      version: -1
+    taskid: 2720afd4-ac46-46cc-8e9c-97c0bcb58f1f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 840,
+          "y": 1360
+        }
+      }
+  "37":
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      forEach: true
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "36"
+      - "40"
+      - "41"
+      - "46"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      host:
+        simple: ${TCSHostnameArray}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: dc8f2243-d429-4a6a-8043-f9005eaee3e9
+      iscommand: false
+      name: TCS-Compliance Lift Host Containment Check
+      playbookId: f777c749-f237-480d-88e0-94948572e0ad
+      type: playbook
+      version: -1
+    taskid: dc8f2243-d429-4a6a-8043-f9005eaee3e9
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 1280,
+          "y": 1170
+        }
+      }
+  "38":
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: Report
+      value:
+        simple: '${.=(val.File instanceof Array ? val.File[val.File.length-1].EntryID
+          : val.File.EntryID)}'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 08841501-6294-44b2-87c1-68794c1d7f2d
+      iscommand: false
+      name: Set Report To New Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 08841501-6294-44b2-87c1-68794c1d7f2d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1410,
+          "y": 1700
+        }
+      }
+  "39":
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: Report
+      value:
+        simple: '${.=(val.File instanceof Array ? val.File[val.File.length-1].EntryID
+          : val.File.EntryID)}'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 24c8c356-6d79-496d-8c2c-9e75c1146f76
+      iscommand: false
+      name: Set Report To New Context
+      script: Set
+      type: regular
+      version: -1
+    taskid: 24c8c356-6d79-496d-8c2c-9e75c1146f76
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1900,
+          "y": 1710
+        }
+      }
+  "40":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${HostNotLiftedDetectionFoundReport}
+          operator: isExists
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "42"
+      "yes":
+      - "43"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f798720f-4238-4060-85b0-e642d1f6e734
+      iscommand: false
+      name: Is there any report to create for Hosts Not Lifted as Detection Found
+      type: condition
+      version: -1
+    taskid: f798720f-4238-4060-85b0-e642d1f6e734
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1270,
+          "y": 1360
+        }
+      }
+  "41":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${HostStatusWasNotContainedReport}
+          operator: isExists
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "42"
+      "yes":
+      - "44"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f76fb2ac-950f-4f65-8307-43a52775a0a9
+      iscommand: false
+      name: Is there any report to create for Hosts Status Was Not Contained
+      type: condition
+      version: -1
+    taskid: f76fb2ac-950f-4f65-8307-43a52775a0a9
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 1750,
+          "y": 1360
+        }
+      }
+  "42":
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "45"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a09697fe-e67b-421a-813c-ca7255342a42
+      iscommand: false
+      name: Send Mail Report To Compliance Team
+      type: title
+      version: -1
+    taskid: a09697fe-e67b-421a-813c-ca7255342a42
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1125,
+          "y": 1950
+        }
+      }
+  "43":
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "38"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      context_key:
+        simple: HostNotLiftedDetectionFoundReport
+      file_name:
+        simple: Host_Containment_Not_Lifted_as_Detection_Found.csv
+      header:
+        simple: Hostname
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 42d24b56-377f-460e-8eb0-8119bd697a9f
+      iscommand: false
+      name: Create Excel Report of Host Containment Not Lifted as Detection Found
+      script: 98fd7176-124d-4739-8f9d-2f1edb20aa55
+      type: regular
+      version: -1
+    taskid: 42d24b56-377f-460e-8eb0-8119bd697a9f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1410,
+          "y": 1540
+        }
+      }
+  "44":
+    continueonerrortype: ""
+    id: "44"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "39"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      csvArray:
+        simple: ${HostStatusWasNotContainedReport}
+      fileName:
+        simple: Host_Was_Not_In_Contained_State.csv
+      headers:
+        simple: Hostname,ID,FirstSeen,LastSeen,OS,ExternalIP,LocalIP
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Export given array to csv file
+      id: 51866c1b-d190-41c8-80f3-5a403f292962
+      iscommand: false
+      name: Create Excel Report For Hosts Was Not In Contained State
+      script: ExportToCSV
+      type: regular
+      version: -1
+    taskid: 51866c1b-d190-41c8-80f3-5a403f292962
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1900,
+          "y": 1540
+        }
+      }
+  "45":
+    continueonerrortype: ""
+    id: "45"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attachIDs:
+        simple: ${Report}
+      body:
+        simple: "Hello Human,\n\nPlease find the report for all the hosts shared in
+          this list - ${incident.attachment.name}. \n\n\nRegards,\nCyber Autobot\nAutomation
+          id : ${incident.id}\n"
+      cc:
+        simple: kunal.krushev@tcs.com,InternalIS.SecurityCompliance@tcs.com
+      subject:
+        simple: ' Crowdstrike Host Lift Containment Report For Submitted File (Compliance
+          Team)- ${incident.attachment.name}'
+      to:
+        complex:
+          accessor: Email/from
+          root: incident.labels
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: EWS Mail Sender
+      description: Sends an email using EWS.
+      id: 29ee83c6-17e0-42f0-8eba-c010d336dcbf
+      iscommand: true
+      name: 'Send Host Lift Containment Report '
+      script: EWS Mail Sender|||send-mail
+      type: regular
+      version: -1
+    taskid: 29ee83c6-17e0-42f0-8eba-c010d336dcbf
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1125,
+          "y": 2080
+        }
+      }
+  "46":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: ${HostLiftedContainReport}
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "46"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "42"
+      "yes":
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: effb3154-395e-4668-8927-c2797a79a2b4
+      iscommand: false
+      name: Is there any report to create for Hosts Not Found
+      type: condition
+      version: -1
+    taskid: effb3154-395e-4668-8927-c2797a79a2b4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 2390,
+          "y": 1360
+        }
+      }
+  "47":
+    continueonerrortype: ""
+    id: "47"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entryID:
+        complex:
+          accessor: EntryID
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: File.Extension
+              operator: isEqualString
+              right:
+                value:
+                  simple: txt
+          root: File
+      input_encoding:
+        simple: utf-16
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Load the contents of a file into context.
+      id: 7e086cc6-b19e-4629-8e22-570bfced9c19
+      iscommand: false
+      name: Read The Text Attachment
+      script: ReadFile
+      type: regular
+      version: -1
+    taskid: 7e086cc6-b19e-4629-8e22-570bfced9c19
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1720,
+          "y": 655
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "36_18_yes": 0.51,
+      "36_42_#default#": 0.23,
+      "40_42_#default#": 0.7,
+      "40_43_yes": 0.55,
+      "41_42_#default#": 0.12,
+      "41_44_yes": 0.47,
+      "46_42_#default#": 0.16,
+      "46_4_yes": 0.52
+    },
+    "paper": {
+      "dimensions": {
+        "height": 2200,
+        "width": 2480,
+        "x": 360,
+        "y": 310
+      }
+    }
+  }
