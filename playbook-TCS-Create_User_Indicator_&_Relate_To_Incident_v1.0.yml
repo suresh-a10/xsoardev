@@ -1,0 +1,642 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: a8f14eae-50f0-476d-84bb-1c0d7fb01027
+inputs:
+- description: ""
+  key: emp
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: TCS-Create User Indicator & Relate To Incident v1.0
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: faa0e5e8-6db2-432f-89b7-53238df6eb66
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: faa0e5e8-6db2-432f-89b7-53238df6eb66
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 30
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: indicator
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      "yes":
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: cb23f702-b0fe-4c28-87fe-4970fe2134cc
+      iscommand: false
+      name: Is Indicator Context Set ?
+      type: condition
+      version: -1
+    taskid: cb23f702-b0fe-4c28-87fe-4970fe2134cc
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 190
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: indicator
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Delete field from context
+      id: 07455071-789a-437b-8845-86b87a3aa016
+      iscommand: false
+      name: Delete 'Indicator' Context
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 07455071-789a-437b-8845-86b87a3aa016
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 400
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: indicator.value=value::indicator.tag=CustomFields.tags
+      using:
+        simple: InnerServicesModule
+      value:
+        complex:
+          root: inputs.emp
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.find.indicators
+      id: e556a350-739a-42ec-8715-18a747686ff7
+      iscommand: true
+      name: Check If Indicator Exists
+      script: Builtin|||findIndicators
+      type: regular
+      version: -1
+    taskid: e556a350-739a-42ec-8715-18a747686ff7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 600
+        }
+      }
+  "6":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: value
+                root: indicator
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "8"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: cc44a4e6-505a-427c-8f10-aa45be29d552
+      iscommand: false
+      name: Found Indicator ?
+      type: condition
+      version: -1
+    taskid: cc44a4e6-505a-427c-8f10-aa45be29d552
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 800
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      incidentId:
+        complex:
+          accessor: id
+          root: incident
+      value:
+        simple: ${inputs.emp}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.associate.indicator
+      id: 547f6e45-403d-44c1-8350-a319b2b2108d
+      iscommand: true
+      name: Link Indicator To Current Incident
+      script: Builtin|||associateIndicatorToIncident
+      type: regular
+      version: -1
+    taskid: 547f6e45-403d-44c1-8350-a319b2b2108d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -230,
+          "y": 1000
+        }
+      }
+  "8":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      relateToIncident:
+        simple: "true"
+      tags:
+        simple: ${incident.id}
+      type:
+        simple: TCS Employee Id
+      value:
+        complex:
+          accessor: crowdstrikehostname
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.new.indicator
+      id: 82e4eb63-faab-4537-8206-81a8ca4b5ade
+      iscommand: true
+      name: Create username Indicator and link to incident
+      script: Builtin|||createNewIndicator
+      type: regular
+      version: -1
+    taskid: 82e4eb63-faab-4537-8206-81a8ca4b5ade
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 220,
+          "y": 1160
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      field:
+        simple: tags
+      fieldValue:
+        simple: ${incident.id}
+      indicatorsValues:
+        simple: ${inputs.emp}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.add.values.to.indicator.multi.select.field
+      id: 66130851-4ee8-4101-886b-9d905bd68553
+      iscommand: true
+      name: Append The Indicator Tag With Incident ID
+      script: Builtin|||appendIndicatorField
+      type: regular
+      version: -1
+    taskid: 66130851-4ee8-4101-886b-9d905bd68553
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -230,
+          "y": 1160
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 94960158-f71d-49cc-8260-8b86f4021e63
+      iscommand: false
+      name: Check If User Has Multiple Alerts
+      type: title
+      version: -1
+    taskid: 94960158-f71d-49cc-8260-8b86f4021e63
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 1380
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      indicator:
+        simple: ${inputs.emp}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Lookup incidents with specified indicator. Use currentIncidentId to omit the existing incident from output.
+
+        This automation runs using the default Limited User role, unless you explicitly change the permissions.
+        For more information, see the section about permissions here:
+        https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-2/cortex-xsoar-admin/playbooks/automations.html
+      id: 0e48df93-5d66-47f2-80f4-b9839843a968
+      iscommand: false
+      name: Find Incidents With Reported Username
+      script: findIncidentsWithIndicator
+      type: regular
+      version: -1
+    taskid: 0e48df93-5d66-47f2-80f4-b9839843a968
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 1510
+        }
+      }
+  "12":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      array:
+        complex:
+          accessor: incidentIDs
+          root: IncidentsWithIndicator
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Count an array size
+      id: dea9bd25-44f0-4a1b-80d1-2b3ea81fa2fe
+      iscommand: false
+      name: Count The Number of Incidents
+      script: CountArraySize
+      type: regular
+      version: -1
+    taskid: dea9bd25-44f0-4a1b-80d1-2b3ea81fa2fe
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 1840
+        }
+      }
+  "13":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: ArraySize
+          operator: lessThan
+          right:
+            value:
+              simple: "2"
+      label: "yes"
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "15"
+      "yes":
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5d640f2b-fea6-4f01-8995-d6da8fd01ee4
+      iscommand: false
+      name: Is There Only One Incident?
+      type: condition
+      version: -1
+    taskid: 5d640f2b-fea6-4f01-8995-d6da8fd01ee4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 2010
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      generalnotification:
+        simple: '<h2 style="text-align: center;"><em><span style="color: #008000;">This
+          is The User''s First Incident<br/></span><span style="color: #808080;"><strong>Check
+          &#39;Related Incidents&#39; In IoC Intel Report Section</strong></span></em></h2>'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 1ff9b441-3dab-40ba-85f4-fb71a0cf8fc9
+      iscommand: true
+      name: Set Notification - This is the users first incident
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 1ff9b441-3dab-40ba-85f4-fb71a0cf8fc9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 2240
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      generalnotification:
+        simple: '<h2 style="text-align: center;"><em><span style="color: #008000;">This
+          User is Linked To Multiple Incidents<br/></span><span style="color: #808080;"><strong>Check
+          &#39;Related Incidents&#39; In IoC Intel Report Section</strong></span></em></h2>'
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: d356e212-79c9-4ba3-83ac-83d6cf9c867c
+      iscommand: true
+      name: Set Notification - This is the users first incident
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: d356e212-79c9-4ba3-83ac-83d6cf9c867c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 410,
+          "y": 2240
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 656f06cf-c837-4765-8fe2-1d65ff1aec13
+      iscommand: false
+      name: The End
+      type: title
+      version: -1
+    taskid: 656f06cf-c837-4765-8fe2-1d65ff1aec13
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 2470
+        }
+      }
+  "17":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: incidentIDs
+                root: IncidentsWithIndicator
+          operator: isExists
+      label: "yes"
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "14"
+      "yes":
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f3d7ddcc-7913-4d9a-8504-4b7d7b3db165
+      iscommand: false
+      name: Check if Context is Defined
+      type: condition
+      version: -1
+    taskid: f3d7ddcc-7913-4d9a-8504-4b7d7b3db165
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 1670
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "6_7_yes": 0.49,
+      "6_8_#default#": 0.47
+    },
+    "paper": {
+      "dimensions": {
+        "height": 2505,
+        "width": 1020,
+        "x": -230,
+        "y": 30
+      }
+    }
+  }
