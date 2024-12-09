@@ -1,0 +1,128 @@
+args:
+- auto: PREDEFINED
+  description: Select the shift you are joining
+  name: shift
+  predefined:
+  - First-Shift
+  - Second-Shift
+  - Third-Shift
+commonfields:
+  id: 11fbe1f4-9587-43dd-869a-3b5e8f4cc583
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.9.7.24076
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Present_WIP
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  from datetime import datetime, time
+  import pytz
+
+  CURRENT_TIME=datetime.now(pytz.timezone('Asia/Kolkata')).time()
+  START_TIME=time(12,30)
+  END_TIME=time(14,00)
+
+  def addUserToShift(listName,empid,username,time,shift):
+      runCommand=True
+      current_user_list=json.loads(demisto.executeCommand('getList', {'listName':listName})[0]['Contents'])
+      current_absent_list=json.loads(demisto.executeCommand('getList', {'listName':"AbsentInCurrentShift"})[0]['Contents'])
+      Exists = None
+      if current_user_list:
+          #Going over the data to see if data is already set for today, if so, override
+          for k,v in current_user_list.items():
+              if empid in k:
+                  Exists = k
+
+      # Checking if the data is already set
+      if not Exists:
+          data={"Name":username,"Time":time}
+          current_user_list[empid]=data
+
+          # Setting new list
+          res = demisto.executeCommand('setList', {'listName':listName, 'listData':current_user_list})
+
+          demisto.results("Added to List")
+
+          if shift:
+              if username=="Jyoti Pawar1":
+                  role=[shift,"Operator","CSOC-XSOAR-Admin"]
+              else:
+                  role=[shift,"Operator"]
+              body={
+                  'id':username,
+                  'roles':{
+                      'roles':role,
+                      'defaultAdmin':False
+                  }
+              }
+              demisto.executeCommand('demisto-api-post', {'body':body,'uri':"/users/update"})
+      else:
+          demisto.results("Already Present in List")
+          runCommand=False
+
+      if current_absent_list:
+          for k,v in current_absent_list.items():
+              if empid in k:
+                  demisto.executeCommand("RemoveKeyFromList",{"keyName":empid,'listName':"AbsentInCurrentShift"})
+      return runCommand
+
+
+
+  def get_current_user_details():
+      empid,username,time=None,None,None
+      get_current_user=demisto.executeCommand("getUsers",{"current":True})[0]['Contents']
+      # current_user_list={}
+
+      if get_current_user:
+          empid=(get_current_user[0].get('phone')).split('@')[0]
+          username=get_current_user[0].get('username')
+          time=CURRENT_TIME.strftime("%H:%M:%S")
+      return empid,username,time
+
+
+
+
+  def main():
+      try:
+          empid,username,time=get_current_user_details()
+          shift=demisto.args().get('shift',None)
+
+          if CURRENT_TIME>START_TIME and CURRENT_TIME<END_TIME:
+              listName='PresentInSecondShift'
+              runCommand=addUserToShift(listName,empid,username,time,shift)
+              # print(True)
+          else:
+              listName='PresentInCurrentShift'
+              runCommand=addUserToShift(listName,empid,username,time,shift)
+              if runCommand:
+                  res=demisto.executeCommand('ShiftUpdate_v2_WIP',{'AddOrRemove':'Add to Shift','EmpID':empid,'RanInIncident':'No'})
+                  print(res)
+              # print(False)
+
+      except Exception as e:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute script. Error: {str(e)}')
+
+
+  ''' ENTRY POINT '''
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
