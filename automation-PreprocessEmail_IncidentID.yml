@@ -28,10 +28,10 @@ commonfields:
 contentitemexportablefields:
   contentitemfields:
     definitionid: ""
-    fromServerVersion: 5.0.0
-    itemVersion: 2.0.35
+    fromServerVersion: ""
+    itemVersion: ""
     packID: ""
-    packName: Email Communication
+    packName: ""
     prevname: ""
     propagationLabels:
     - all
@@ -40,7 +40,7 @@ dockerimage: demisto/python3:3.11.10.115186
 enabled: true
 engineinfo: {}
 mainengineinfo: {}
-name: PreprocessEmail_basedonincidentid
+name: PreprocessEmail_IncidentID
 pswd: ""
 runas: DBotRole
 runonce: false
@@ -326,17 +326,20 @@ script: |
                         f'"emaillatestmessage" field was not updated with {item_id} value for incident: {incident_id}')
 
 
-  def get_email_related_incident_id(email_related_incident_code, email_original_subject):
+  def get_email_related_incident_id(email_related_incident_code):
       """
       Get the email generated code and the original text subject of an email and return the incident matching to the
       email code and original subject.
       """
 
-      query = f'(emailgeneratedcode:{email_related_incident_code}) ' \
-              f'or (emailgeneratedcodes:*{email_related_incident_code}*)'
+      #query = f'(emailgeneratedcode:{email_related_incident_code}) ' \
+              #f'or (emailgeneratedcodes:*{email_related_incident_code}*)'
+      query = f'(id:{email_related_incident_code})'
 
       incidents_details = get_incident_by_query(query)
+      print(incidents_details)
 
+      """"
       for incident in incidents_details:
           email_subject = incident.get('emailsubject', '')
           if email_subject and email_original_subject in email_subject:
@@ -356,7 +359,7 @@ script: |
               except Exception as e:
                   demisto.error(f'Exception while retrieving thread context: {e}')
       return None
-
+      """
 
   def get_unique_code():
       """
@@ -464,15 +467,11 @@ script: |
       email_replyto = custom_fields.get('emailreplyto', '')
       email_latest_message = custom_fields.get('emaillatestmessage', '')
 
-      reputation_calc_async = argToBoolean(args.get('reputation_calc_async', False))
-
       try:
-          email_related_incident_code = email_subject.split('<')[1].split('>')[0]
-          email_original_subject = email_subject.split('<')[-1].split('>')[1].strip()
+          email_related_incident= email_subject.split('<')[1].split('>')[0]
 
-          email_related_incident = get_email_related_incident_id(email_related_incident_code, email_original_subject)
           update_latest_message_field(email_related_incident, email_latest_message)
-          query = f"id:{email_related_incident}"
+          query = f"id:{email_related_incident_code}"
 
           incident_details = get_incident_by_query(query)[0]
 
@@ -492,13 +491,13 @@ script: |
               # Add new email message as Entry if type is 'Email Communication'
               demisto.debug(
                   "Incoming email related to Email Communication Incident"
-                  f" {email_related_incident}. Appending a message there.")
+                  f" {email_related_incident_code}. Appending a message there.")
               email_reply = set_email_reply(email_from, email_to, email_cc, html_body, attachments)
-              add_entries(email_reply, email_related_incident, reputation_calc_async)
+
           else:
               # For all other incident types, add message details as context entry
-              demisto.debug(f"Incoming email related to Incident {email_related_incident}.  Appending message there.")
-              create_thread_context(email_related_incident_code, email_cc, email_bcc, email_text, email_from, html_body,
+              demisto.results(f"Incoming email related to Incident {email_related_incident_code}.  Appending message there.")
+              create_thread_context(email_related_incident, email_cc, email_bcc, email_text, email_from, html_body,
                                     email_latest_message, email_received, email_replyto, email_subject, email_to,
                                     email_related_incident, attachments)
 
@@ -530,7 +529,6 @@ script: |
 
   register_module_line('PreprocessEmail', 'end', __line__())
 scripttarget: 0
-sourcescripid: PreprocessEmail
 subtype: python3
 tags:
 - email
