@@ -240,7 +240,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 6.1.94
+    itemVersion: 6.1.98
     packID: CortexXDR
     packName: Cortex XDR by Palo Alto Networks
     packPropagationLabels:
@@ -2801,9 +2801,21 @@ script:
         the xdr-get-endpoints command.
       name: endpoint_ids
       required: true
-    - description: A comma-separated list of shell commands to execute.
+    - description: A comma-separated list of shell commands to execute. Set the `is_raw_command`
+        argument to `true` to prevent splitting by commas. (Useful when using `||`,
+        `&&`, `;` separators for controlling the flow of multiple commands).
       name: commands
       required: true
+    - description: Whether to pass the command as-is. When false, the command is split
+        by commas and sent as a list of commands, that are run independently.
+      name: is_raw_command
+      type: Boolean
+    - auto: PREDEFINED
+      description: Type of shell command.
+      name: command_type
+      predefined:
+      - powershell
+      - native
     - defaultValue: "600"
       description: The timeout in seconds for this execution.
       name: timeout
@@ -3749,7 +3761,7 @@ script:
         Unique ID of a specific user.
         User ID could be either of the `foo/dummy` format, or just `dummy`.
       name: user_id
-    - defaultValue: "50"
+    - defaultValue: "10"
       description: Limit the number of users that will appear in the list. (Use limit
         when no specific host is requested.)
       name: limit
@@ -3785,7 +3797,7 @@ script:
   - arguments:
     - description: The host name of a specific host.
       name: host_id
-    - defaultValue: "50"
+    - defaultValue: "10"
       description: Limit the number of hosts that will appear in the list. By default,
         the limit is 50 hosts.(Use limit when no specific host is requested.)
       name: limit
@@ -3934,7 +3946,7 @@ script:
       Update one or more alerts with the provided arguments.
       Required license: Cortex XDR Prevent, Cortex XDR Pro per Endpoint, or Cortex XDR Pro per GB.
     name: xdr-update-alert
-  dockerimage: demisto/python3:3.11.10.115887
+  dockerimage: demisto/python3:3.11.10.116949
   isfetch: true
   ismappable: true
   isremotesyncin: true
@@ -3942,7 +3954,7 @@ script:
   runonce: false
   script: |
     register_module_line('Cortex XDR - IR', 'start', __line__())
-    demisto.debug('pack name = Cortex XDR by Palo Alto Networks, pack version = 6.1.94')
+    demisto.debug('pack name = Cortex XDR by Palo Alto Networks, pack version = 6.1.98')
 
 
     import hashlib
@@ -6373,11 +6385,50 @@ script:
         )
 
 
+    def form_powershell_command(unescaped_string: str) -> str:
+        """
+        Builds a Powershell command using prefix and a shell-escaped string.
+
+        Args:
+            unescaped_string (str): An unescaped command string.
+
+        Returns:
+            str: Prefixed and escaped command.
+        """
+        escaped_string = ''
+
+        for i, char in enumerate(unescaped_string):
+            if char == "'":
+                escaped_string += "''"
+
+            elif char == '"':
+                backslash_count = 0
+                for j in range(i - 1, -1, -1):
+                    if unescaped_string[j] != '\\':
+                        break
+                    backslash_count += 1
+
+                escaped_string += ('\\' * backslash_count) + '\\"'
+
+            else:
+                escaped_string += char
+
+        return f"powershell -Command '{escaped_string}'"
+
+
     def run_script_execute_commands_command(client: CoreClient, args: Dict) -> CommandResults:
         endpoint_ids = argToList(args.get('endpoint_ids'))
         incident_id = arg_to_number(args.get('incident_id'))
         timeout = arg_to_number(args.get('timeout', 600)) or 600
-        parameters = {'commands_list': argToList(args.get('commands'))}
+
+        commands = args.get('commands')
+        is_raw_command = argToBoolean(args.get('is_raw_command', False))
+        commands_list = remove_empty_elements([commands]) if is_raw_command else argToList(commands)
+
+        if args.get('command_type') == 'powershell':
+            commands_list = [form_powershell_command(command) for command in commands_list]
+        parameters = {'commands_list': commands_list}
+
         response = client.run_script('a6f7683c8e217d85bd3c398f0d3fb6bf', endpoint_ids, parameters, timeout, incident_id)
         reply = response.get('reply')
         return CommandResults(
@@ -7117,33 +7168,39 @@ script:
         return xdr_close_reason
 
 
-    def handle_outgoing_issue_closure(remote_args):
-        incident_id = remote_args.remote_incident_id
-        demisto.debug(f"handle_outgoing_issue_closure {incident_id=}")
-        update_args = remote_args.delta
-        current_remote_status = remote_args.data.get('status') if remote_args.data else None
-        close_reason = update_args.get('close_reason') or update_args.get('closeReason')
-        demisto.debug(f'{current_remote_status=} {remote_args.data=} {remote_args.inc_status=} {close_reason=}')
-        # force closing remote incident only if:
-        #   The XSOAR incident is closed
-        #   and the remote incident isn't already closed
-        if remote_args.inc_status == 2 and current_remote_status not in XDR_RESOLVED_STATUS_TO_XSOAR and close_reason:
-            if close_notes := update_args.get('closeNotes'):
-                demisto.debug(f"handle_outgoing_issue_closure {incident_id=} {close_notes=}")
-                update_args['resolve_comment'] = close_notes
+    def handle_outgoing_issue_closure(parsed_args: UpdateRemoteSystemArgs):
+        """
+        Handle closure of an outgoing issue by updating the delta field in the parsed_args object. The closed_reason will
+        be determined based on whether it exists in XSOAR or XDR. If the XSOAR incident is closed and the remote incident isn't
+        already closed, update the delta with resolve comment or xsoar close-reason.
 
-            xdr_close_reason = resolve_xdr_close_reason(close_reason)
-            update_args['status'] = xdr_close_reason
-            demisto.debug(f"handle_outgoing_issue_closure Closing Remote incident {incident_id=} with status {update_args['status']}")
+        Args:
+            parsed_args (object): An object of type UpdateRemoteSystemArgs, containing the parsed arguments.
+        """
+
+        close_reason_fields = ['close_reason', 'closeReason', 'closeNotes', 'resolve_comment', 'closingUserId']
+        closed_reason = (next((parsed_args.delta.get(key) for key in close_reason_fields if parsed_args.delta.get(key)), None)
+                         or next((parsed_args.data.get(key) for key in close_reason_fields if parsed_args.data.get(key)), None))
+        demisto.debug(f"handle_outgoing_issue_closure: incident_id: {parsed_args.remote_incident_id} {closed_reason=}")
+        remote_xdr_status = parsed_args.data.get('status') if parsed_args.data else None
+        if parsed_args.inc_status == IncidentStatus.DONE and closed_reason and remote_xdr_status not in XDR_RESOLVED_STATUS_TO_XSOAR:
+            demisto.debug("handle_outgoing_issue_closure: XSOAR is closed, xdr is open. updating delta")
+            if close_notes := parsed_args.delta.get('closeNotes'):
+                demisto.debug(f"handle_outgoing_issue_closure: adding resolve comment to the delta. {close_notes}")
+                parsed_args.delta['resolve_comment'] = close_notes
+
+            parsed_args.delta['status'] = resolve_xdr_close_reason(closed_reason)
+            demisto.debug(
+                f"handle_outgoing_issue_closure Closing Remote incident ID: {parsed_args.remote_incident_id}"
+                f" with status {parsed_args.delta['status']}")
 
 
-    def get_update_args(remote_args):
+    def get_update_args(parsed_args):
         """Change the updated field names to fit the update command"""
-
-        handle_outgoing_issue_closure(remote_args)
-        handle_outgoing_incident_owner_sync(remote_args.delta)
-        handle_user_unassignment(remote_args.delta)
-        return remote_args.delta
+        handle_outgoing_issue_closure(parsed_args)
+        handle_outgoing_incident_owner_sync(parsed_args.delta)
+        handle_user_unassignment(parsed_args.delta)
+        return parsed_args.delta
 
 
     def get_distribution_versions_command(client, args):
@@ -8367,7 +8424,7 @@ script:
             table_for_markdown = [parse_risky_users_or_hosts(outputs, *table_headers)]  # type: ignore[arg-type]
 
         else:
-            list_limit = int(args.get('limit', 50))
+            list_limit = int(args.get('limit', 10))
 
             try:
                 outputs = get_func().get('reply', [])[:list_limit]
@@ -9568,73 +9625,56 @@ script:
 
 
     def update_remote_system_command(client, args):
-        remote_args = UpdateRemoteSystemArgs(args)
-        incident_id = remote_args.remote_incident_id
-        remote_data = remote_args.data
-        demisto.debug(f"update_remote_system_command {incident_id=} {remote_args=}")
-        demisto.debug(f"update_remote_system_command {incident_id=} , {remote_data.get('closeReason')=}, "
-                      f"{remote_data.get('closeNotes')=}")
+        parsed_args = UpdateRemoteSystemArgs(args)
+        demisto.debug(f"update_remote_system_command command args are:"
+                      f"id: {parsed_args.remote_incident_id}, "
+                      f"data: {parsed_args.data}, "
+                      f"entries: {parsed_args.entries}, "
+                      f"incident_changed: {parsed_args.incident_changed}, "
+                      f"remote_incident_id: {parsed_args.remote_incident_id}, "
+                      f"inc_status: {parsed_args.inc_status}, "
+                      f"delta: {parsed_args.delta}")
 
-        if remote_args.delta:
-            demisto.debug(f'Got the following delta keys {str(list(remote_args.delta.keys()))} to update'
-                          f'incident {remote_args.remote_incident_id}')
         try:
-            if remote_args.incident_changed:
-                demisto.debug(f"update_remote_system_command {incident_id=} {remote_args.incident_changed=}")
-                update_args = get_update_args(remote_args)
+            if parsed_args.incident_changed:
+                demisto.debug(
+                    f'For incident ID: {parsed_args.remote_incident_id} got the following'
+                    f' delta keys {str(list(parsed_args.delta.keys()))} to update.')
+                xsoar_to_xdr_delta = get_update_args(parsed_args)
+                demisto.debug(f"update_remote_system_command: After returning from get_update_args, {xsoar_to_xdr_delta=}")
+                xsoar_to_xdr_delta['incident_id'] = parsed_args.remote_incident_id
 
-                update_args['incident_id'] = remote_args.remote_incident_id
-                demisto.debug(f'Sending incident with remote ID [{remote_args.remote_incident_id}]\n')
-                demisto.debug(f"Before checking status {update_args=}")
-                current_remote_status = remote_args.data.get('status') if remote_args.data else None
-                is_closed_delta = (update_args.get('close_reason') or update_args.get('closeReason') or update_args.get('closeNotes')
-                                   or update_args.get('resolve_comment') or update_args.get('closingUserId'))
-                is_closed_data = (remote_data.get('closeReason') or remote_data.get('close_reason') or remote_data.get('closeNotes'))
-                demisto.debug(f"update_remote_system_command {is_closed_delta=}, {is_closed_data=}")
-                is_closed = is_closed_delta or is_closed_data
-                closed_without_status = not update_args.get('close_reason') and not update_args.get('closeReason')
-                remote_is_already_closed = current_remote_status in XDR_RESOLVED_STATUS_TO_XSOAR
-                demisto.debug(f"{remote_is_already_closed=}")
-                if is_closed and closed_without_status and not remote_is_already_closed:
-                    update_args['status'] = XSOAR_RESOLVED_STATUS_TO_XDR.get('Other')
-                demisto.debug(f"After checking status {update_args=}")
-
-                close_xdr_incident = argToBoolean(client._params.get("close_xdr_incident", True))
-
+                should_close_xdr_incident = argToBoolean(client._params.get("close_xdr_incident", True))
                 status = ""
                 # If the client does not want to close the incident in XDR, temporarily remove the status from the arguments
                 # to update the incident, and add it back later to close the alerts.
-                if not close_xdr_incident and (update_args.get('status') in XSOAR_RESOLVED_STATUS_TO_XDR.values()):
-                    status = update_args.pop('status')
-                    resolve_comment = update_args.pop('resolve_comment', None)
-
+                if not should_close_xdr_incident and (xsoar_to_xdr_delta.get('status') in XSOAR_RESOLVED_STATUS_TO_XDR.values()):
+                    status = xsoar_to_xdr_delta.pop('status')
+                    resolve_comment = xsoar_to_xdr_delta.pop('resolve_comment', None)
                     demisto.debug(f"Popped status {status} and {resolve_comment=} from update_args,"
                                   f" incident status won't be updated in XDR.")
 
-                update_incident_command(client, update_args)
+                demisto.debug(f"update_remote_system_command: Update incident with the following delta {xsoar_to_xdr_delta}")
+                update_incident_command(client, xsoar_to_xdr_delta)  # updating xdr with the delta
 
-                close_alerts_in_xdr = argToBoolean(client._params.get("close_alerts_in_xdr", False))
-                # Check all relevant fields for an incident being closed in XSOAR UI
-                demisto.debug(f"Defining whether to close related alerts by: {is_closed=} {close_alerts_in_xdr=}")
-                if is_closed and closed_without_status and remote_is_already_closed:
-                    update_args['status'] = current_remote_status
-                if close_alerts_in_xdr and is_closed:
+                should_close_alerts_in_xdr = argToBoolean(client._params.get("close_alerts_in_xdr", False))
+
+                if should_close_alerts_in_xdr and xsoar_to_xdr_delta.get('status') in XDR_RESOLVED_STATUS_TO_XSOAR:
                     if status:
-                        update_args['status'] = status
+                        xsoar_to_xdr_delta['status'] = status
                         demisto.debug(f'Restored {status=} in order to update the alerts status.')
-                    update_related_alerts(client, update_args)
-
+                    update_related_alerts(client, xsoar_to_xdr_delta)
+                    demisto.debug("update_remote_system_command: closed xdr alerts")
             else:
-                demisto.debug(f'Skipping updating remote incident fields [{remote_args.remote_incident_id}] '
+                demisto.debug(f'Skipping updating remote incident fields [{parsed_args.remote_incident_id}] '
                               f'as it is not new nor changed')
-
-            return remote_args.remote_incident_id
+            return parsed_args.remote_incident_id
 
         except Exception as e:
-            demisto.debug(f"Error in outgoing mirror for incident {remote_args.remote_incident_id} \n"
+            demisto.debug(f"Error in outgoing mirror for incident {parsed_args.remote_incident_id} \n"
                           f"Error message: {str(e)}")
 
-            return remote_args.remote_incident_id
+            return parsed_args.remote_incident_id
 
 
     def update_related_alerts(client: Client, args: dict):
