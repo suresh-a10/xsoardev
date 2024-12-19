@@ -20,17 +20,6 @@ configuration:
   required: true
   section: Connect
   type: 15
-- additionalinfo: Will run the TAXII2 Server on this port from within Cortex XSOAR.
-    Requires a unique port for each long-running integration instance. Do not use
-    the same port for multiple instances. (For Cortex XSOAR 8 and Cortex XSIAM) If
-    you do not enter a Listen Port, an unused port for TAXII2 Server will automatically
-    be generated when the instance is saved. However, if using an engine, you must
-    enter a Listen Port.
-  display: Listen Port
-  name: longRunningPort
-  required: true
-  section: Connect
-  type: 0
 - additionalinfo: Credentials to use for the basic authentication.
   display: Username
   name: credentials
@@ -90,6 +79,17 @@ configuration:
   required: false
   section: Connect
   type: 0
+- additionalinfo: Will run the TAXII2 Server on this port from within Cortex XSOAR.
+    Requires a unique port for each long-running integration instance. Do not use
+    the same port for multiple instances. (For Cortex XSOAR 8 and Cortex XSIAM) If
+    you do not enter a Listen Port, an unused port for TAXII2 Server will automatically
+    be generated when the instance is saved. However, if using an engine, you must
+    enter a Listen Port.
+  display: Listen Port
+  name: longRunningPort
+  required: true
+  section: Connect
+  type: 0
 - additionalinfo: 'NGINX global directives to be passed on the command line using
     the -g option. Each directive should end with `;`. For example: `worker_processes
     4; timer_resolution 100ms;`. Advanced configuration to be used only if instructed
@@ -136,7 +136,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 6.1.0
-    itemVersion: 2.0.72
+    itemVersion: 2.1.0
     packID: TAXIIServer
     packName: TAXII Server
     packPropagationLabels:
@@ -229,13 +229,13 @@ script:
     - contextPath: TAXIIServer.ServerInfo.description
       description: The server description.
       type: String
-  dockerimage: demisto/flask-nginx:1.0.0.115634
+  dockerimage: demisto/flask-nginx:1.0.0.117310
   longRunning: true
   longRunningPort: true
   runonce: false
   script: |
     register_module_line('TAXII2 Server', 'start', __line__())
-    demisto.debug('pack name = TAXII Server, pack version = 2.0.72')
+    demisto.debug('pack name = TAXII Server, pack version = 2.1.0')
 
 
     import functools
@@ -1125,6 +1125,8 @@ script:
         """
         Integration test module.
         """
+        if not params.get('longRunningPort'):
+            params['longRunningPort'] = '1111'
         run_long_running(params, is_test=True)
         return 'ok'
 
@@ -1201,14 +1203,6 @@ script:
         fields_to_present = create_fields_list(params.get('fields_filter', ''))
         types_for_indicator_sdo = argToList(params.get('provide_as_indicator'))
 
-        try:
-            if not params.get('longRunningPort'):
-                params['longRunningPort'] = '1111'
-                # The default is for the autogeneration port feature before port allocation.
-            port = int(params.get('longRunningPort', ''))
-        except ValueError as e:
-            raise ValueError(f'Invalid listen port - {e}')
-
         collections = get_collections(params)
         version = params.get('version')
         credentials = params.get('credentials', {})
@@ -1232,6 +1226,13 @@ script:
         demisto.debug(f'Command being called is {command}')
 
         try:
+            if command == 'test-module':
+                return_results(test_module(params))
+            try:
+                port = int(params.get('longRunningPort', ''))
+            except ValueError as e:
+                raise ValueError(f'Invalid listen port - {e}')
+
             SERVER = TAXII2Server(scheme, str(host_name), port, collections, certificate,
                                   private_key, http_server, credentials, version, service_address, fields_to_present,
                                   types_for_indicator_sdo)
@@ -1245,9 +1246,6 @@ script:
                 set_integration_context(integration_context)
 
                 run_long_running(params)
-
-            elif command == 'test-module':
-                return_results(test_module(params))
 
             elif command == 'taxii-server-list-collections':
                 integration_context = get_integration_context(True)
@@ -1269,7 +1267,6 @@ script:
 
 
     # pylint: disable=E9010, E9011
-
 
     from typing import Optional, Tuple
     from requests.sessions import merge_setting, CaseInsensitiveDict
@@ -2923,6 +2920,8 @@ script:
             Args:
                 autonomous_system_obj (dict): indicator as an observable object of type autonomous-system.
             """
+            if isinstance(autonomous_system_obj, dict) and 'number' in autonomous_system_obj:
+                autonomous_system_obj['number'] = str(autonomous_system_obj.get('number', ''))
             autonomous_system_indicator = self.parse_general_sco_indicator(autonomous_system_obj, value_mapping='number')
             autonomous_system_indicator[0]['fields']['name'] = autonomous_system_obj.get('name')
 
