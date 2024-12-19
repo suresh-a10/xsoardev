@@ -1,0 +1,440 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.10.0
+    itemVersion: 2.1.11
+    packID: PrismaAccess
+    packName: Palo Alto Networks - Strata Cloud Manager
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: |
+  ## Goal
+  This playbook is designed to automatically quarantine a SentinelOne host in response to a new threat incident trigger using Prisma SASE.
+
+  ## Playbook Flow
+  - **Trigger**: The playbook activates upon the creation of a new SentinelOne Threat incident.
+  - **Process**:
+    1. Retrieves the Host ID from Cortex Data Lake.
+    2. Loads detailed information about the agent.
+    3. If the Host ID is found and the agent is not decommissioned, it initiates quarantine through Prisma SASE.
+
+  ## Dependencies and Configuration
+  - This playbook requires being set as the default in the SentinelOne instance configuration.
+  - It specifically responds to events categorized as 'Threats'.
+  - Ensure that the Prisma SASE, Cortex Data Lake and SentinelOne integrations are properly configured and operational for seamless execution of this playbook.
+id: Prisma SASE - Quarantine Host With Active Threat
+inputs: []
+name: Prisma SASE - Quarantine a SentinelOne Host With Active Threat
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d11573fb-1ab8-48c2-8915-7fe01aadd5c7
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: d11573fb-1ab8-48c2-8915-7fe01aadd5c7
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 40
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      limit:
+        simple: "100000"
+      query:
+        complex:
+          accessor: devicename
+          root: incident
+          transformers:
+          - args:
+              prefix:
+                value:
+                  simple: SELECT  DISTINCT host_id,endpoint_device_name FROM `firewall.globalprotect`
+                    where event_id.value = 'gateway-connected'  and endpoint_device_name='
+              suffix:
+                value:
+                  simple: ''''
+            operator: concat
+      transform_results:
+        simple: "false"
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Runs a query on any table or field.
+      id: e6a6b01b-5d40-4bfb-8ccb-bc761acfe500
+      iscommand: true
+      name: Get Host ID from CDL Logs
+      script: '|||cdl-query-logs'
+      type: regular
+      version: -1
+    taskid: e6a6b01b-5d40-4bfb-8ccb-bc761acfe500
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 360
+        }
+      }
+  "4":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: CDL.Logging.host_id
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "7"
+      "yes":
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether the host ID was found in the CDL logs.
+      id: 7f2ad353-eb6f-4110-837d-d21daf4a93d2
+      iscommand: false
+      name: Was the host ID found?
+      type: condition
+      version: -1
+    taskid: 7f2ad353-eb6f-4110-837d-d21daf4a93d2
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 680
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              simple: SentinelOne.agentDetails.agentRealtimeInfo.agentIsDecommissioned
+          operator: isEqualString
+          right:
+            value:
+              simple: "true"
+      label: "yes"
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "11"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks whether the agent is decommissioned.
+      id: 4df18bfe-7246-42cc-8450-e2f834e7ba6c
+      iscommand: false
+      name: Is the agent decommissioned?
+      type: condition
+      version: -1
+    taskid: 4df18bfe-7246-42cc-8450-e2f834e7ba6c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 360,
+          "y": 860
+        }
+      }
+  "6":
+    continueonerror: true
+    continueonerrortype: errorPath
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#error#':
+      - "9"
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      host_id:
+        complex:
+          accessor: host_id
+          root: CDL.Logging
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Quarantine a host.
+      id: 87a99122-3a73-4bee-8218-568891f0afa2
+      iscommand: true
+      name: Quarantine host via Prisma SASE
+      script: '|||prisma-sase-quarantine-host'
+      type: regular
+      version: -1
+    taskid: 87a99122-3a73-4bee-8218-568891f0afa2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 360,
+          "y": 1220
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b76a1b66-af59-4a57-80eb-e4957c866a64
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: b76a1b66-af59-4a57-80eb-e4957c866a64
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -200,
+          "y": 1405
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: SentinelOne.agentDetails=
+      ignore-outputs:
+        simple: "true"
+      input:
+        complex:
+          accessor: details
+          root: incident
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Loads a JSON from a string input, and returns a JSON object result.
+      id: ce581bda-eae3-4ae7-80b2-6172c932b51e
+      iscommand: false
+      name: Load SentinelOne agent details
+      script: LoadJSON
+      type: regular
+      version: -1
+    taskid: ce581bda-eae3-4ae7-80b2-6172c932b51e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 520
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      message:
+        simple: The host couldn't be quarantined. It might have already been quarantined,
+          or an error was encountered during the quarantine execution.
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints an error entry with a given message.
+      id: d729bc95-fdeb-4819-8349-8aef1a7c3ba5
+      iscommand: false
+      name: 'Error: Could not quarantine host'
+      script: PrintErrorEntry
+      type: regular
+      version: -1
+    taskid: d729bc95-fdeb-4819-8349-8aef1a7c3ba5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 360,
+          "y": 1405
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "7"
+      "yes":
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      brandname:
+        simple: Cortex Data Lake
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns 'yes' if integration brand is available. Otherwise returns
+        'no'.
+      id: dc4da1ed-848a-4a18-84c4-971c8cb12133
+      iscommand: false
+      name: Is Cortex Data Lake Integration Enabled?
+      script: IsIntegrationAvailable
+      type: condition
+      version: -1
+    taskid: dc4da1ed-848a-4a18-84c4-971c8cb12133
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 180
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "7"
+      "yes":
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      brandname:
+        simple: Palo Alto Networks - Prisma SASE
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns 'yes' if integration brand is available. Otherwise returns
+        'no'.
+      id: 70b3a700-03a9-4fb5-80ee-f60c4cd6904b
+      iscommand: false
+      name: Is Prisma SASE Enabled?
+      script: IsIntegrationAvailable
+      type: condition
+      version: -1
+    taskid: 70b3a700-03a9-4fb5-80ee-f60c4cd6904b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 360,
+          "y": 1040
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "10_3_yes": 0.42,
+      "10_7_no": 0.28,
+      "11_6_yes": 0.36,
+      "11_7_no": 0.34,
+      "4_5_yes": 0.31,
+      "4_7_#default#": 0.28,
+      "5_11_#default#": 0.4,
+      "5_7_yes": 0.27,
+      "6_9_#error#": 0.64
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1460,
+        "width": 940,
+        "x": -200,
+        "y": 40
+      }
+    }
+  }
