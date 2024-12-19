@@ -264,7 +264,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 2.2.8
+    itemVersion: 2.3.0
     packID: PAN-OS
     packName: PAN-OS by Palo Alto Networks
     packPropagationLabels:
@@ -277,27 +277,33 @@ defaultmapperin: Panorama Mapper
 description: Manage Palo Alto Networks Firewall and Panorama. Use this pack to manage
   Prisma Access through Panorama. For more information, see the Panorama documentation.
 detaileddescription: "The integration uses the Panorama XML API.\nTo obtain an API
-  Key, run the following REST command and copy the key:\nhttps://[PanoramaIP]/api/?type=keygen&user=[user]&password=[password]\n
-  \nFor more information, visit the [Palo Alto Networks documentation](https://docs.paloaltonetworks.com/panorama).\n
-  \n---\nYou need to create a separate integration instance for Palo Alto Networks
-  Firewall and Palo Alto Networks. Unless specified otherwise, all commands are valid
-  for both Firewall and Panorama.\n\n---\n### Firewall: Configure the vsys\n- The
-  vsys is located in the Firewall URL; e.g., https://<server>#device::<vsys>::device/setup\n
-  \n### Panorama: Configure a device group\n- Access the Panorama UI.\n- Go to **Panorama**
-  > **Device Groups**.\n- Choose a device group name.\n\n---\n### Fetch Incidents\n
-  The Panorama integration now supports fetch incidents.\nThe incidents are fetched
-  according to a number of different optional log type queries. The log types are:
-  **Traffic, Threat, URL, Data, Correlation, System, Wildfire, Decryption**.\n\n\n
-  ##### Max incidents per fetch\nThe max incidents per fetch parameter specifies the
-  maximum number of incidents to fetch **per** Log Type Query.\n\n##### Log Type \n
-  The queries that will be included during the fetch are decided according to the
-  \"Log Type\" parameter (Multiple select dropdown).\n- Selecting \"All\" will use
-  all the log type queries in the fetch.\n- To choose a specific set of queries, select
-  their log types from the dropdown (make sure \"All\" option is unselected).\n\n
-  ##### Log Type Query\n- Each log type has its own query field in the instance configuration.
-  \n- Note that the default query values has some example text in it, make sure to
-  enter a valid query.\n  \n##### Log Type Query Examples\n\n| Log Type            |
-  Query Example                                                                                                                                           |\n
+  key, run the following CURL command and copy the key:\n```shell\ncurl -H \"Content-Type:
+  application/x-www-form-urlencoded\" -X POST https://[PanoramaIP]/api/\\?type\\=keygen
+  -d 'user=[user]&password=[password]'\n```\n\n***Creating or updating the encryption
+  master key of Palo Alto Networks Firewall or Panorama invalidates the current API
+  key and requires obtaining a new one. All subsequent commands will raise an \"Invalid
+  Credential\" error until a new API key is obtained and the integration instance
+  is updated accordingly.***\n \nFor more information, visit the [Palo Alto Networks
+  documentation](https://docs.paloaltonetworks.com/panorama).\n \n---\nYou need to
+  create a separate integration instance for Palo Alto Networks Firewall and Palo
+  Alto Networks. Unless specified otherwise, all commands are valid for both Firewall
+  and Panorama.\n\n---\n### Firewall: Configure the vsys\n- The vsys is located in
+  the Firewall URL; e.g., https://<server>#device::<vsys>::device/setup\n \n### Panorama:
+  Configure a device group\n- Access the Panorama UI.\n- Go to **Panorama** > **Device
+  Groups**.\n- Choose a device group name.\n\n---\n### Fetch Incidents\n The Panorama
+  integration now supports fetch incidents.\nThe incidents are fetched according to
+  a number of different optional log type queries. The log types are: **Traffic, Threat,
+  URL, Data, Correlation, System, Wildfire, Decryption**.\n\n\n ##### Max incidents
+  per fetch\nThe max incidents per fetch parameter specifies the maximum number of
+  incidents to fetch **per** Log Type Query.\n\n##### Log Type \n The queries that
+  will be included during the fetch are decided according to the \"Log Type\" parameter
+  (Multiple select dropdown).\n- Selecting \"All\" will use all the log type queries
+  in the fetch.\n- To choose a specific set of queries, select their log types from
+  the dropdown (make sure \"All\" option is unselected).\n\n ##### Log Type Query\n-
+  Each log type has its own query field in the instance configuration. \n- Note that
+  the default query values has some example text in it, make sure to enter a valid
+  query.\n  \n##### Log Type Query Examples\n\n| Log Type            | Query Example
+  \                                                                                                                                          |\n
   |---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|\n
   | Traffic             | (addr.src in {source}) and (addr.dst in {destination}) and
   (action eq {action})                                                                         |\n|
@@ -10268,12 +10274,91 @@ script:
     - contextPath: Panorama.Spyware.Exception.packet-capture
       description: The exception packet capture.
       type: String
-  dockerimage: demisto/pan-os-python:1.0.0.108041
+  - arguments: []
+    description: Show the details of the default master key that encrypts all the
+      private keys and passwords in the configuration.
+    name: pan-os-get-master-key-details
+    outputs:
+    - contextPath: Panorama.MasterKey.auto-renew-mkey
+      description: Whether the master key will be automatically renewed on expiry.
+      type: String
+    - contextPath: Panorama.MasterKey.expire-at
+      description: The date and time when the key is set to expire.
+      type: String
+    - contextPath: Panorama.MasterKey.hours-to-expiry
+      description: The number of hours remaining before the key expires.
+      type: String
+    - contextPath: Panorama.MasterKey.hours-to-reminder
+      description: The number of hours remaining before being notified that the key
+        is set to expire.
+      type: String
+    - contextPath: Panorama.MasterKey.minutes-to-expiry
+      description: The number of minutes remaining before the key expires.
+      type: String
+    - contextPath: Panorama.MasterKey.minutes-to-reminder
+      description: The number of minutes remaining before being notified that the
+        key is set to expire.
+      type: String
+    - contextPath: Panorama.MasterKey.on-hsm
+      description: Whether the master key is encrypted using a key stored on a Hardware
+        Security Module (HSM).
+      type: String
+    - contextPath: Panorama.MasterKey.remind-at
+      description: The date and time when to be notified that the key is set to expire.
+      type: String
+    - contextPath: Panorama.MasterKey.seconds-to-expiry
+      description: The number of seconds remaining before the key expires.
+      type: String
+    - contextPath: Panorama.MasterKey.seconds-to-reminder
+      description: The number of seconds remaining before being notified that the
+        key is set to expire.
+      type: String
+  - arguments:
+    - description: The encryption master key. Must be exactly 16 characters.
+      name: master_key
+      required: true
+      type: String
+    - description: The lifetime of the key in hours.
+      name: lifetime_in_hours
+      required: true
+      type: Number
+    - description: The time to be notified of the key's expiration in hours.
+      name: reminder_in_hours
+      required: true
+      type: Number
+    description: Create a default master key that encrypts all the private keys and
+      passwords in the configuration. This command is harmful because it invalidates
+      the current API key and requires re-configuration of the integration instance.
+    execution: true
+    name: pan-os-create-master-key
+  - arguments:
+    - description: The new encryption master key. Must be exactly 16 characters.
+      name: new_master_key
+      required: true
+      type: String
+    - description: The current encryption master key.
+      name: current_master_key
+      required: true
+      type: String
+    - description: The lifetime of the new key in hours.
+      name: lifetime_in_hours
+      required: true
+      type: Number
+    - description: The time to be notified of new the new key's expiration in hours.
+      name: reminder_in_hours
+      required: true
+      type: Number
+    description: Update the default master key that encrypts all the private keys
+      and passwords in the configuration. This command is harmful because it invalidates
+      the current API key and requires re-configuration of the integration instance.
+    execution: true
+    name: pan-os-update-master-key
+  dockerimage: demisto/pan-os-python:1.0.0.117206
   isfetch: true
   runonce: false
   script: |
     register_module_line('Panorama', 'start', __line__())
-    demisto.debug('pack name = PAN-OS by Palo Alto Networks, pack version = 2.2.8')
+    demisto.debug('pack name = PAN-OS by Palo Alto Networks, pack version = 2.3.0')
 
 
 
@@ -10303,7 +10388,7 @@ script:
 
     ''' IMPORTS '''
     import uuid
-    from typing import Tuple, Callable, ValuesView, Iterator, TYPE_CHECKING
+    from typing import Tuple, Callable, ValuesView, Iterator, Literal, TYPE_CHECKING
     from urllib.parse import urlparse
 
     if TYPE_CHECKING:
@@ -24787,6 +24872,122 @@ script:
         )
 
 
+    def build_master_key_create_or_update_cmd(args: dict, action: Literal['create', 'update']) -> str:
+        """Builds the XML command for creating or updating the default master key on Panorama / PAN-OS.
+
+        Args:
+            args (dict): The command arguments.
+            action ('create'| 'update'): Whether to create a new master key or update an existing one.
+
+        Returns:
+            str: XML string of the master key create or update command.
+        """
+        xml_args = [
+            add_argument(arg=args.get('lifetime_in_hours'), field_name='lifetime', member=False),
+            add_argument(arg=args.get('reminder_in_hours'), field_name='reminder', member=False),
+        ]
+
+        match action:
+            case 'create':
+                xml_args.append(
+                    add_argument(arg=args.get('master_key'), field_name='new-master-key', member=False),
+                )
+            case 'update':
+                xml_args.extend(
+                    [
+                        add_argument(arg=args.get('new_master_key'), field_name='new-master-key', member=False),
+                        add_argument(arg=args.get('current_master_key'), field_name='current-master-key', member=False),
+                    ]
+                )
+            case _:
+                raise ValueError(f"Invalid action value: '{action}'. Expected 'create' or 'update'.")
+
+        # Whether to encrypt the master key using a Hardware Security Module (HSM) encryption key; currently a static value by demand
+        xml_args.append(add_argument_yes_no(arg='no', field_name='on-hsm'))
+        master_key_element = add_argument(arg=''.join(xml_args), field_name='master-key', member=False)
+
+        return add_argument(arg=master_key_element, field_name='request', member=False)
+
+
+    def create_or_update_master_key(args: dict, action: Literal['create', 'update']) -> CommandResults:
+        """Builds an XML command and sends a request to create or update the master key based on the given action.
+
+        Args:
+            args (dict): The command arguments.
+            action ('create'| 'update'): Whether to create a new master key or update an existing one.
+
+        Returns:
+            CommandResults: Contains readable output and raw response.
+        """
+        master_key_cmd = build_master_key_create_or_update_cmd(args, action=action)
+        raw_response: dict = http_request(URL, 'GET', params={'type': 'op', 'key': API_KEY, 'cmd': master_key_cmd})
+        response_result = raw_response['response']['result']  # human readable message
+
+        # Creating or updating the encryption master key by definition invalidates the current API key, refer to the integration docs.
+        demisto.info(f'The master key of {URL} has been {action}d. The current API key has been invalidated.')
+
+        return CommandResults(
+            readable_output=f'{response_result}. \n\n⚠️ The current API key is no longer valid! (by design) '
+            'Generate a new API key and update it in the integration instance configuration to keep using the integration.',
+            raw_response=raw_response,
+        )
+
+
+    def pan_os_create_master_key_command(args: dict) -> CommandResults:
+        """Creates a new default master key on Panorama / PAN-OS.
+
+        Args:
+            args (dict): The command arguments.
+
+        Returns:
+            CommandResults: Contains readable output and raw response.
+        """
+        return create_or_update_master_key(args, action='create')
+
+
+    def pan_os_update_master_key_command(args: dict) -> CommandResults:
+        """Updates the default master key on Panorama / PAN-OS.
+
+        Args:
+            args (dict): The command arguments.
+
+        Returns:
+            CommandResults: Contains readable output and raw response.
+        """
+        return create_or_update_master_key(args, action='update')
+
+
+    def pan_os_get_master_key_details_command() -> CommandResults:
+        """Shows the details of the default master key on Panorama / PAN-OS.
+
+        Args:
+            args (dict): The command arguments.
+
+        Returns:
+            CommandResults: Contains context output, readable output, and raw response.
+        """
+        system_element = add_argument(arg='<masterkey-properties/>', field_name='system', member=False)
+        show_master_key_cmd = add_argument(arg=system_element, field_name='show', member=False)
+
+        raw_response: dict = http_request(URL, 'GET', params={'type': 'op', 'key': API_KEY, 'cmd': show_master_key_cmd})
+        response_result = raw_response['response']['result']
+
+        result_to_human_readable = {'auto-renew-mkey': 'Auto-renew master key', "on-hsm": "Encryption on HSM"}
+        human_readable = tableToMarkdown(
+            'Master Key Details',
+            response_result,
+            headers=['auto-renew-mkey', 'on-hsm', 'remind-at', 'expire-at'],
+            headerTransform=lambda key: result_to_human_readable.get(key, ' '.join(key.split('-')).capitalize()),
+        )
+
+        return CommandResults(
+            outputs_prefix='Panorama.MasterKey',
+            outputs=response_result,
+            raw_response=raw_response,
+            readable_output=human_readable,
+        )
+
+
     """ Fetch Incidents """
 
 
@@ -25971,6 +26172,12 @@ script:
                 return_results(pan_os_delete_profile_exception_command(args))
             elif command == 'pan-os-list-profile-exception':
                 return_results(pan_os_list_profile_exception_command(args))
+            elif command == 'pan-os-create-master-key':
+                return_results(pan_os_create_master_key_command(args))
+            elif command == 'pan-os-update-master-key':
+                return_results(pan_os_update_master_key_command(args))
+            elif command == 'pan-os-get-master-key-details':
+                return_results(pan_os_get_master_key_details_command())
             else:
                 raise NotImplementedError(f'Command {command} is not implemented.')
         except Exception as err:
