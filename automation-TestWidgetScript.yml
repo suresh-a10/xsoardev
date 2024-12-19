@@ -1,0 +1,61 @@
+commonfields:
+  id: 40337864-0c04-4e94-85b8-ad0cc628a196
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.12.7.117934
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: TestWidgetScript
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  import json
+
+  def List_Extract(listData):
+      # try:
+      data = listData.split('//')
+      output_list=[]
+      for item in data:
+          entry=json.loads(item)
+          output_list.append({'PeakEPS': entry['PeakEPS'], 'showTime': entry['showTime']})
+      return json.dumps(output_list)
+
+  def transform_data(input_data,subscribe):
+      output_data = []
+      for item in input_data:
+          output_item = {"name": item["showTime"],"groups": [{"name": "PeakEPS","data": [item["PeakEPS"]]},{"name":'Base Line EPS',"data": [subscribe]}]}
+          output_data.append(output_item)
+      return json.dumps(output_data)
+
+  def SOCQ3Today():
+      getList = str(demisto.executeCommand("getList", {"listName":SOCQ3List})[0]["Contents"])
+      data = json.loads(List_Extract(getList))
+      N_Data = []
+      for item in data:
+          N_Item = {'PeakEPS': item['PeakEPS'],
+                      'showTime': item['showTime'].split(' ')[1]}
+          N_Data.append(N_Item)
+      return transform_data(N_Data,SOCQ03Sub)
+
+
+  def main():
+      SOCQ3Today()
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+scripttarget: 0
+subtype: python3
+tags:
+- widget
+type: python
