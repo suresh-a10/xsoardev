@@ -260,7 +260,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.5.0
-    itemVersion: 1.2.24
+    itemVersion: 1.2.27
     packID: FeedTAXII
     packName: TAXII Feed
     packPropagationLabels:
@@ -338,7 +338,7 @@ script:
   runonce: false
   script: |
     register_module_line('TAXII 2 Feed', 'start', __line__())
-    demisto.debug('pack name = TAXII Feed, pack version = 1.2.24')
+    demisto.debug('pack name = TAXII Feed, pack version = 1.2.27')
 
 
 
@@ -402,19 +402,26 @@ script:
             last_run["latest_indicators"] = [{obj.get('rawJSON', {}).get("id"): obj.get('rawJSON', {}).get("modified")}
                                              if obj.get("value") != "$$DummyIndicator$$" else obj
                                              for obj in indicators]
+            demisto.debug("with first fetch, updated the latest_indicators")
             return indicators
         for indicator in indicators:
-            indicator_id = indicator.get("rawJSON", {}).get('id', "")
+            indicator_id = indicator.get("rawJSON", {}).get("id")
 
             # check if the indicator is stored in latest_indicators
             saved_indicator = list(filter(lambda ind: indicator_id in ind, last_indicators))
 
             # if the indicator is stored in latest_indicators -> check if it was modified
             if saved_indicator:
-                modified_date = saved_indicator[0].get(indicator_id)
+                saved_modified_date = saved_indicator[0].get(indicator_id)
+                new_modified_date = indicator.get('rawJSON', {}).get('modified')
 
+                # if indicator stored in saved indicators but does not have modified field -> add to new_indicators
+                if not saved_modified_date or not new_modified_date:
+                    demisto.debug(f"saved indicator's modified value: {saved_modified_date}, "
+                                  f"new indicator's modified value is: {new_modified_date}")
+                    new_indicators.append(indicator)
                 # the indicator is stored in latest_indicators, but got modified -> add to new_indicators
-                if indicator.get("rawJSON", {}).get("modified", "") > modified_date:
+                elif new_modified_date > saved_modified_date:
                     new_indicators.append(indicator)
                 else:
                     skipped_indicators.append(indicator_id)
@@ -721,7 +728,6 @@ script:
 
 
     # pylint: disable=E9010, E9011
-
 
     from typing import Optional, Tuple
     from requests.sessions import merge_setting, CaseInsensitiveDict
@@ -2375,6 +2381,8 @@ script:
             Args:
                 autonomous_system_obj (dict): indicator as an observable object of type autonomous-system.
             """
+            if isinstance(autonomous_system_obj, dict) and 'number' in autonomous_system_obj:
+                autonomous_system_obj['number'] = str(autonomous_system_obj.get('number', ''))
             autonomous_system_indicator = self.parse_general_sco_indicator(autonomous_system_obj, value_mapping='number')
             autonomous_system_indicator[0]['fields']['name'] = autonomous_system_obj.get('name')
 
