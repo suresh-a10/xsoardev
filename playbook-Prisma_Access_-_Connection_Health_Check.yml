@@ -1,0 +1,373 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.5.0
+    itemVersion: 2.1.11
+    packID: PrismaAccess
+    packName: Palo Alto Networks - Strata Cloud Manager
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: Use the Prisma Access integration to run SSH CLI commands and query the
+  connection states for all tunnels. If any tunnels are down - the playbook escalates
+  to a manual task for remediation and provides recommendations on next steps in the
+  task description. The playbook can be run as a job, or triggered from an incoming
+  event to confirm an initial suspicion (such as a tunnel log from Cortex Data Lake)
+  to validate that the issue still exists.
+id: Prisma Access - Connection Health Check
+inputs: []
+name: Prisma Access - Connection Health Check
+outputs: []
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ad53268e-d021-4b6e-843d-24bd15c4b0c0
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: ad53268e-d021-4b6e-843d-24bd15c4b0c0
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 607.5,
+          "y": -110
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query:
+        simple: action getServiceConnectionRegionalStat
+      querystring:
+        simple: query action getServiceConnectionRegionalStat
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 00d8382e-5990-41f3-8a8c-fcf6616041b4
+      iscommand: true
+      name: Prisma Access - Get Service Connection Status
+      script: '|||prisma-access-query'
+      type: regular
+      version: -1
+    taskid: 00d8382e-5990-41f3-8a8c-fcf6616041b4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 515
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      query:
+        simple: action getFWaaSRegionalStat
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a00a461c-2e26-4d6c-80f5-0e735e6ea15e
+      iscommand: true
+      name: Prisma Access - Get Firewall Status
+      script: '|||prisma-access-query'
+      type: regular
+      version: -1
+    taskid: a00a461c-2e26-4d6c-80f5-0e735e6ea15e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 515
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: PrismaAccess.QueryResults.Status.value
+          operator: isNotEqualString
+          right:
+            value:
+              simple: OK
+      label: "yes"
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      "yes":
+      - "9"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check for OK status on all tunnels.
+      id: 625179bc-2292-4504-89dd-3861bf40609b
+      iscommand: false
+      name: Any tunnels down?
+      type: condition
+      version: -1
+    taskid: 625179bc-2292-4504-89dd-3861bf40609b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 710
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Close investigation
+      id: 4e05599a-218b-41fd-80ae-3209e65d5774
+      iscommand: true
+      name: Close incident
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 4e05599a-218b-41fd-80ae-3209e65d5774
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1320
+        }
+      }
+  "6":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: brand
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.state
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: active
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Prisma Access
+                root: modules
+          operator: isEqualString
+          right:
+            value:
+              simple: Prisma Access
+      label: "yes"
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "7"
+      "yes":
+      - "8"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 59a55bbc-ce73-47da-812f-cb01e297513d
+      iscommand: false
+      name: Is Prisma Access Enabled?
+      type: condition
+      version: -1
+    taskid: 59a55bbc-ce73-47da-812f-cb01e297513d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 607.5,
+          "y": 35
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: de800a04-5067-42ca-8694-3cb346006f23
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: de800a04-5067-42ca-8694-3cb346006f23
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 890,
+          "y": 1500
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c8e8d4d3-7cc1-4021-859e-3e745d63a6aa
+      iscommand: false
+      name: Query Prisma Access
+      type: title
+      version: -1
+    taskid: c8e8d4d3-7cc1-4021-859e-3e745d63a6aa
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        ### Recommendations for investigation and remediation steps:
+         - Verify that the backup tunnel activated successfully
+         - Collect and analyze relevant logs from Prisma Access
+         - Make the necessary changes to remediate the issue
+         - Revert to using the main tunnel connection
+      id: 1cbc360a-e718-41d1-857c-b5c22e5fdd8c
+      iscommand: false
+      name: Investigate and remediate tunnel issue
+      type: regular
+      version: -1
+    taskid: 1cbc360a-e718-41d1-857c-b5c22e5fdd8c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 580,
+          "y": 930
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "3_5_#default#": 0.5,
+      "6_7_#default#": 0.14,
+      "6_8_yes": 0.3
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1675,
+        "width": 1220,
+        "x": 50,
+        "y": -110
+      }
+    }
+  }
