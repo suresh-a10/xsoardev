@@ -10,17 +10,6 @@ configuration:
   required: false
   section: Connect
   type: 8
-- additionalinfo: Will run the TAXII server on this port from within Demisto. Requires
-    a unique port for each long-running integration instance. Do not use the same
-    port for multiple instances. (For Cortex XSOAR 8 and Cortex XSIAM) If you do not
-    enter a Listen Port, an unused port for the EDL will automatically be generated
-    when the instance is saved. However, if using an engine, you must enter a Listen
-    Port.
-  display: Listen Port
-  name: longRunningPort
-  required: true
-  section: Connect
-  type: 0
 - display: Certificate (Required for HTTPS)
   name: certificate
   required: false
@@ -54,6 +43,17 @@ configuration:
   required: false
   section: Connect
   type: 0
+- additionalinfo: Runs the service on this port from within Cortex XSOAR. Requires
+    a unique port for each long-running integration instance. Do not use the same
+    port for multiple instances. (For Cortex XSOAR 8 and Cortex XSIAM) If you do not
+    enter a Listen Port, an unused port for the EDL will automatically be generated
+    when the instance is saved. However, if using an engine, you must enter a Listen
+    Port.
+  display: Listen Port
+  name: longRunningPort
+  required: true
+  section: Connect
+  type: 0
 - display: Incident type
   name: incidentType
   required: false
@@ -62,7 +62,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.5.0
-    itemVersion: 2.0.72
+    itemVersion: 2.1.0
     packID: TAXIIServer
     packName: TAXII Server
     packPropagationLabels:
@@ -109,7 +109,7 @@ script:
   runonce: false
   script: |
     register_module_line('TAXII Server', 'start', __line__())
-    demisto.debug('pack name = TAXII Server, pack version = 2.0.72')
+    demisto.debug('pack name = TAXII Server, pack version = 2.1.0')
 
 
     from flask import Flask, request, make_response, Response, stream_with_context
@@ -813,10 +813,9 @@ script:
         """
         Gets port from the integration parameters.
         """
+        if not params.get('longRunningPort'):
+            params['longRunningPort'] = '1111'
         try:
-            if not params.get('longRunningPort'):
-                params['longRunningPort'] = '1111'
-                # The default is for the autogeneration port feature before port allocation.
             port = int(params.get('longRunningPort', ''))
         except ValueError as e:
             raise ValueError(f'Invalid listen port - {e}')
@@ -971,7 +970,7 @@ script:
 
     def test_module(taxii_server: TAXIIServer):
         run_server(taxii_server, is_test=True)
-        return 'ok', {}, {}
+        return 'ok'
 
 
     def run_server(taxii_server: TAXIIServer, is_test=False):
@@ -1031,10 +1030,6 @@ script:
         """
         params = demisto.params()
         command = demisto.command()
-        port = get_port(params)
-        collections = get_collections(params)
-        server_links = demisto.demistoUrls()
-        server_link_parts: ParseResult = urlparse(server_links.get('server'))
 
         certificate: str = params.get('certificate', '')
         private_key: str = params.get('key', '')
@@ -1045,23 +1040,26 @@ script:
         elif certificate and private_key:
             http_server = False
 
-        global SERVER
-        scheme = 'http'
-        host_name = server_link_parts.hostname
-        if not http_server:
-            scheme = 'https'
-
-        service_address = params.get('service_address')
-        SERVER = TAXIIServer(scheme, str(host_name), port, collections,
-                             certificate, private_key, http_server, credentials, service_address)
-
         demisto.debug(f'Command being called is {command}')
-        commands = {
-            'test-module': test_module
-        }
-
+        commands: dict = {}
         try:
-            if command == 'long-running-execution':
+            port = get_port(params)
+            collections = get_collections(params)
+            server_links = demisto.demistoUrls()
+            server_link_parts: ParseResult = urlparse(server_links.get('server'))
+
+            global SERVER
+            scheme = 'http'
+            host_name = server_link_parts.hostname
+            if not http_server:
+                scheme = 'https'
+
+            service_address = params.get('service_address')
+            SERVER = TAXIIServer(scheme, str(host_name), port, collections,
+                                 certificate, private_key, http_server, credentials, service_address)
+            if command == 'test-module':
+                return_results(test_module(SERVER))
+            elif command == 'long-running-execution':
                 run_server(SERVER)
             else:
                 readable_output, outputs, raw_response = commands[command](SERVER)
