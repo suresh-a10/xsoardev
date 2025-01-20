@@ -1,0 +1,1282 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.5.0
+    itemVersion: 1.0.7
+    packID: MITRECoA
+    packName: MITRE ATT&CK - Courses of Action
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: "This is a wrapper playbook for the \"MITRE ATT&CK - Courses of Action\"
+  use-case.\n\nPossible playbook triggers:\n- Through a job, by a feed integration
+  fetching indicators that contain MITRE ATT&CK techniques as “Feed Related Indicators”,
+  or with custom inputs.\n- Through an incident, using custom playbook inputs.\n\nOnce
+  triggered, the playbook will create a new incident from type \"MITRE ATT&CK CoA\".
+  The incident will trigger the playbook \"MITRE ATT&CK - Courses of Action\", \nwhich
+  contains all phases and remediates MITRE ATT&CK techniques using intelligence-driven
+  Courses of Action (COA) defined by Palo Alto Networks Unit 42 team. \n \n***Disclaimer:
+  This playbook does not simulate an attack using the specified techniques, but follows
+  the steps to remediation as defined by Palo Alto Networks Unit 42 team’s Actionable
+  Threat Objects and Mitigations (ATOMs).\n"
+id: MITRE ATT&CK - Courses of Action Trigger Job
+inputs:
+- description: MITRE ATT&CK ID of a technique, or comma-separated list of techniques
+    IDs.
+  key: techniqueByIncident
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: |-
+    Define a query that will retrieve indicators that contain MITRE ATT&CK techniques under the "Feed Related Indicators" field.
+    (Possible query example: `feedrelatedindicators.type:"MITRE ATT&CK"`)
+  key: ""
+  playbookInputQuery:
+    daterange:
+      fromdate: "0001-01-01T00:00:00Z"
+      fromdatelicenseval: "0001-01-01T00:00:00Z"
+      period:
+        by: ""
+        byfrom: ""
+        byto: ""
+        field: ""
+        fromvalue: null
+        tovalue: null
+      todate: "0001-01-01T00:00:00Z"
+    query: type:"Attack Pattern" or type:Report and feedrelatedindicators.type:"MITRE
+      ATT&CK"
+    queryEntity: indicators
+    results: null
+    runFromLastJobTime: false
+  required: false
+  value: {}
+- description: Template name to enforce WildFire best practices profile.
+  key: template
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Rules location. Can be 'pre-rulebase' or 'post-rulebase'. Mandatory
+    for Panorama instances.
+  key: pre_post
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The device group for which to return addresses (Panorama instances).
+  key: device-group
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Tag for which to filter the rules.
+  key: tag
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: |-
+    The type of the indicator query this playbook is running. Possible values can be:
+    Direct - The playbook query returns a list of "STIX ATT&CK Pattern" indicators.
+    ,relationship,unit42,other
+  key: query_type
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: MITRE ATT&CK - Courses of Action Trigger Job
+outputs:
+- contextPath: Handled.Techniques
+  description: The techniques handled in this playbook
+  type: unknown
+quiet: true
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      id: 30224cdf-e67b-4492-811f-909decbf9f6e
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 30224cdf-e67b-4492-811f-909decbf9f6e
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": -670,
+          "y": -2010
+        }
+      }
+  "16":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: playbookQuery
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "18"
+      "yes":
+      - "24"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Checks if the playbook was triggered by a feed integration and
+        if there are techniques to handle.
+      id: 3d9dc0f5-5121-459a-8b9e-368119465a10
+      iscommand: false
+      name: Is there a playbook query value?
+      type: condition
+      version: -1
+    taskid: 3d9dc0f5-5121-459a-8b9e-368119465a10
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -670,
+          "y": -1860
+        }
+      }
+  "18":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: inputs.techniqueByIncident
+          operator: isNotEmpty
+      label: "yes"
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "20"
+      "yes":
+      - "19"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Is the techniqueByIncident input populated?
+      id: 5b75d804-6853-4d33-8a48-f5d9af08a43f
+      iscommand: false
+      name: Is the techniqueByIncident input populated?
+      type: condition
+      version: -1
+    taskid: 5b75d804-6853-4d33-8a48-f5d9af08a43f
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -670,
+          "y": 490
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: TechniquesList
+      value:
+        complex:
+          root: inputs.techniqueByIncident
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: ','
+            operator: split
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: a18389dc-2551-4684-8ea4-d9a6ac773e95
+      iscommand: false
+      name: Set techniques list
+      script: Set
+      type: regular
+      version: -1
+    taskid: a18389dc-2551-4684-8ea4-d9a6ac773e95
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -410,
+          "y": 810
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 492b17eb-910d-491d-80f6-5f3389d84dc8
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 492b17eb-910d-491d-80f6-5f3389d84dc8
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -670,
+          "y": 1150
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      id: 2061ac8e-b01b-4407-8059-e5ff43a3bbab
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 2061ac8e-b01b-4407-8059-e5ff43a3bbab
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -670,
+          "y": 1340
+        }
+      }
+  "23":
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      name:
+        simple: MITRE ATT&CK - Courses of Action
+      techniqueslist:
+        complex:
+          root: TechniquesList
+          transformers:
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      type:
+        simple: MITRE ATT&CK CoA
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: Builtin
+      description: commands.local.cmd.create.inc
+      id: f515173d-6d03-465c-862c-0877a7349db5
+      iscommand: true
+      name: Create new incident
+      script: Builtin|||createNewIncident
+      type: regular
+      version: -1
+    taskid: f515173d-6d03-465c-862c-0877a7349db5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1790,
+          "y": 980
+        }
+      }
+  "24":
+    continueonerrortype: ""
+    id: "24"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "47"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Filter results.
+      id: 7f8827e7-7da3-479b-86c3-1563afb53bdf
+      iscommand: false
+      name: Filter results
+      type: title
+      version: -1
+    taskid: 7f8827e7-7da3-479b-86c3-1563afb53bdf
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 820,
+          "y": -1685
+        }
+      }
+  "25":
+    conditions:
+    - condition:
+      - - left:
+            value:
+              simple: Attack Pattern
+          operator: inList
+          right:
+            iscontext: true
+            value:
+              complex:
+                accessor: indicator_type
+                root: playbookQuery
+      label: Attack Pattern
+    - condition:
+      - - left:
+            value:
+              simple: MITRE ATT&CK
+          operator: inList
+          right:
+            iscontext: true
+            value:
+              complex:
+                accessor: indicator_type
+                root: playbookQuery
+      label: MITRE ATT&CK
+    continueonerrortype: ""
+    id: "25"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "48"
+      Attack Pattern:
+      - "33"
+      MITRE ATT&CK:
+      - "32"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Is the returned value a list of techniques?
+      id: 34492fd1-2626-4345-80ac-ca869a81aa30
+      iscommand: false
+      name: Is the returned value a list of techniques?
+      type: condition
+      version: -1
+    taskid: 34492fd1-2626-4345-80ac-ca869a81aa30
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 820,
+          "y": -1390
+        }
+      }
+  "27":
+    continueonerrortype: ""
+    id: "27"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "35"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Check for relationships.
+      id: 996b5de4-f959-43cb-8472-d17461ae14aa
+      iscommand: false
+      name: Check for relationships
+      type: title
+      version: -1
+    taskid: 996b5de4-f959-43cb-8472-d17461ae14aa
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 350,
+          "y": -1070
+        }
+      }
+  "29":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: source
+                root: playbookQuery.comments
+          operator: containsString
+          right:
+            value:
+              simple: Unit42v2
+      label: "yes"
+    continueonerrortype: ""
+    id: "29"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "31"
+      "yes":
+      - "49"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Is the source the Unit 42 integration?
+      id: 96a73259-68c2-4521-81e2-0300084839c8
+      iscommand: false
+      name: Is the source the Unit 42 integration?
+      type: condition
+      version: -1
+    taskid: 96a73259-68c2-4521-81e2-0300084839c8
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 130,
+          "y": -550
+        }
+      }
+  "31":
+    continueonerrortype: ""
+    form:
+      description: Please enter techniques list manually or update the playbook's
+        query.
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Techniques list
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: false
+        tooltip: A list of comma-separated MITRE ATT&CK technique IDs.
+        type: shortText
+      sender: ""
+      title: Manual - Enter techniques list
+      totalanswers: 0
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Please enter techniques list manually or update the playbook's query.
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: false
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "34"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Manual - Enter techniques list.
+      id: c05f34d9-3dba-44a8-80e0-b7b86a9731ae
+      iscommand: false
+      name: Manual - Enter techniques list
+      type: collection
+      version: -1
+    taskid: c05f34d9-3dba-44a8-80e0-b7b86a9731ae
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 130,
+          "y": 650
+        }
+      }
+  "32":
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: TechniquesList
+      value:
+        complex:
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: playbookQuery.value
+              operator: startWith
+              right:
+                value:
+                  simple: T
+          root: playbookQuery.value
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 9d5a30eb-6ac0-42f3-8c0d-bac179c030c2
+      iscommand: false
+      name: Set techniques list - MITRE ATT&CK
+      script: Set
+      type: regular
+      version: -1
+    taskid: 9d5a30eb-6ac0-42f3-8c0d-bac179c030c2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1350,
+          "y": -1220
+        }
+      }
+  "33":
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: TechniquesList
+      value:
+        complex:
+          accessor: mitreid
+          root: playbookQuery.CustomFields
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 52d878a1-e9e7-421b-8821-25b3ddf94385
+      iscommand: false
+      name: Set techniques list - ATT&CK Pattern
+      script: Set
+      type: regular
+      version: -1
+    taskid: 52d878a1-e9e7-421b-8821-25b3ddf94385
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1790,
+          "y": -1220
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      append:
+        simple: "true"
+      key:
+        simple: TechniquesList
+      value:
+        complex:
+          accessor: "0"
+          root: Manual - Enter techniques list.Answers
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: ','
+            operator: split
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 44e419b8-8bda-4299-8ece-3b8936a8a178
+      iscommand: false
+      name: Set techniques list
+      script: Set
+      type: regular
+      version: -1
+    taskid: 44e419b8-8bda-4299-8ece-3b8936a8a178
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 130,
+          "y": 810
+        }
+      }
+  "35":
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entities:
+        complex:
+          accessor: value
+          root: playbookQuery
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: This automation outputs the indicator relationships to context
+        according to the provided query, using the entities, entityTypes, and relationships
+        arguments. All arguments will use the AND operator. For example, using the
+        following arguments entities=8.8.8.8 entities_types=Domain will provide only
+        relationships that the 8.8.8.8 indicator has with indicators of type domain.
+      id: a0c08f83-f256-4b5f-8282-cfbe29fd49d0
+      iscommand: false
+      name: Get indicators relationships
+      script: SearchIndicatorRelationships
+      type: regular
+      version: -1
+    taskid: a0c08f83-f256-4b5f-8282-cfbe29fd49d0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 350,
+          "y": -920
+        }
+      }
+  "36":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: EntityBType
+                root: Relationships
+          operator: isEqualString
+          right:
+            value:
+              simple: MITRE ATT&CK
+      label: MITRE ATT&CK
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: EntityBType
+                root: Relationships
+          operator: isEqualString
+          right:
+            value:
+              simple: Attack Pattern
+      label: Attack Pattern
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "29"
+      Attack Pattern:
+      - "39"
+      MITRE ATT&CK:
+      - "37"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      id: 158e13f2-3a48-4679-82eb-7ee71df29db4
+      iscommand: false
+      name: Is the relationship with object from type MITRE ATT&CK?
+      type: condition
+      version: -1
+    taskid: 158e13f2-3a48-4679-82eb-7ee71df29db4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 350,
+          "y": -730
+        }
+      }
+  "37":
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: TechniquesList
+      value:
+        complex:
+          accessor: EntityB
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: Relationships.EntityBType
+              operator: isEqualString
+              right:
+                value:
+                  simple: MITRE ATT&CK
+          root: Relationships
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: f5d2ab37-4a52-4f94-8af9-5990e3e87656
+      iscommand: false
+      name: Set techniques list - MITRE ATT&CK
+      script: Set
+      type: regular
+      version: -1
+    taskid: f5d2ab37-4a52-4f94-8af9-5990e3e87656
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1040,
+          "y": -560
+        }
+      }
+  "39":
+    continueonerrortype: ""
+    id: "39"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: TechniquesList=CustomFields.mitreid
+      value:
+        complex:
+          accessor: EntityB
+          root: Relationships
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: Builtin
+      description: commands.local.cmd.find.indicators
+      id: fa276e10-be2c-4e86-843b-e1a166f288c0
+      iscommand: true
+      name: Find ATT&CK Patterns indicators
+      script: Builtin|||findIndicators
+      type: regular
+      version: -1
+    taskid: fa276e10-be2c-4e86-843b-e1a166f288c0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1460,
+          "y": -560
+        }
+      }
+  "40":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: EntityBType
+                root: Relationships
+          operator: isEqualString
+          right:
+            value:
+              simple: Campaign
+      label: "yes"
+    continueonerrortype: ""
+    id: "40"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "31"
+      "yes":
+      - "43"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      id: c78502d3-8743-4921-81cd-2eee4dab18d7
+      iscommand: false
+      name: Is the relationship with object from type Campaign?
+      type: condition
+      version: -1
+    taskid: c78502d3-8743-4921-81cd-2eee4dab18d7
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 490,
+          "y": -230
+        }
+      }
+  "41":
+    continueonerrortype: ""
+    id: "41"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "46"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      entities:
+        complex:
+          root: Campaigns
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: This automation outputs the indicator relationships to context
+        according to the provided query, using the entities, entityTypes, and relationships
+        arguments. All arguments will use the AND operator. For example, using the
+        following arguments entities=8.8.8.8 entities_types=Domain will provide only
+        relationships that the 8.8.8.8 indicator has with indicators of type domain.
+      id: 142cdfb6-6615-43b9-8e60-700eee2c5850
+      iscommand: false
+      name: Get indicators relationships
+      script: SearchIndicatorRelationships
+      type: regular
+      version: -1
+    taskid: 142cdfb6-6615-43b9-8e60-700eee2c5850
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 700,
+          "y": 295
+        }
+      }
+  "42":
+    continueonerrortype: ""
+    id: "42"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "41"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      all:
+        simple: "no"
+      key:
+        simple: Relationships
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Delete field from context
+      id: 817c1ec1-c3f9-409c-8425-263dab25e228
+      iscommand: false
+      name: Delete previous relationships information
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 817c1ec1-c3f9-409c-8425-263dab25e228
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 700,
+          "y": 115
+        }
+      }
+  "43":
+    continueonerrortype: ""
+    id: "43"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "42"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: Campaigns
+      value:
+        complex:
+          accessor: EntityB
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: Relationships.EntityBType
+              operator: isEqualString
+              right:
+                value:
+                  simple: Campaign
+          root: Relationships
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 5c338798-1a90-46c9-8b03-dcaa185f757c
+      iscommand: false
+      name: Set campaigns information
+      script: Set
+      type: regular
+      version: -1
+    taskid: 5c338798-1a90-46c9-8b03-dcaa185f757c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 700,
+          "y": -60
+        }
+      }
+  "44":
+    continueonerrortype: ""
+    id: "44"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: TechniquesList=CustomFields.mitreid
+      value:
+        complex:
+          accessor: EntityB
+          root: Relationships
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: Builtin
+      description: commands.local.cmd.find.indicators
+      id: 63cec928-59a4-4650-8a4e-5487c286f1fc
+      iscommand: true
+      name: Find Attack Pattern indicators
+      script: Builtin|||findIndicators
+      type: regular
+      version: -1
+    taskid: 63cec928-59a4-4650-8a4e-5487c286f1fc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1000,
+          "y": 650
+        }
+      }
+  "46":
+    conditions:
+    - condition:
+      - - left:
+            value:
+              simple: Attack Pattern
+          operator: inList
+          right:
+            iscontext: true
+            value:
+              simple: Relationships.EntityBType
+      label: "yes"
+    continueonerrortype: ""
+    id: "46"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "31"
+      "yes":
+      - "44"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      id: 9ead4a6b-d36d-4be8-8a68-0583ee7ce1d9
+      iscommand: false
+      name: Is the relationship with object from type Attack Pattern?
+      type: condition
+      version: -1
+    taskid: 9ead4a6b-d36d-4be8-8a68-0583ee7ce1d9
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 700,
+          "y": 480
+        }
+      }
+  "47":
+    continueonerrortype: ""
+    id: "47"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "25"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      id: c34b5715-ff33-48ae-8598-7ed64d0beeb4
+      iscommand: false
+      name: Playbook query value is a list of techniques
+      type: title
+      version: -1
+    taskid: c34b5715-ff33-48ae-8598-7ed64d0beeb4
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 820,
+          "y": -1530
+        }
+      }
+  "48":
+    continueonerrortype: ""
+    id: "48"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "27"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      id: 85724365-3f6b-4160-8ece-396d2d8423fc
+      iscommand: false
+      name: Playbook query value is related to techniques
+      type: title
+      version: -1
+    taskid: 85724365-3f6b-4160-8ece-396d2d8423fc
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 350,
+          "y": -1220
+        }
+      }
+  "49":
+    continueonerrortype: ""
+    id: "49"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "40"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      id: cfbf77bd-5f4a-43f6-8b7b-fbe3f3d9d630
+      iscommand: false
+      name: Playbook query value is a Unit 42 report
+      type: title
+      version: -1
+    taskid: cfbf77bd-5f4a-43f6-8b7b-fbe3f3d9d630
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 490,
+          "y": -380
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "16_18_#default#": 0.11,
+      "18_20_#default#": 0.52,
+      "25_32_MITRE ATT\u0026CK": 0.9,
+      "29_31_#default#": 0.35,
+      "40_31_#default#": 0.3
+    },
+    "paper": {
+      "dimensions": {
+        "height": 3415,
+        "width": 2840,
+        "x": -670,
+        "y": -2010
+      }
+    }
+  }
