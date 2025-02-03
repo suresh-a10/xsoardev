@@ -10,7 +10,12 @@ contentitemexportablefields:
     - all
     toServerVersion: ""
 id: 7938a406-da30-4828-8e55-d766cececc26
-inputs: []
+inputs:
+- description: ""
+  key: Iteratorvalue
+  playbookInputQuery: null
+  required: false
+  value: {}
 name: Report Download - Incident Search
 outputs:
 - contextPath: Iterator
@@ -43,8 +48,8 @@ tasks:
     view: |-
       {
         "position": {
-          "x": 450,
-          "y": 50
+          "x": 260,
+          "y": -340
         }
       }
   "1":
@@ -56,29 +61,548 @@ tasks:
     note: false
     quietmode: 0
     scriptarguments:
-      extend-context:
-        simple: Iterator=
-      key:
-        simple: PageNo
+      pageno:
+        complex:
+          accessor: pageno
+          root: incident
+          transformers:
+          - args:
+              by:
+                value:
+                  simple: "1"
+            operator: addition
     separatecontext: false
     skipunavailable: false
     task:
-      brand: ""
-      description: Set a value in context under the key you entered.
-      id: 7cc942a5-52c0-4bf2-85ac-a4cb1c59d33e
-      iscommand: false
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 1097a1b7-3ff1-489b-858c-3bf3988cb10b
+      iscommand: true
       name: Set Page no
-      script: Set
+      script: Builtin|||setIncident
       type: regular
       version: -1
-    taskid: 7cc942a5-52c0-4bf2-85ac-a4cb1c59d33e
+    taskid: 1097a1b7-3ff1-489b-858c-3bf3988cb10b
     timertriggers: []
     type: regular
     view: |-
       {
         "position": {
-          "x": 450,
-          "y": 190
+          "x": 260,
+          "y": -165
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      body:
+        simple: |-
+          {
+            "all" : true,
+            "columns" : [ "id","name","status","owner","duedate" ],
+            "filter" : {
+              "fields" : [ "id","name","status","owner","duedate" ],
+              "page" : ${incident.pageno},
+              "query" : ${incident.incidentsearchquery},
+              "size" : ${incident.pagesize},
+              "sort" : [ {
+                "asc" : true,
+                "field" : "id"
+              } ],
+              "fromDate":${incident.fromdate},
+              "toDate":${incident.todate},
+              "totalOnly" : true,
+              "trim_events" : 0
+            },
+            "force" : true,
+            "overrideInvestigation" : true
+          }
+      execution-timeout:
+        simple: "1800"
+      extend-context:
+        simple: IncidentData.total=.response.total::IncidentData.foundIncidents=.response.data={\"id\":val.id,\"name\":val.name}
+      uri:
+        simple: /incidents/search
+      using:
+        simple: Core REST API_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Core REST API
+      description: send HTTP POST request.
+      id: 29159588-aa35-4387-8efc-148217b3502b
+      iscommand: true
+      name: Post API request with FromDate and ToDate to Batch export Incidents
+      script: Core REST API|||core-api-post
+      type: regular
+      version: -1
+    taskid: 29159588-aa35-4387-8efc-148217b3502b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1110,
+          "y": 300
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: IncidentData.foundIncidents
+          operator: isNotEmpty
+      label: Results exists
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      Results exists:
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 860a0487-4558-4369-8c65-cfcbc9c6750d
+      iscommand: false
+      name: Check incident data exists or not?
+      type: condition
+      version: -1
+    taskid: 860a0487-4558-4369-8c65-cfcbc9c6750d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 260,
+          "y": 565
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      csvArray:
+        simple: ${IncidentData.foundIncidents}
+      fileName:
+        simple: incident_report_${incident.fromdate}_${incident.todate}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Export given array to csv file.
+      id: 8e90544e-181a-4563-8ff1-b81c81f8fe4b
+      iscommand: false
+      name: Export Incidents to CSV
+      script: ExportToCSV
+      type: regular
+      version: -1
+    taskid: 8e90544e-181a-4563-8ff1-b81c81f8fe4b
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 700,
+          "y": 740
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: No Results Returned !! Please check you incident search query
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: f37fde8c-250b-441e-8186-56262a47d2ce
+      iscommand: false
+      name: No Results Returned
+      script: Print
+      type: regular
+      version: -1
+    taskid: f37fde8c-250b-441e-8186-56262a47d2ce
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -110,
+          "y": 880
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: IncidentData
+      subplaybook:
+        simple: "yes"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: "Delete field from context.\n\nThis automation runs using the default
+        Limited User role, unless you explicitly change the permissions.\nFor more
+        information, see the section about permissions here:\n- For Cortex XSOAR 6
+        see https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.x/Cortex-XSOAR-Playbook-Design-Guide/Automations
+        \n- For Cortex XSOAR 8 Cloud see https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/8/Cortex-XSOAR-Cloud-Documentation/Create-a-script\n-
+        For Cortex XSOAR 8.7 On-prem see https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/8.7/Cortex-XSOAR-On-prem-Documentation/Create-a-script"
+      id: 331b9377-20d3-4456-895d-9fab933f39a7
+      iscommand: false
+      name: DeleteContext
+      script: DeleteContext
+      type: regular
+      version: -1
+    taskid: 331b9377-20d3-4456-895d-9fab933f39a7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 710,
+          "y": 930
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 523e6a65-9a22-4ab6-8957-2238804b6064
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 523e6a65-9a22-4ab6-8957-2238804b6064
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 280,
+          "y": 1250
+        }
+      }
+  "8":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.fromdate
+          operator: isExists
+          right:
+            value: {}
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.todate
+          operator: isExists
+      label: From Date & To Date defined
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.relativetimerange
+          operator: isExists
+      label: Relative time range
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      From Date & To Date defined:
+      - "9"
+      Relative time range:
+      - "10"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 27186c2f-3b6a-4fdb-8812-558a3eb2a409
+      iscommand: false
+      name: Check fromDate & toDate exist or not
+      type: condition
+      version: -1
+    taskid: 27186c2f-3b6a-4fdb-8812-558a3eb2a409
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 260,
+          "y": 165
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      body:
+        simple: |-
+          {
+            "all" : true,
+            "filter" : {
+            "fields" : [ "id","name","status","owner","duedate" ],
+          "page":0,
+          "size":${incident.pagesize},
+          "query":${incident.incidentsearchquery},
+          "sort":[{"asc":false,"field":"id"}],
+          "fromDate":${incident.fromdate},
+          "toDate":${incident.todate},
+              "trim_events" : 0
+            },
+            "force" : true,
+            "overrideInvestigation" : true
+          }
+      extend-context:
+        simple: IncidentData.total=.response.total::IncidentData.foundIncidents=.response.data={"id":val.id,"name":val.name}
+      uri:
+        simple: /incidents/search
+      using:
+        simple: Core REST API_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Core REST API
+      description: send HTTP POST request.
+      id: 3dddcd09-3b21-4ea6-8b7f-205e77428d67
+      iscommand: true
+      name: Post API request with FromDate and ToDate to Batch export Incidents
+      script: Core REST API|||core-api-post
+      type: regular
+      version: -1
+    taskid: 3dddcd09-3b21-4ea6-8b7f-205e77428d67
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -120,
+          "y": 340
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      body:
+        simple: |-
+          {
+            "all" : true,
+            "filter" : {
+            "fields" : [ "id","name","status","owner","duedate" ],
+          "page":0,
+          "period":{
+          "byFrom":"days",
+          "fromValue":${incident.relativetimerange},
+          "byTo":"days",
+          "toValue":0},
+          "size":${incident.pagesize},
+          "query":${incident.incidentsearchquery},
+          "sort":[{"asc":false,"field":"id"}],
+              "trim_events" : 0
+            },
+            "force" : true,
+            "overrideInvestigation" : true
+          }
+      extend-context:
+        simple: IncidentData.Total=.response.total::IncidentData.foundIncidents=.response.data={"id":val.id,"name":val.name}
+      uri:
+        simple: /incidents/search
+      using:
+        simple: Core REST API_instance_1
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Core REST API
+      description: send HTTP POST request.
+      id: 2ae2e7e5-d623-4037-8b0d-812ace3c3aff
+      iscommand: true
+      name: Post API request with Relative Time Range to Batch export Incidents
+      script: Core REST API|||core-api-post
+      type: regular
+      version: -1
+    taskid: 2ae2e7e5-d623-4037-8b0d-812ace3c3aff
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 610,
+          "y": 380
+        }
+      }
+  "11":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: incident.pageno
+          operator: isEqualNumber
+          right:
+            value:
+              simple: "4"
+      label: "yes"
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "13"
+      "yes":
+      - "12"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 001ded86-ae76-43a1-8729-88d63838e8ff
+      iscommand: false
+      name: Untitled Task
+      type: condition
+      version: -1
+    taskid: 001ded86-ae76-43a1-8729-88d63838e8ff
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -290,
+          "y": 10
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "13"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 30ea38ee-e303-4dda-8ac7-683bac5b37db
+      iscommand: false
+      name: Untitled Task
+      type: regular
+      version: -1
+    taskid: 30ea38ee-e303-4dda-8ac7-683bac5b37db
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -650,
+          "y": 180
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bb19f8df-4d89-4b3b-82c2-1f33f0f50ce4
+      iscommand: false
+      name: Untitled Task
+      type: title
+      version: -1
+    taskid: bb19f8df-4d89-4b3b-82c2-1f33f0f50ce4
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -590,
+          "y": 410
         }
       }
 version: -1
@@ -87,10 +611,10 @@ view: |-
     "linkLabelsPosition": {},
     "paper": {
       "dimensions": {
-        "height": 235,
-        "width": 380,
-        "x": 450,
-        "y": 50
+        "height": 1655,
+        "width": 2140,
+        "x": -650,
+        "y": -340
       }
     }
   }
