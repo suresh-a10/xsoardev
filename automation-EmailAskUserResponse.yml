@@ -1,8 +1,14 @@
 args:
 - default: true
-  description: Entry ID where EmailAskUser will complete when user replies
+  description: Entry ID where EmailAskUser will complete when user replies.
   name: responseEntryId
   required: true
+- description: Text to remove from the start of the answer. If the response contains
+    a known prefix that should be removed, this argument should be used.
+  name: prefix
+- description: Text to remove from the end of the answer. If the response contains
+    a known suffix that should be removed, this argument should be used.
+  name: suffix
 comment: Extract user's response from EmailAskUser reply. Returns the first textual
   response line of the provided entry that contains the reply body. Use ${lastCompletedTaskEntries}
   to analyze the previous playbook task containing the user's reply.
@@ -13,7 +19,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 1.18.2
+    itemVersion: 1.19.30
     packID: CommonScripts
     packName: Common Scripts
     packPropagationLabels:
@@ -29,11 +35,19 @@ pswd: ""
 runas: DBotWeakRole
 runonce: false
 script: |
-  // pack version: 1.18.2
+  // pack version: 1.19.30
   var res = executeCommand("getEntry", {"id":args.responseEntryId});
+  var prefix = args.prefix;
+  var suffix = args.suffix;
 
   if (res[0].Type==entryTypes.note || res[0].Type==entryTypes.file) {
       text = res[0].Contents;
+      if (prefix && text.startsWith(prefix)) {
+          text = text.slice(prefix.length);
+      }
+      if (suffix && text.endsWith(suffix)) {
+          text = text.slice(0, -1 * suffix.length);
+      }
       text = text.replace(/<br\/?>/gi,'\n')
                   .replace(/\r/g,'')
                   .replace(/\n/g,'__NL__')
