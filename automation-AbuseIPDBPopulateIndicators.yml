@@ -1,0 +1,113 @@
+args:
+- defaultValue: "30"
+  description: Time range to return reports for (in days).
+  name: days
+- defaultValue: "200"
+  description: Maximum number of IPs to retrieve.
+  name: limit
+- defaultValue: "100"
+  description: The Minimum confidence required of IPs to retrieve.
+  name: confidence
+comment: Extracts IP addresses on block lists from AbuseIPDB, and Populates Indicators
+  accordingly.
+commonfields:
+  id: AbuseIPDBPopulateIndicators
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 5.0.0
+    itemVersion: 1.0.32
+    packID: AbuseDB
+    packName: AbuseIPDB
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dependson:
+  must:
+  - '|||abuseipdb-get-blacklist'
+  - Builtin|||createNewIndicator
+dockerimage: demisto/python3:3.11.10.115186
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: AbuseIPDBPopulateIndicators
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('AbuseIPDBPopulateIndicators', 'start', __line__())
+  demisto.debug('pack name = AbuseIPDB, pack version = 1.0.32')
+
+
+
+  BLACKLISTED = "Bad"
+
+
+  def get_contents(args: Dict[str, Any]):
+      """Get IP addresses on block lists from AbuseIPDB
+
+      :return: dictionary containing block lists
+      :rtype: ``dict[str, Any]``
+      """
+
+      return (
+          execute_command(
+              "abuseipdb-get-blacklist",
+              {
+                  "days": args.get("days"),
+                  "limit": args.get("limit"),
+                  "confidence": args.get("confidence"),
+              },
+          )
+          or None
+      )
+
+
+  def check_ips(ips: list):
+      """Check 'ips' list validity
+
+      :return: None if valid, else execute return_error()
+      :rtype: ``None``
+      """
+      if not ips or "Too many requests" in ips:
+          raise DemistoException("No Indicators were created (possibly bad API key)")
+
+
+  def main():
+      try:
+          args = demisto.args()
+          ips = get_contents(args)
+          check_ips(ips)
+
+          # Extract IPs into new Indicators
+          for ip in ips:
+              execute_command(
+                  "createNewIndicator",
+                  {
+                      "type": "IP",
+                      "value": ip,
+                      "source": "AbuseIPDB",
+                      "reputation": BLACKLISTED,
+                      "seenNow": "true",
+                  },
+              )
+
+          return_results("All Indicators were created successfully")
+
+      except DemistoException as e:
+          return_error(e.message)
+
+
+  if __name__ in ("__main__", "__builtin__", "builtins"):
+      main()
+
+  register_module_line('AbuseIPDBPopulateIndicators', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags: []
+timeout: 900ns
+type: python
