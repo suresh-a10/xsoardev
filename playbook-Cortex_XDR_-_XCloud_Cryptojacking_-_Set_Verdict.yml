@@ -1,0 +1,526 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.5.0
+    itemVersion: 1.0.23
+    packID: CloudIncidentResponse
+    packName: Cloud Incident Response
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: "This playbook sets the alert's verdict as malicious if one of the following
+  conditions is true:\n1. If the source IP address is malicious\n2. If the incident
+  includes both \"Unusual allocation of multiple cloud compute resources\" AND \"Cloud
+  identity reached a throttling API rate\" (medium/high severity)\n3. If the incident
+  includes both \"Unusual allocation of multiple cloud compute resources\" AND \"Suspicious
+  heavy allocation of compute resources - possible mining activity\" \n4. If the incident
+  includes \"Unusual allocation of multiple cloud compute resources\" with medium/high
+  severity, the source ASN isn't known, and the source IP isn't known as well.\n5.
+  If the incident includes both \"Unusual allocation of multiple cloud compute resources\"
+  AND \"A cloud compute instance was created in a dormant region\"\n\nIf none of the
+  conditions is true, the playbook will wait for an analyst's decision."
+id: Cortex XDR - Cryptomining - Set Verdict
+inputs: []
+name: Cortex XDR - XCloud Cryptojacking - Set Verdict
+outputs:
+- contextPath: alertVerdict
+  description: The alert verdict
+  type: string
+quiet: true
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 65c3510f-3df1-4aed-8536-4acfd9e68c63
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 65c3510f-3df1-4aed-8536-4acfd9e68c63
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 100
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: alertVerdict
+      value:
+        simple: Malicious
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 3720bbcd-d40b-4797-846e-76176cd9fe57
+      iscommand: false
+      name: Set verdict - Malicious
+      script: Set
+      type: regular
+      version: -1
+    taskid: 3720bbcd-d40b-4797-846e-76176cd9fe57
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1190
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: Score
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: DBotScore.Indicator
+                    operator: isEqualString
+                    right:
+                      iscontext: true
+                      value:
+                        simple: alertJson.raw_abioc.event.caller_ip
+                root: DBotScore
+          operator: greaterThanOrEqual
+          right:
+            value:
+              simple: "2"
+      label: Malicious
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "5"
+      Malicious:
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks the verdict logic. Refer to the playbook description for
+        detailed information.
+      id: 4745fd0b-4f71-4287-85ec-6453d449460a
+      iscommand: false
+      name: Check caller IP reputation
+      type: condition
+      version: -1
+    taskid: 4745fd0b-4f71-4287-85ec-6453d449460a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 230
+        }
+      }
+  "4":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: name
+                root: PaloAltoNetworksXDR.Incident.alerts
+          operator: containsString
+          right:
+            value:
+              simple: Unusual allocation of multiple cloud compute resources
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: name
+                root: PaloAltoNetworksXDR.Incident.alerts
+          operator: containsString
+          right:
+            value:
+              simple: Suspicious heavy allocation of compute resources - possible
+                mining activity
+      label: Malicious
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      Malicious:
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks the verdict logic. Refer to the playbook description for
+        detailed information.
+      id: c97de1ea-62c9-486c-874e-9bd924b83e93
+      iscommand: false
+      name: Unusual allocation & Heavy allocation alerts existence
+      type: condition
+      version: -1
+    taskid: c97de1ea-62c9-486c-874e-9bd924b83e93
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 20,
+          "y": 590
+        }
+      }
+  "5":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: name
+                root: PaloAltoNetworksXDR.Incident.alerts
+          operator: isEqualString
+          right:
+            value:
+              simple: Unusual allocation of multiple cloud compute resources
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: name
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.Incident.alerts.severity
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: medium
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.Incident.alerts.severity
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: high
+                root: PaloAltoNetworksXDR.Incident.alerts
+          operator: containsString
+          right:
+            value:
+              simple: Cloud identity reached a throttling API rate
+      label: Malicious
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "4"
+      Malicious:
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks the verdict logic. Refer to the playbook description for
+        detailed information.
+      id: 98b85d0b-2c42-4a40-8890-143aad9aa963
+      iscommand: false
+      name: Check alert severity & Throttling API rate error alert
+      type: condition
+      version: -1
+    taskid: 98b85d0b-2c42-4a40-8890-143aad9aa963
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 210,
+          "y": 410
+        }
+      }
+  "6":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: name
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.Incident.alerts.severity
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: medium
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PaloAltoNetworksXDR.Incident.alerts.severity
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: high
+                root: PaloAltoNetworksXDR.Incident.alerts
+          operator: containsString
+          right:
+            value:
+              simple: Unusual allocation of multiple cloud compute resources
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: cloud_agent_external_ip_days_seen_count
+                root: Core.OriginalAlert.event
+          operator: isEqualNumber
+          right:
+            value:
+              simple: "0"
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: cloud_caller_ip_asn_count_distinct_cloud_best_identity
+                root: Core.OriginalAlert.event
+          operator: isEqualNumber
+          right:
+            value:
+              simple: "0"
+      label: Malicious
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "7"
+      Malicious:
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks the verdict logic. Refer to the playbook description for
+        detailed information.
+      id: 61bdf893-c55c-4e7a-8f7f-17e2e98a29db
+      iscommand: false
+      name: Check alert severity & ASN popularity & Agent IP
+      type: condition
+      version: -1
+    taskid: 61bdf893-c55c-4e7a-8f7f-17e2e98a29db
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -170,
+          "y": 770
+        }
+      }
+  "7":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: name
+                root: PaloAltoNetworksXDR.Incident.alerts
+          operator: containsString
+          right:
+            value:
+              simple: Unusual allocation of multiple cloud compute resources
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: name
+                root: PaloAltoNetworksXDR.Incident.alerts
+          operator: containsString
+          right:
+            value:
+              simple: A cloud compute instance was created in a dormant region
+      label: Malicious
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "9"
+      Malicious:
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks the verdict logic. Refer to the playbook description for
+        detailed information.
+      id: c021b67f-9dee-4984-8b50-00531dfd6b6b
+      iscommand: false
+      name: Check unusual allocation & Dormant region
+      type: condition
+      version: -1
+    taskid: c021b67f-9dee-4984-8b50-00531dfd6b6b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -360,
+          "y": 940
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: alertVerdict
+      value:
+        simple: userVerification
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: db4fa154-1292-4324-8c7a-671e7bb5ccba
+      iscommand: false
+      name: Set verdict - User verification
+      script: Set
+      type: regular
+      version: -1
+    taskid: db4fa154-1292-4324-8c7a-671e7bb5ccba
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -360,
+          "y": 1190
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: faaf4e3b-1296-4d27-876d-8175626fe732
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: faaf4e3b-1296-4d27-876d-8175626fe732
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1370
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "3_2_Malicious": 0.14,
+      "4_2_Malicious": 0.24,
+      "5_2_Malicious": 0.21,
+      "6_2_Malicious": 0.19,
+      "6_7_#default#": 0.8,
+      "7_2_Malicious": 0.21,
+      "7_9_#default#": 0.59
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1335,
+        "width": 1190,
+        "x": -360,
+        "y": 100
+      }
+    }
+  }
