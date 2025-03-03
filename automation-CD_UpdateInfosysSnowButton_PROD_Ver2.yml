@@ -1,0 +1,402 @@
+commonfields:
+  id: d36dd2ba-ab91-4468-81cc-77793a80bce3
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.10.13.74666
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: CD_UpdateInfosysSnowButton_PROD_Ver2
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  inc_data = demisto.incidents()[0]
+
+  custom_fields = inc_data.get("CustomFields",{})
+  sys_id = custom_fields.get("snowincidentsysid")
+  snow_id = custom_fields.get("cdsnowincidentnumber")
+  snow_category = custom_fields.get("snowcategory") #default = "Security"
+  snow_subcategory = custom_fields.get("snowsubcategory") # default = "Hacking"
+  snow_impact = custom_fields.get("snowimpact") #default = "2")
+  snow_urgency = custom_fields.get("snowurgency") #default = "2")
+  snow_state = custom_fields.get("snowstate") #default = "New")
+  snow_assignmentgroup = custom_fields.get("snowassignmentgroup") #default = "SOC-Analyst")
+  snow_assignedto = custom_fields.get("snowassignedto") #default = "Soc User")
+  snow_description = custom_fields.get("snowdescription") #default = "Scripted Description Value")
+  snow_contacttype = custom_fields.get("snowcontacttype") #default = "Email")
+  snow_short_description = custom_fields.get("snowshortdescription") #default = "Scripted short description Value")
+  on_hold_reason = custom_fields.get("snowonholdreason")
+  snow_configurationitem = custom_fields.get("snowconfigurationitem")
+  source_brand = inc_data.get("sourceBrand")
+  #snow_privacy_impact = custom_fields.get("snowprivacyimpact")
+  snowworknotesadditionalcomments = custom_fields.get("snowworknotesadditionalcomments")
+  snow_businessservice = custom_fields.get("snowbusinessservice")
+  notesselection = custom_fields.get("notesselection")
+  cd_incident_type = custom_fields.get("cdsnowincidenttype")
+  incident_check = custom_fields.get("incidentinfoupdatecheck")
+
+
+  def incident_field_update(field_name,field_value):
+      demisto.executeCommand("setIncident",{field_name:field_value})
+
+  if snow_id != "" and snow_id is not None:
+
+      query = "number="+str(snow_id)
+      print(query)
+      result = demisto.executeCommand('servicenow-query-tickets',{'query':query, "system_params":"sysparm_display_value=true", "using":"ServiceNow v2_AUS-Customer-CCBP"})
+      content = result[0]["Contents"]["result"][0]
+      assignment_group = content["assignment_group"] if content["assignment_group"] == "" else content["assignment_group"]['display_value']
+      configuration_item = content["cmdb_ci"] if content["cmdb_ci"] == "" else content["cmdb_ci"]['display_value']
+      #print(snow_category,snow_subcategory,snow_impact,snow_urgency,snow_assignmentgroup,snow_contacttype,snow_configurationitem)
+      print(content["category"],content["subcategory"],content["impact"],content["urgency"],assignment_group,configuration_item,content["contact_type"])
+      print(repr(snow_short_description))
+
+      if cd_incident_type == content["u_incident_type"] and snow_category == content["category"] and snow_subcategory == content["subcategory"] and snow_impact == content["impact"] and snow_urgency == content["urgency"] and snow_assignmentgroup == assignment_group and snow_description == content["description"] and snow_short_description == content["short_description"] and snow_configurationitem == configuration_item and content["contact_type"] and snow_businessservice == content["business_service"]:
+          demisto.results("No New Changes to Update in ServiceNow!!")
+      else:
+          if snowworknotesadditionalcomments is not None and snowworknotesadditionalcomments != "":
+              snow_update_custom = "u_incident_type={}".format(cd_incident_type)
+              if snow_state == content["state"] and (on_hold_reason is None or on_hold_reason == content["hold_reason"]):
+                  res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"category":snow_category,
+                                                                              "subcategory":snow_subcategory, "impact":snow_impact,
+                                                                              "urgency":snow_urgency,
+                                                                              "assignment_group":snow_assignmentgroup,
+                                                                              "description":snow_description,
+                                                                              "short_description":snow_short_description,
+                                                                              "cmdb_ci":snow_configurationitem,
+                                                                              "work_notes":snowworknotesadditionalcomments,
+                                                                              "custom_fields":snow_update_custom,
+                                                                              "contact_type":snow_contacttype,
+                                                                              "business_service":snow_businessservice,
+                                                                              "using":"ServiceNow v2_AUS-Customer-CCBP"})
+              else:
+                  res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"category":snow_category,
+                                                                              "subcategory":snow_subcategory, "impact":snow_impact,
+                                                                              "urgency":snow_urgency,
+                                                                              "assignment_group":snow_assignmentgroup,
+                                                                              "description":snow_description,
+                                                                              "short_description":snow_short_description,
+                                                                              "cmdb_ci":snow_configurationitem,
+                                                                              "custom_fields":snow_update_custom,
+                                                                              "contact_type":snow_contacttype,
+                                                                              "business_service":snow_businessservice,
+                                                                              "using":"ServiceNow v2_AUS-Customer-CCBP"})
+              demisto.results(res)
+              demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"","cdupdatestatusmessage":'<p style="color: green;">Update Successful!!</p>'})
+              #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">Update Successful!!</p>'})
+              print(res)
+              priority = int(res[0]["Contents"]["result"]["priority"])
+              print(priority,type(priority))
+              if priority == 1:
+                  demisto.executeCommand("setIncident",{"cdpriority":"P1","snowpriority":"1 - Critical"})
+              elif priority == 2:
+                  demisto.executeCommand("setIncident",{"cdpriority":"P2","snowpriority":"2 - High"})
+              elif priority == 3:
+                  demisto.executeCommand("setIncident",{"cdpriority":"P3","snowpriority":"3 - Moderate"})
+              elif priority == 4:
+                  demisto.executeCommand("setIncident",{"cdpriority":"P4","snowpriority":"4 - Low"})
+              else:
+                  pass
+          else:
+              demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                  "cdupdatestatusmessage":'<p style="color: red;">Update Cannot happen!!Please Add Work Notes and Try Updating Again!!</p>'
+              })
+              demisto.results("Update Cannot happen!!Please Add Work Notes and Try Updating Again!!")
+              #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">Update Cannot happen!!Please Add Work Notes and Try Updating Again!!</p>'})
+      #,"additional_fields":"{0}={1};{2}={3}".format("hold_reason",on_hold_reason,"u_privacy_impact",snow_privacy_impact)
+      #demisto.executeCommand("servicenow-add-comment", {"id":sys_id,"comment":"Field Updated by Analyst from Demisto","post-as-comment":"false","using":"ServiceNow v2 USA Customer-TC Web User"})
+
+      print(content["hold_reason"])
+      if snow_state == content["state"] and on_hold_reason == content["hold_reason"]:
+          demisto.results("No Change in ServiceNow State")
+      else:
+          if source_brand == "ServiceNow v2":
+              #if snow_state == "In Progress" or snow_state == "New": (snow_state == "In Progress" and content["state"] != "In Progress")
+              if (snow_state == "In Progress" and content["state"] != "In Progress") or (snow_state == "Canceled" and content["state"] != "Canceled") or (snow_state == "New" and content["state"] != "New"):
+                  if snowworknotesadditionalcomments is not None and snowworknotesadditionalcomments != "":
+                      res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"state":snow_state,"additional_fields":"{0}={1}".format("hold_reason",""),"work_notes":snowworknotesadditionalcomments,
+                                                                                  "using":"ServiceNow v2_AUS-Customer-CCBP"})
+                      demisto.results(res)
+                      demisto.executeCommand("setIncident",{"cdincidentstate":"In Progress","snowonholdreason":"","notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                          "snowresolutioncode":"","snowresolutionnotes":"",
+                          "cdupdatestatusmessage":'<p style="color: green;">State Change Successful!!</p>'
+                      })
+                      #demisto.executeCommand("setIncident",{"snowresolutioncode":"","snowresolutionnotes":""})
+                      #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">State Change Successful!!</p>'})
+                  else:
+                      demisto.executeCommand("setIncident",{"snowstate":content["state"],"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                          "cdupdatestatusmessage":'<p style="color: red;">State Change Cannot happen!!Please Add Work Notes and Try Updating Again!!</p>'
+                      })
+                      demisto.results("State Change Cannot happen!!Please Change the State Again and Add Work Notes and Try Updating Again!!")
+                      #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">State Change Cannot happen!!Please Add Work Notes and Try Updating Again!!</p>'})
+              elif snow_state == "On Hold":
+                  if on_hold_reason == "Awaiting Caller" and content["hold_reason"] != "Awaiting Caller":
+                      if snowworknotesadditionalcomments is not None and snowworknotesadditionalcomments != "":
+                          if notesselection == "Additional Comments(Customer Visible)":
+                              res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"state":snow_state,
+                                                                              "additional_fields":"{0}={1}".format("hold_reason",on_hold_reason),
+                                                                              "comments":snowworknotesadditionalcomments,
+                                                                              "using":"ServiceNow v2_AUS-Customer-CCBP"})
+                              demisto.results(res)
+                              demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Customer Inputs","notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                                  "cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'
+                              })
+                              demisto.results("State Change happened!!")
+                              #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'})
+                          else:
+                              demisto.executeCommand("setIncident",{"snowstate":content["state"],"snowonholdreason":"","notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                                  "cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Additional Comments</p>'
+                              })
+                              demisto.results("State Change could not Happened!!Please Choose Note Selection as Additional Comments")
+                              #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Additional Comments</p>'})
+                      else:
+                          demisto.executeCommand("setIncident",{"snowstate":content["state"],"snowonholdreason":content["hold_reason"],"notesselection":"Additional Comments(Customer Visible)","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Additional Comments and also add Comments</p>'
+                          })
+                          demisto.results("State Change could not Happened!!Please Choose Note Selection as Additional Comments and also add Comments")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Additional Comments and also add Comments</p>'})
+                  elif on_hold_reason == "Awaiting Change" and content["hold_reason"] != "Awaiting Change":
+                      demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Others"})
+                      if snowworknotesadditionalcomments is not None and snowworknotesadditionalcomments != "":
+                          res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"state":snow_state,"work_notes":snowworknotesadditionalcomments,
+                                                                                  "additional_fields":"{0}={1}".format("hold_reason",on_hold_reason),
+                                                                                  "using":"ServiceNow v2_AUS-Customer-CCBP"})
+                          demisto.results(res)
+                          demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'
+                          })
+                          demisto.results("State Change happened!!")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'})
+                      else:
+                          demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes</p>'
+                          })
+                          demisto.results("State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes</p>'})
+                  elif on_hold_reason == "Awaiting Problem" and content["hold_reason"] != "Awaiting Problem":
+                      demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Others"})
+                      if snowworknotesadditionalcomments is not None and snowworknotesadditionalcomments != "":
+                          res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"state":snow_state,"work_notes":snowworknotesadditionalcomments,
+                                                                                  "additional_fields":"{0}={1}".format("hold_reason",on_hold_reason),
+                                                                                  "using":"ServiceNow v2_AUS-Customer-CCBP"})
+                          demisto.results(res)
+                          demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'
+                          })
+                          demisto.results("State Change happened!!")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'})
+                      else:
+                          demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes</p>'
+                          })
+                          demisto.results("State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes</p>'})
+                  elif on_hold_reason == "Awaiting Vendor" and content["hold_reason"] != "Awaiting Vendor":
+                      demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Vendor Inputs"})
+                      if snowworknotesadditionalcomments is not None and snowworknotesadditionalcomments != "":
+                          res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"state":snow_state,"work_notes":snowworknotesadditionalcomments,
+                                                                                  "additional_fields":"{0}={1}".format("hold_reason",on_hold_reason),
+                                                                                  "using":"ServiceNow v2_AUS-Customer-CCBP"})
+                          demisto.results(res)
+                          demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'
+                          })
+                          demisto.results("State Change happened!!")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'})
+                      else:
+                          demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes</p>'
+                          })
+                          demisto.results("State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes</p>'})
+                  else:
+                      demisto.executeCommand("setIncident",{"snowstate":content["state"],"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                          "cdsnowupdatemessage":'<p style="color: red;">State Change could not Happened!!Please add On Hold Reason</p>'
+                      })
+                      #demisto.executeCommand("setIncident",{"cdsnowupdatemessage":'<p style="color: red;">State Change could not Happened!!Please add On Hold Reason</p>'})
+              else:
+                  pass
+          else:
+              if snow_state == "On Hold":
+                  print(content["hold_reason"])
+                  if on_hold_reason == "Awaiting Caller" and content["hold_reason"] != "Awaiting Caller":
+                      if snowworknotesadditionalcomments is not None and snowworknotesadditionalcomments != "":
+                          if notesselection == "Additional Comments(Customer Visible)":
+                              res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"state":snow_state,
+                                                                              "additional_fields":"{0}={1}".format("hold_reason",on_hold_reason),
+                                                                              "comments":snowworknotesadditionalcomments,
+                                                                              "using":"ServiceNow v2_AUS-Customer-CCBP"})
+                              demisto.results(res)
+                              demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Customer Inputs","notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                                  "cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'
+                              })
+                              demisto.results("State Change happened!!")
+                              #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'})
+                          else:
+                              demisto.executeCommand("setIncident",{"snowstate":content["state"],"snowonholdreason":content["hold_reason"],
+                              "notesselection":"Additional Comments(Customer Visible)","snowworknotesadditionalcomments":"",
+                                  "cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Additional Comments</p>'
+                              })
+                              demisto.results("State Change could not Happened!!Please Choose Note Selection as Additional Comments")
+                              #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Additional Comments</p>'})
+                      else:
+                          demisto.executeCommand("setIncident",{"snowstate":content["state"],"snowonholdreason":content["hold_reason"],"notesselection":"Additional Comments(Customer Visible)","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Additional Comments</p>'
+                          })
+                          demisto.results("State Change could not Happened!!Please Choose Note Selection as Additional Comments and also add Comments")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Additional Comments</p>'})
+                  elif on_hold_reason == "Awaiting Change" and content["hold_reason"] != "Awaiting Change":
+                      demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Others"})
+                      if snowworknotesadditionalcomments is not None and snowworknotesadditionalcomments != "":
+                          res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"state":snow_state,"work_notes":snowworknotesadditionalcomments,
+                                                                                  "additional_fields":"{0}={1}".format("hold_reason",on_hold_reason),
+                                                                                  "using":"ServiceNow v2_AUS-Customer-CCBP"})
+                          demisto.results(res)
+                          demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'
+                          })
+                          demisto.results("State Change happened!!")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'})
+                      else:
+                          demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes</p>'
+                          })
+                          demisto.results("State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes</p>'})
+                  elif on_hold_reason == "Awaiting Problem" and content["hold_reason"] != "Awaiting Problem":
+                      demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Others"})
+                      if snowworknotesadditionalcomments is not None and snowworknotesadditionalcomments != "":
+                          res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"state":snow_state,"work_notes":snowworknotesadditionalcomments,
+                                                                                  "additional_fields":"{0}={1}".format("hold_reason",on_hold_reason),
+                                                                                  "using":"ServiceNow v2_AUS-Customer-CCBP"})
+                          demisto.results(res)
+                          demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'
+                          })
+                          demisto.results("State Change happened!!")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'})
+                      else:
+                          demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes</p>'
+                          })
+                          demisto.results("State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes</p>'})
+                  elif on_hold_reason == "Awaiting Vendor" and content["hold_reason"] != "Awaiting Vendor":
+                      demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Vendor Inputs"})
+                      if snowworknotesadditionalcomments is not None and snowworknotesadditionalcomments != "":
+                          res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"state":snow_state,"work_notes":snowworknotesadditionalcomments,
+                                                                                  "additional_fields":"{0}={1}".format("hold_reason",on_hold_reason),
+                                                                                  "using":"ServiceNow v2_AUS-Customer-CCBP"})
+                          demisto.results(res)
+                          demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'
+                          })
+                          demisto.results("State Change happened!!")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'})
+                      else:
+                          demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                              "cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes</p>'
+                          })
+                          demisto.results("State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes")
+                          #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">State Change could not Happened!!Please Choose Note Selection as Work Notes and also add Notes</p>'})
+                  else:
+                      demisto.executeCommand("setIncident",{"snowstate":content["state"],"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                          "cdsnowupdatemessage":'<p style="color: red;">State Change could not Happened!!Please add On Hold Reason</p>'
+                      })
+                      #demisto.executeCommand("setIncident",{"cdsnowupdatemessage":'<p style="color: red;">State Change could not Happened!!Please add On Hold Reason</p>'})
+              elif snow_state == "In Progress":
+                  demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Customer Inputs"})
+                  res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"state":snow_state,"additional_fields":"{0}={1}".format("hold_reason",""),"work_notes":snowworknotesadditionalcomments,
+                                                                                  "using":"ServiceNow v2_AUS-Customer-CCBP"})
+                  demisto.results(res)
+                  demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"","cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>',
+                      "snowonholdreason":"","snowresolutioncode":"","snowresolutionnotes":""
+                  })
+                  demisto.results("State Change happened!!")
+                  #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'})
+                  #demisto.executeCommand("setIncident",{"snowonholdreason":"","snowresolutioncode":"","snowresolutionnotes":""})
+              elif snow_state == "New":
+                  demisto.executeCommand("setIncident",{"cdincidentstate":"Pending Customer Inputs"})
+                  res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"state":snow_state,"additional_fields":"{0}={1}".format("hold_reason",""),"work_notes":snowworknotesadditionalcomments,
+                                                                                  "using":"ServiceNow v2_AUS-Customer-CCBP"})
+                  demisto.results(res)
+                  demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"","cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>',
+                      "snowonholdreason":"","snowresolutioncode":"","snowresolutionnotes":""
+                  })
+                  demisto.results("State Change happened!!")
+                  #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'})
+                  #demisto.executeCommand("setIncident",{"snowonholdreason":"","snowresolutioncode":"","snowresolutionnotes":""})
+              elif snow_state == "Canceled":
+                  demisto.executeCommand("setIncident",{"cdincidentstate":"In Progress"})
+                  res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,"state":snow_state,"additional_fields":"{0}={1}".format("hold_reason",""),"work_notes":snowworknotesadditionalcomments,
+                                                                                  "using":"ServiceNow v2_AUS-Customer-CCBP"})
+                  demisto.results(res)
+                  demisto.executeCommand("setIncident",{"notesselection":"Work Notes","snowworknotesadditionalcomments":"",
+                      "cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'
+                  })
+                  demisto.results("State Change happened!!")
+                  #demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">State Change Successful</p>'})
+
+              else:
+                  pass
+
+
+
+      '''if snow_privacy_impact is not None and snow_privacy_impact !="" and snow_privacy_impact != content["u_privacy_impact"]:
+          if snowworknotesadditionalcomments is not None and snowworknotesadditionalcomments != "":
+              if notesselection == "Work Notes":
+                  res = demisto.executeCommand("servicenow-update-ticket",{"id":sys_id,
+                                                                          "additional_fields":"{0}={1}".format("u_privacy_impact",snow_privacy_impact),
+                                                                          "work_notes":snowworknotesadditionalcomments,
+                                                                          "using":"ServiceNow v2_AUS-Customer-CCBP"})
+                  demisto.results(res)
+                  demisto.executeCommand("setIncident",{"snowworknotesadditionalcomments":""})
+                  demisto.results("Privacy Impact Field Change happened!!")
+                  demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: green;">Privacy Impact Change Successful</p>'})
+              else:
+                  demisto.executeCommand("setIncident",{"snowprivacyimpact":content["u_privacy_impact"],"notesselection":"Work Notes","snowworknotesadditionalcomments":""})
+                  demisto.results("Privacy Impact Field Change could not Happened!!Please Choose Note Selection as Work Notes")
+                  demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">Privacy Impact Field Change could not Happened!!Please Choose Note Selection as Work Notes</p>'})
+          else:
+              demisto.executeCommand("setIncident",{"snowprivacyimpact":content["u_privacy_impact"],"notesselection":"Work Notes","snowworknotesadditionalcomments":""})
+              demisto.results("Privacy Impact Field Change could not Happened!!Please Choose Note Selection as Additional Comments and also add Comments")
+              demisto.executeCommand("setIncident",{"cdupdatestatusmessage":'<p style="color: red;">Privacy Impact Field Change could not Happened!!Please Choose Note Selection as Additional Comments and also add Comments</p>'})
+      else:
+          demisto.results("No Change in Privacy Impact Field!!")'''
+
+
+
+      linkedcount = inc_data.get("linkedCount")
+      demisto.results(linkedcount)
+      LinkedIncidents = inc_data.get("linkedIncidents")
+      print(LinkedIncidents,type(LinkedIncidents))
+
+      if int(linkedcount)>=1:
+          for inc in LinkedIncidents:
+              demisto.executeCommand("setIncident",{"id":inc,"snowcategory":snow_category,"snowsubcategory":snow_subcategory, "snowimpact":snow_impact,
+                                                                      "snowurgency":snow_urgency, "snowstate":snow_state,
+                                                                      "snowassignmentgroup":snow_assignmentgroup,"snowdescription":snow_description,
+                                                                      "snowshortdescription":snow_short_description,"snowconfigurationitem":snow_configurationitem,"snowonholdreason":on_hold_reason,"snowbusinesservice":snow_businessservice,})
+      else:
+          pass
+
+      demisto.results("Ticket has been updated. Sucessfully!")
+  else:
+      demisto.results("No ticket found. Kindly create a ticket.")
+
+  incident_field_update("incidentinfoupdatecheck","")
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
