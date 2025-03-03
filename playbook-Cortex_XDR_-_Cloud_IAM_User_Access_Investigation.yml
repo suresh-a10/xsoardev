@@ -1,0 +1,995 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.8.0
+    itemVersion: 1.0.23
+    packID: CloudIncidentResponse
+    packName: Cloud Incident Response
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: "Investigate and respond to Cortex XDR Cloud alerts where a Cloud IAM
+  user`s access key is used suspiciously to access the cloud environment. \nThe following
+  alerts are supported for AWS, Azure, and GCP environments.\n- Penetration testing
+  tool attempt\n- Penetration testing tool activity\n- Suspicious API call from a
+  Tor exit node\n\n"
+id: Cortex XDR - Cloud IAM User Access Investigation
+inputs:
+- description: The alert ID.
+  key: alert_id
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: Whether to execute the user remediation flow automatically.
+  key: autoAccessKeyRemediation
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "False"
+- description: Whether to block the indicators automatically.
+  key: autoBlockIndicators
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "False"
+- description: Whether to execute the user remediation flow automatically.
+  key: autoUserRemediation
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "False"
+- description: |-
+    The response playbook provides the following remediation actions using AWS, MSGraph Users, GCP and GSuite Admin:
+
+    Reset: By entering "Reset" in the input, the playbook will execute password reset.
+    Supports: AWS, MSGraph Users, GCP and GSuite Admin.
+
+    Revoke: By entering "Revoke" in the input, the GCP will revoke the access key, GSuite Admin will revoke the access token and the MSGraph Users will revoke the session.
+    Supports: GCP, GSuite Admin and MSGraph Users.
+
+    Deactivate - By entering "Deactivate" in the input, the playbook will execute access key deactivation.
+    Supports: AWS.
+
+    ALL: By entering "ALL" in the input, the playbook will execute the all remediation actions provided for each CSP.
+  key: credentialsRemediationType
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: Reset
+- description: |-
+    Choose the remediation type for the user's access key.
+
+    AWS available types:
+    Disable - for disabling the user's access key.
+    Delete - for deleting the user's access key.
+  key: AWS-accessKeyRemediationType
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: Disable
+- description: |-
+    Choose the remediation type for the user involved.
+
+    AWS available types:
+    Delete - for the user deletion.
+    Revoke - for revoking the user's credentials.
+  key: AWS-userRemediationType
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: Revoke
+- description: The name of the new role to create if the analyst decides to clone
+    the service account.
+  key: AWS-newRoleName
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The name of the new instance profile to create if the analyst decides
+    to clone the service account.
+  key: AWS-newInstanceProfileName
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: If provided, the role will be attached with a deny policy without the
+    compute instance analysis flow.
+  key: AWS-roleNameToRestrict
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: |-
+    Whether to clone the compromised SA before putting a deny policy to it.
+    True/False
+  key: shouldCloneSA
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: |-
+    Choose the remediation type for the user involved.
+
+    Azure available types:
+    Disable - for disabling the user.
+    Delete - for deleting the user.
+  key: Azure-userRemediationType
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: Disable
+- description: |-
+    Choose the remediation type for the user's access key.
+
+    GCP available types:
+    Disable - For disabling the user's access key.
+    Delete - For deleting the user's access key.
+  key: GCP-accessKeyRemediationType
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: Disable
+- description: |-
+    Choose the remediation type for the user involved.
+
+    GCP available types:
+    Delete - For deleting the user.
+    Disable - For disabling the user.
+  key: GCP-userRemediationType
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: Disable
+name: Cortex XDR - Cloud IAM User Access Investigation
+outputs: []
+quiet: true
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 9455cb69-b1ad-4c8c-8815-91c6e7f96a10
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 9455cb69-b1ad-4c8c-8815-91c6e7f96a10
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": -230
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "4"
+      - "11"
+      - "16"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 307cc28e-ca4e-4793-83e5-862475661d63
+      iscommand: false
+      name: Analysis
+      type: title
+      version: -1
+    taskid: 307cc28e-ca4e-4793-83e5-862475661d63
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 240
+        }
+      }
+  "4":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      ip:
+        complex:
+          accessor: caller_ip
+          root: alertJson.raw_abioc.event
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks the reputation of an IP address.
+      id: 906e18b4-0d76-4b7e-860f-7f3dba7ce7e4
+      iscommand: true
+      name: IP Enrichment
+      script: '|||ip'
+      type: regular
+      version: -1
+    taskid: 906e18b4-0d76-4b7e-860f-7f3dba7ce7e4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 860,
+          "y": 390
+        }
+      }
+  "6":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: alert_name
+                root: alertJson
+          operator: isEqualString
+          right:
+            value:
+              simple: Suspicious API call from a Tor exit node
+        - left:
+            iscontext: true
+            value:
+              simple: DBotScore.Score
+          operator: isEqualNumber
+          right:
+            value:
+              simple: "3"
+      label: "yes"
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "12"
+      "yes":
+      - "8"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Check if the alert is malicious according to the IP DBot score
+        or if there is an API call from a Tor exit node.
+      id: 47daf361-6f62-4183-8bbd-37602dded39a
+      iscommand: false
+      name: malicious?
+      type: condition
+      version: -1
+    taskid: 47daf361-6f62-4183-8bbd-37602dded39a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 690
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Based on the collected data investigation, is it a true positive event?
+      cc: null
+      format: ""
+      methods:
+      - email
+      replyOptions:
+      - "Yes"
+      - "No"
+      subject:
+        simple: Based on the collected data investigation, is it a true positive event?
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to:
+        simple: Analyst
+    nexttasks:
+      "No":
+      - "10"
+      "Yes":
+      - "8"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Based on the collected data investigation, is it a true positive
+        event?
+      id: b17705e9-b1ad-475d-87e6-c0974d5fc8fa
+      iscommand: false
+      name: Decision making - true/false-positive alert
+      type: condition
+      version: -1
+    taskid: b17705e9-b1ad-475d-87e6-c0974d5fc8fa
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 670,
+          "y": 1020
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "9"
+      - "21"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4b87a31c-f367-4ab6-8ac7-3f9a2f3d179a
+      iscommand: false
+      name: Remediation
+      type: title
+      version: -1
+    taskid: 4b87a31c-f367-4ab6-8ac7-3f9a2f3d179a
+    timertriggers:
+    - action: start
+      fieldname: remediationsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1220
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      AWS-accessKeyRemediationType:
+        complex:
+          root: inputs.AWS-accessKeyRemediationType
+      AWS-resourceRemediationType:
+        simple: Stop
+      AWS-userRemediationType:
+        complex:
+          root: inputs.AWS-userRemediationType
+      Azure-resourceRemediationType:
+        simple: Poweroff
+      Azure-userRemediationType:
+        complex:
+          root: inputs.Azure-userRemediationType
+      GCP-accessKeyRemediationType:
+        complex:
+          root: inputs.GCP-accessKeyRemediationType
+      GCP-resourceRemediationType:
+        simple: Stop
+      GCP-userRemediationType:
+        complex:
+          root: inputs.GCP-userRemediationType
+      accessKeyId:
+        complex:
+          accessor: access_key_id
+          root: alertJson.raw_abioc.event._aws_specific_fields
+      autoAccessKeyRemediation:
+        complex:
+          root: inputs.autoAccessKeyRemediation
+      autoBlockIndicators:
+        complex:
+          root: inputs.autoBlockIndicators
+      autoResourceRemediation:
+        simple: "False"
+      autoUserRemediation:
+        complex:
+          root: inputs.autoUserRemediation
+      cloudProvider:
+        complex:
+          accessor: cloud_provider
+          root: alertJson.raw_abioc.event
+      region:
+        complex:
+          accessor: region
+          root: alertJson.raw_abioc.event
+      resourceGroup:
+        complex:
+          accessor: referenced_resource
+          root: alertJson.raw_abioc.event
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: /
+              fields:
+                value:
+                  simple: "5"
+            operator: Cut
+      resourceName:
+        complex:
+          accessor: referenced_resource
+          root: alertJson.raw_abioc.event
+      resourceZone:
+        complex:
+          accessor: zone
+          root: alertJson.raw_abioc.event
+      username:
+        complex:
+          accessor: identity_name
+          root: alertJson.raw_abioc.event
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        This playbook provides response playbooks for:
+        - AWS
+        - Azure
+        - GCP
+
+        The response actions available are:
+        - Terminate/Shut down/Power off an instance
+        - Delete/Disable a user
+        - Delete/Revoke/Disable credentials
+        - Block indicators
+      id: 89e1b907-b4c4-4dfa-8579-17969e71e1a2
+      iscommand: false
+      name: Cloud Response - Generic
+      playbookId: Cloud Response - Generic
+      type: playbook
+      version: -1
+    taskid: 89e1b907-b4c4-4dfa-8579-17969e71e1a2
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1360
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 46d8a585-dbc1-44b6-8653-6ad06f7f1976
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: 46d8a585-dbc1-44b6-8653-6ad06f7f1976
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1660
+        }
+      }
+  "11":
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 0
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      GCPProjectName:
+        complex:
+          accessor: project
+          root: alertJson.raw_abioc.event
+      cloudIdentityType:
+        complex:
+          accessor: identity_type
+          root: alertJson.raw_abioc.event
+      cloudProvider:
+        complex:
+          accessor: cloud_provider
+          root: alertJson.raw_abioc.event
+      username:
+        complex:
+          accessor: identity_name
+          root: alertJson.raw_abioc.event
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      description: This playbook is responsible for collecting and enriching data
+        on Identity Access Management (IAM) in cloud environments (AWS, Azure, and
+        GCP).
+      id: 4de4fb9a-ee3d-49dd-86f4-62f4d42061ec
+      iscommand: false
+      name: Cloud IAM Enrichment - Generic
+      playbookId: Cloud IAM Enrichment - Generic
+      type: playbook
+      version: -1
+    taskid: 4de4fb9a-ee3d-49dd-86f4-62f4d42061ec
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 390
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 2
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |2-
+         To determine if this is a true positive event,  review the operations performed by the access key and the user in the recent time frame.
+        Search for the following items:
+        Investigate the operation performed by the access key and examine the executed operations, by who it was executed, on which resource, and the operation status.
+        Investigate operations performed by the user and examine the executed operations, by who it was executed, on which resource, and the operation status.
+        Look at any persistence, for example - a new user creation or key, etc.
+        Investigate operations performed by the user and examine the executed operations, by who it was executed, on which resource, and the operation status.
+        Look at any lateral movement operations. For example, an operation can be = AsumeRole.
+        As an extra validation step, it is recommended to query the user and/or the user’s manager regarding the investigated suspicious activity.
+      id: d121fca8-3d36-47c8-8fec-4767e752b0cb
+      iscommand: false
+      name: Investigate collected data
+      type: regular
+      version: -1
+    taskid: d121fca8-3d36-47c8-8fec-4767e752b0cb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 670,
+          "y": 860
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 13af30d6-2052-4b3f-8765-7dc9ab9d3909
+      iscommand: false
+      name: Verdict
+      type: title
+      version: -1
+    taskid: 13af30d6-2052-4b3f-8765-7dc9ab9d3909
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 560
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Username:
+        complex:
+          accessor: Username
+          root: Account
+          transformers:
+          - operator: uniq
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      description: |-
+        Enrich accounts using one or more integrations.
+        Supported integrations:
+        - Active Directory
+        - SailPoint IdentityNow
+        - SailPoint IdentityIQ
+        - PingOne
+        - Okta
+        - AWS IAM
+
+        Also, the playbook supports the generic command 'iam-get-user' (implemented in IAM integrations.) For more information, visit https://xsoar.pan.dev/docs/integrations/iam-integrations.
+      id: c6f2ad53-aa37-479d-89ee-6488d9c5bd66
+      iscommand: false
+      name: Account Enrichment - Generic v2.1
+      playbookId: Account Enrichment - Generic v2.1
+      type: playbook
+      version: -1
+    taskid: c6f2ad53-aa37-479d-89ee-6488d9c5bd66
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 40,
+          "y": 390
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b94798dd-a0f6-48a8-8af0-ac25845e6cda
+      iscommand: false
+      name: Remediation Complete
+      type: title
+      version: -1
+    taskid: b94798dd-a0f6-48a8-8af0-ac25845e6cda
+    timertriggers:
+    - action: stop
+      fieldname: remediationsla
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1530
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      alert_ids:
+        complex:
+          root: inputs.alert_id
+      filter_alert_fields:
+        simple: "false"
+      ignore-outputs:
+        simple: "false"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns information about each alert ID.
+      id: 68003c98-7022-48d9-866b-7322df1e8294
+      iscommand: true
+      name: Fetch alert extra data
+      script: '|||xdr-get-cloud-original-alerts'
+      type: regular
+      version: -1
+    taskid: 68003c98-7022-48d9-866b-7322df1e8294
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": -100
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      type:
+        simple: Cortex XDR - XCLOUD
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: 47a8da82-dab8-4479-88b2-cb441115e42f
+      iscommand: true
+      name: Set incident type
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: 47a8da82-dab8-4479-88b2-cb441115e42f
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 70
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      AWS-accessKeyID:
+        complex:
+          accessor: accessKeyId
+          root: PaloAltoNetworksXDR.OriginalAlert.event.identity_orig
+      AWS-instanceID:
+        complex:
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: alert.username
+              operator: containsGeneral
+              right:
+                value:
+                  simple: i-
+          root: alert.username
+          transformers:
+          - args:
+              delimiter:
+                value:
+                  simple: /
+              fields:
+                value:
+                  simple: "2"
+            operator: Cut
+      AWS-newInstanceProfileName:
+        complex:
+          root: inputs.AWS-newInstanceProfileName
+      AWS-newRoleName:
+        complex:
+          root: inputs.AWS-newRoleName
+      AWS-roleNameToRestrict:
+        complex:
+          root: inputs.AWS-roleNameToRestrict
+      AWS-userID:
+        complex:
+          accessor: username
+          root: incident
+      Azure-AppID:
+        complex:
+          accessor: appid
+          root: PaloAltoNetworksXDR.OriginalAlert.event.identity_orig.claims
+      Azure-ObjectID:
+        complex:
+          accessor: claims
+          root: PaloAltoNetworksXDR.OriginalAlert.event.identity_orig
+          transformers:
+          - args:
+              error_if_no_match: {}
+              ignore_case: {}
+              multi_line: {}
+              period_matches_newline: {}
+              regex:
+                value:
+                  simple: http://schemas.microsoft.com/identity/claims/objectidentifier":"\w{8}\-\w{4}\-\w{4}\-\w{4}\-\w{12}
+              unpack_matches: {}
+            operator: RegexExtractAll
+          - args:
+              from:
+                value:
+                  simple: http://schemas.microsoft.com/identity/claims/objectidentifier":"
+              to:
+                value:
+                  simple: '"'
+            operator: ExtractInbetween
+      Azure-userID:
+        complex:
+          accessor: username
+          root: incident
+      GCP-SAEmail:
+        complex:
+          accessor: principalEmail
+          root: PaloAltoNetworksXDR.OriginalAlert.event.identity_orig
+      GCP-cloudProject:
+        complex:
+          accessor: project
+          root: PaloAltoNetworksXDR.OriginalAlert.event
+      GCP-userID:
+        complex:
+          accessor: username
+          root: incident
+      GCP-zone:
+        complex:
+          accessor: zone
+          root: PaloAltoNetworksXDR.OriginalAlert.event
+      RemediationType:
+        complex:
+          root: inputs.credentialsRemediationType
+      cloudProvider:
+        complex:
+          accessor: cloud_provider
+          root: PaloAltoNetworksXDR.OriginalAlert.event
+      identityType:
+        complex:
+          accessor: type
+          root: PaloAltoNetworksXDR.OriginalAlert.event.identity_orig.sessionContext.sessionIssuer
+      shouldCloneSA:
+        complex:
+          root: inputs.shouldCloneSA
+    separatecontext: true
+    skipunavailable: true
+    task:
+      brand: ""
+      description: |-
+        ## **Cloud Credentials Rotation - Generic**
+
+        This comprehensive playbook combines the remediation steps from AWS, Azure, and GCP sub-playbooks into a single, cohesive guide. Regardless of which Cloud Service Provider (CSP) you're working with, this playbook will direct you to the relevant steps, ensuring swift and effective response.
+
+        The primary objective is to offer an efficient way to address compromised credentials across different cloud platforms. By consolidating the key steps from AWS, Azure, and GCP, it minimizes the time spent searching for platform-specific procedures and accelerates the remediation process, ensuring the highest level of security for your cloud environments.
+
+        ## **Integrations for Each Sub-Playbook**
+
+        In order to seamlessly execute the actions mentioned in each sub-playbook, specific integrations are essential. These integrations facilitate the automated tasks and processes that the playbook carries out. Here are the required integrations for each sub-playbook:
+
+        ### **AWS Sub-Playbook:**
+        1. [**AWS - IAM**](https://xsoar.pan.dev/docs/reference/integrations/aws---iam): Used to manage AWS Identity and Access Management.
+        2. [**AWS - EC2**](https://xsoar.pan.dev/docs/reference/integrations/aws---ec2): Essential for managing Amazon Elastic Compute Cloud (EC2) instances.
+
+        ### **GCP Sub-Playbook:**
+        1. [**Google Workspace Admin**](https://xsoar.pan.dev/docs/reference/integrations/g-suite-admin): Manages users, groups, and other entities within Google Workspace.
+        2. [**GCP-IAM**](https://xsoar.pan.dev/docs/reference/integrations/gcp-iam): Ensures management and control of GCP's Identity and Access Management.
+
+        ### **Azure Sub-Playbook:**
+        1. [**Microsoft Graph Users**](https://xsoar.pan.dev/docs/reference/integrations/microsoft-graph-user): Manages users and related entities in Microsoft Graph.
+        2. [**Microsoft Graph Applications**](https://xsoar.pan.dev/docs/reference/integrations/microsoft-graph-applications): Manages applications within Microsoft Graph.
+      id: a1933c13-65f0-443a-8054-961f49ffc08d
+      iscommand: false
+      name: Cloud Credentials Rotation - Generic
+      playbookId: Cloud Credentials Rotation - Generic
+      type: playbook
+      version: -1
+    taskid: a1933c13-65f0-443a-8054-961f49ffc08d
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 30,
+          "y": 1360
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "6_8_yes": 0.38,
+      "7_10_No": 0.27,
+      "7_8_Yes": 0.47
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1955,
+        "width": 1210,
+        "x": 30,
+        "y": -230
+      }
+    }
+  }
