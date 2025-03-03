@@ -190,7 +190,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.5.0
-    itemVersion: 1.2.27
+    itemVersion: 1.2.31
     packID: FeedTAXII
     packName: TAXII Feed
     packPropagationLabels:
@@ -314,12 +314,12 @@ script:
     - contextPath: TAXII.Indicator.Rawjson
       description: The indicator rawJSON value.
       type: Unknown
-  dockerimage: demisto/taxii:1.0.0.116749
+  dockerimage: demisto/taxii:1.0.0.117607
   feed: true
   runonce: false
   script: |
     register_module_line('TAXIIFeed', 'start', __line__())
-    demisto.debug('pack name = TAXII Feed, pack version = 1.2.27')
+    demisto.debug('pack name = TAXII Feed, pack version = 1.2.31')
 
 
     import tempfile
@@ -417,13 +417,16 @@ script:
             for domain in domains_list:
                 if 'http' in domain:
                     domain = domain.replace('https://', "").replace("http://", "")
-                    if len(domain.split(".")) > 1:
-                        results.append({
-                            'indicator': domain,
-                            'type': 'Domain'
-                        })
-                    else:
-                        demisto.debug(f"obj with value {domain} is not a domain, skipping.")
+                indicator_type = auto_detect_indicator_type(domain)
+                is_domain = ('Domain' in indicator_type) if indicator_type else False
+                demisto.debug(f"{indicator_type=}, {is_domain=}")
+                if len(domain.split(".")) > 1 or is_domain:
+                    results.append({
+                        'indicator': domain,
+                        'type': 'Domain'
+                    })
+                else:
+                    demisto.debug(f"obj with value {domain} is not a domain, skipping.")
             return results
 
 
@@ -520,11 +523,16 @@ script:
                     })
                 elif type_ == 'Domain':
                     domain = url.replace('https://', "").replace("http://", "")
-                    if len(domain.split(".")) > 1:
+                    indicator_type = auto_detect_indicator_type(domain)
+                    is_domain = ('Domain' in indicator_type) if indicator_type else False
+                    demisto.debug(f"{indicator_type=}, {is_domain=}")
+                    if len(domain.split(".")) > 1 or is_domain:
                         results.append({
                             'indicator': domain,
                             'type': 'Domain'
                         })
+                    else:
+                        demisto.debug(f"obj with value {url} is not of type {type_}, skipping.")
                 else:
                     demisto.debug(f"obj with value {url} is not of type {type_}, skipping.")
 
@@ -622,7 +630,7 @@ script:
         @staticmethod
         def object_extract_properties(props, kwargs):
             type_ = props.get('xsi:type').rsplit(':')[-1]
-
+            demisto.debug(f"The type of the indicator is {type_=}")
             if type_ not in StixDecode.DECODERS:
                 LOG(f'Unhandled cybox Object type: {type_!r} - {props!r}')
                 return []
@@ -767,9 +775,8 @@ script:
             if message_id is None:
                 message_id = Taxii11.new_message_id()
 
-            return '''<taxii_11:Collection_Information_Request xmlns:taxii_11=
-            "http://taxii.mitre.org/messages/taxii_xml_binding-1.1" message_id="{}"/>'''.format(
-                message_id)
+            return f'''<taxii_11:Collection_Information_Request xmlns:taxii_11=
+            "http://taxii.mitre.org/messages/taxii_xml_binding-1.1" message_id="{message_id}"/>'''
 
         @staticmethod
         def poll_request(
@@ -792,8 +799,7 @@ script:
             if subscription_id is not None:
                 result.append(f'subscription_id="{subscription_id}"')
             result.append('>')
-            result.append('<taxii_11:Exclusive_Begin_Timestamp>{}</taxii_11:Exclusive_Begin_Timestamp>'.format(
-                exclusive_begin_timestamp))
+            result.append(f'<taxii_11:Exclusive_Begin_Timestamp>{exclusive_begin_timestamp}</taxii_11:Exclusive_Begin_Timestamp>')
             result.append(
                 f'<taxii_11:Inclusive_End_Timestamp>{inclusive_end_timestamp}</taxii_11:Inclusive_End_Timestamp>')
 
@@ -902,7 +908,7 @@ script:
             self.tags = argToList(feedTags)
             self.tlp_color = tlp_color
             self.ttps: dict[str, dict] = {}
-            self.enrichment_excluded = enrichmentExcluded
+            self.enrichment_excluded = enrichmentExcluded or (tlp_color == 'RED' and is_xsiam_or_xsoar_saas())
 
             # authentication
             if credentials:
@@ -1038,9 +1044,7 @@ script:
                 address = coll_service.find('Address')
                 if address is None:
                     LOG(
-                        '{} - Collection management service with no address: {!r}'.format(
-                            INTEGRATION_NAME, coll_service
-                        )
+                        f'{INTEGRATION_NAME} - Collection management service with no address: {coll_service!r}'
                     )
                     continue
                 address = address.string
