@@ -40,7 +40,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 6.5.0
-    itemVersion: 2.1.12
+    itemVersion: 2.1.14
     packID: PrismaAccess
     packName: Palo Alto Networks - Strata Cloud Manager
     packPropagationLabels:
@@ -61,6 +61,20 @@ detaileddescription: |-
 
   ## Prisma SASE API
   [Prisma SASE API](https://pan.dev/sase).
+
+  ## Required Permissions
+
+  To use the integration commands, ensure the ***Prisma Access & NGFW Configuration*** has one of the following roles assigned:
+
+  - Multitenant Superuser
+  - Superuser
+
+  To use the **prisma-sase-cie-user-get** command, ensure the ***Cloud Identity Engine*** has one of the following roles assigned:
+
+  - Deployment Administrator
+  - Multitenant Superuser
+  - Superuser
+  - View Only Administrator
 
   ---
   [View Integration Documentation](https://xsoar.pan.dev/docs/reference/integrations/palo-alto-networks---prisma-sase)
@@ -314,11 +328,11 @@ script:
       description: Polling timeout in seconds.
       name: polling_timeout_in_seconds
     - deprecated: true
-      description: For polling use - the job id of the push job.
+      description: For polling use - the job ID of the push job.
       name: job_id
     - deprecated: true
-      description: For polling use - wether the paret process finished and child processes
-        were creted.
+      description: For polling use - whether the parent process finished and child
+        processes were created.
       name: parent_finished
     - description: Tenant services group ID. If not provided, the tsg_id integration
         parameter will be used as the default.
@@ -330,7 +344,7 @@ script:
       description: Configuration job ID.
       type: String
     - contextPath: PrismaSase.CandidateConfig.result
-      description: The configuration push result, e.g. OK, FAIL.
+      description: The configuration push result, e.g., OK, FAIL.
       type: String
     - contextPath: PrismaSase.CandidateConfig.details
       description: The configuration push details.
@@ -1381,11 +1395,11 @@ script:
       - weekly
       - monthly
     - description: The frequency hour. If the frequency argument is daily, weekly
-        or monthly, value must be provided. Possible values are 00-23.
+        or monthly, a value must be provided. Possible values are 00-23.
       name: frequency_hour
     - auto: PREDEFINED
       description: The day of the week. If the frequency argument is weekly or monthly,
-        value must be provided.
+        a value must be provided.
       name: day_of_week
       predefined:
       - monday
@@ -1395,7 +1409,7 @@ script:
       - friday
       - saturday
       - sunday
-    - description: The day of the month. If the frequency argument is monthly, value
+    - description: The day of the month. If the frequency argument is monthly, a value
         must be provided. Possible values are between 1 and 31.
       name: day_of_month
     - description: The user can exclude certain addresses from the list depending
@@ -1462,7 +1476,7 @@ script:
       - domain
       - url
     - auto: PREDEFINED
-      description: The predefined ip list. If the type is predefined_ip, a value must
+      description: The predefined IP list. If the type is predefined_ip, a value must
         be provided.
       name: predefined_ip_list
       predefined:
@@ -1489,7 +1503,7 @@ script:
       - weekly
       - monthly
     - description: The frequency hour. If the frequency argument is daily, weekly
-        or monthly, value must be provided. Possible values are 00-23.
+        or monthly, a value must be provided. Possible values are 00-23.
       name: frequency_hour
     - auto: PREDEFINED
       description: The day of the week. If the frequency argument is weekly or monthly,
@@ -1571,11 +1585,56 @@ script:
       name: tsg_id
     description: Quarantine a host.
     name: prisma-sase-quarantine-host
-  dockerimage: demisto/python3:3.11.10.115186
+  - arguments:
+    - description: The domain of the directory-sync connected to the CIE.
+      name: domain
+      required: true
+    - description: The attribute value for the filter.
+      name: value_for_filter
+      required: true
+    - defaultValue: Common-Name, Unique Identifier, Manager, User Principal Name,
+        Name, Distinguished Name
+      description: A comma-separated list of attributes to return.
+      isArray: true
+      name: attributes_to_return
+    - defaultValue: Distinguished Name, Unique Identifier, Common-Name, Name, User
+        Principal Name
+      description: A comma-separated list of attributes to filter by.
+      isArray: true
+      name: attributes_to_filter_by
+    - auto: PREDEFINED
+      defaultValue: Equal
+      description: The operator.
+      name: operator
+      predefined:
+      - Equal
+      - Starts With
+      - Ends With
+      - Contain
+      - Text Search
+    description: Get the CIE user.
+    name: prisma-sase-cie-user-get
+    outputs:
+    - contextPath: PrismaSase.CIE.User.common_name
+      description: The common name.
+      type: String
+    - contextPath: PrismaSase.CIE.User.distinguished_name
+      description: The distinguished name.
+      type: String
+    - contextPath: PrismaSase.CIE.User.manager
+      description: The manager.
+      type: String
+    - contextPath: PrismaSase.CIE.User.name
+      description: The name.
+      type: String
+    - contextPath: PrismaSase.CIE.User.unique_identifier
+      description: The unique identifier.
+      type: String
+  dockerimage: demisto/python3:3.12.8.1983910
   runonce: false
   script: |
     register_module_line('Palo Alto Networks - Prisma SASE', 'start', __line__())
-    demisto.debug('pack name = Palo Alto Networks - Strata Cloud Manager, pack version = 2.1.12')
+    demisto.debug('pack name = Palo Alto Networks - Strata Cloud Manager, pack version = 2.1.14')
 
 
 
@@ -2388,6 +2447,22 @@ script:
                 url_suffix=uri,
                 json_data={'host_id': host_id},
                 tsg_id=tsg_id
+            )
+
+        def get_cie_user(self, json_data: Dict[str, Any]) -> dict:  # pragma: no cover
+            """
+            Get CIE user
+            Args:
+                json_data: The JSON data to send in the request body.
+            Returns:
+                The response from the API.
+            """
+            url_suffix = 'cie/directory-sync/v1/cache-users'
+
+            return self.http_request(
+                method="POST",
+                url_suffix=url_suffix,
+                json_data=json_data,
             )
 
 
@@ -3584,6 +3659,89 @@ script:
         )
 
 
+    def cie_user_prepare_args(args: Dict[str, Any]) -> Dict[str, Any]:
+        """
+            Prepare args for get_cie_user_command.
+        Args:
+            args: Dict[str, Any] - args to prepare
+        Returns:
+            Dict[str, Any] - The JSON data for the API call
+        """
+        operator_mapping = {"Equal": "equal", "Starts With": "startsWith", "Ends With": "endsWith",
+                            "Contain": "contain", "Text Search": "textSearch"}
+
+        missing_args = {"attributes_to_return": args.get('attributes_to_return'), "operator": args.get('operator'),
+                        "attributes_to_filter_by": args.get('attributes_to_filter_by')}
+        errors = [name for name, value in missing_args.items() if not value]
+        if errors:
+            raise ValueError(f"The following arguments are empty: {', '.join(errors)}")
+
+        # Ensure "Unique Identifier" is always in the list for the deduplication process
+        attributes_to_return = list(set(argToList(args.get("attributes_to_return", ""))) | {"Unique Identifier"})
+        args["attributes_to_return"] = attributes_to_return
+
+        return {
+            "domain": args.get("domain"),
+            "attrs": attributes_to_return,
+            "name":
+                {
+                    "attrNameOR": argToList(args.get("attributes_to_filter_by", "")),
+                    "attrValue": args.get("value_for_filter"),
+                    "match": operator_mapping.get(args.get('operator', 'Equal'))
+            },
+            "useNormalizedAttrs": "True"
+        }
+
+
+    def parse_cie_user_response(args: Dict[str, Any], raw_response: Dict[str, Any]) -> Dict[str, Any]:
+        """
+            Parse the raw response from the API call.
+        Args:
+            args: dict - The arguments passed to the command
+            raw_response: dict - The raw response from the API call
+        Returns:
+            Dict[str, Any] - The parsed response
+        """
+        default_error_msg = "The get_cie_user_command failed. Please verify the arguments and try again."
+        result_response = raw_response.get("result", {})
+        if error := result_response.get("error"):
+            raise ValueError(
+                f"Error: {error.get('error-message', default_error_msg)}")
+        parsed_raw_response = result_response.get("data", {}).get("domains", [])
+        if parsed_raw_response and (objects := parsed_raw_response[0].get("objects", [])):
+            return {key: objects[0].get(key) for key in args.get('attributes_to_return', [])}
+        return {}
+
+
+    def get_cie_user_command(client: Client, args: Dict[str, Any]) -> CommandResults:
+        """
+        Command get cie user
+        Args:
+            client: Client
+            args: Dict[str, Any]
+        Returns:
+            CommandResults
+        """
+        payload = cie_user_prepare_args(args)
+
+        raw_response = client.get_cie_user(payload)
+
+        outputs = parse_cie_user_response(args, raw_response)
+
+        if outputs:
+            return CommandResults(
+                outputs_prefix=f'{PA_OUTPUT_PREFIX}CIE.User',
+                outputs_key_field='unique_identifier',
+                outputs={key.lower().replace(" ", "_").replace("-", "_"): value for key, value in outputs.items()},
+                readable_output=tableToMarkdown('CIE User', outputs),
+                raw_response=raw_response
+            )
+        return CommandResults(
+            readable_output='No user found with the given arguments. Please verify the arguments and try again.',
+            raw_response=raw_response
+        )
+
+
     def run_push_jobs_polling_command(client: Client, args: dict):
         """
         This function is generically handling the polling flow. In the polling flow, there is always an initial call that
@@ -3718,6 +3876,8 @@ script:
             'prisma-sase-external-dynamic-list-delete': delete_custom_url_category_command,
 
             'prisma-sase-quarantine-host': quarantine_host_command,
+
+            'prisma-sase-cie-user-get': get_cie_user_command,
 
         }
         client = Client(
