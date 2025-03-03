@@ -1,0 +1,770 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: HCL - Download latest content on the Panorama and push the updates to
+  the firewall for Firewall WITHOUT Internet Connectivity. The filename of the content
+  to download needs to be given as an input by the user.
+id: c3d813d6-1150-4d06-82a8-68c2e52627b8
+inputs:
+- description: ""
+  key: target_firewall
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: ""
+  key: Source_Instance
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: HCL_ContentDownload_FW W/o Internet
+outputs: []
+sourceplaybookid: 1d90fe8b-875c-4831-8276-f3cc7ed83986
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 3627ea01-a95d-41f2-805a-29f90604fa85
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 3627ea01-a95d-41f2-805a-29f90604fa85
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": -310
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      cmd:
+        simple: <request><batch><content><download><file>${Collect the Filename for
+          the content to be installed on the firewall.Answers.0}</file></download></content></batch></request>
+      extend-context:
+        simple: ContentDownloadJob=
+      ignore-outputs:
+        simple: "true"
+      type:
+        simple: op
+      using:
+        simple: ${inputs.Source_Instance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Runs any command supported in the API.
+      id: 709e5227-6847-4000-8dbe-668381ad7d26
+      iscommand: true
+      name: Download the Content on Panorama
+      script: '|||pan-os'
+      type: regular
+      version: -1
+    taskid: 709e5227-6847-4000-8dbe-668381ad7d26
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 195
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      cmd:
+        simple: <show><jobs><id>${ContentDownloadJob.response.result.job}</id></jobs></show>
+      extend-context:
+        simple: DownloadJob=
+      ignore-outputs:
+        simple: "true"
+      type:
+        simple: op
+      using:
+        simple: ${incident.panosnetworkoperationspanoramainstance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Runs any command supported in the API.
+      id: 010a9551-d7f2-4940-84d4-dadb73e75766
+      iscommand: true
+      name: Get jobs
+      script: '|||pan-os'
+      type: regular
+      version: -1
+    taskid: 010a9551-d7f2-4940-84d4-dadb73e75766
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 545
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: status
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DownloadJob.response.result.job.type
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Downld
+                root: DownloadJob.response.result.job
+                transformers:
+                - operator: FirstArrayElement
+          operator: isEqualString
+          right:
+            value:
+              simple: FIN
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: result
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: DownloadJob.response.result.job.type
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Downld
+                root: DownloadJob.response.result.job
+          operator: isEqualString
+          right:
+            value:
+              simple: OK
+      label: FIN
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      FIN:
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 0b72662d-b47a-41b5-8e6e-1c592bf93506
+      iscommand: false
+      name: Is the Content Download job Finished?
+      type: condition
+      version: -1
+    taskid: 0b72662d-b47a-41b5-8e6e-1c592bf93506
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 720
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      cmd:
+        simple: <request><batch><content><upload-install><devices>${inputs.target_firewall}</devices><file>${Collect
+          the Filename for the content to be installed on the firewall.Answers.0}</file></upload-install></content></batch></request>
+      extend-context:
+        simple: InstallJob=
+      ignore-outputs:
+        simple: "true"
+      type:
+        simple: op
+      using:
+        simple: ${inputs.Source_Instance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Runs any command supported in the API.
+      id: 956b9c17-109d-412c-8ccf-bf23c0ef75fd
+      iscommand: true
+      name: Install the latest content versions on the firewall
+      script: '|||pan-os'
+      type: regular
+      version: -1
+    taskid: 956b9c17-109d-412c-8ccf-bf23c0ef75fd
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 895
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      seconds:
+        simple: "180"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sleep for X seconds.
+      id: 9f629f22-f377-459c-8e94-901aabdd3e18
+      iscommand: false
+      name: Sleep - For completing Download
+      script: Sleep
+      type: regular
+      version: -1
+    taskid: 9f629f22-f377-459c-8e94-901aabdd3e18
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: Content Download Failed
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 503d6dbb-11e6-4d6c-803d-20895d680600
+      iscommand: false
+      name: Job Failed
+      script: Print
+      type: regular
+      version: -1
+    taskid: 503d6dbb-11e6-4d6c-803d-20895d680600
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 895
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      cmd:
+        simple: <show><jobs><id>${InstallJob.response.result.job}</id></jobs></show>
+      extend-context:
+        simple: InstallJob1=
+      ignore-outputs:
+        simple: "true"
+      type:
+        simple: op
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Runs any command supported in the API.
+      id: b52574b1-d682-4e60-81e6-6a92589fb862
+      iscommand: true
+      name: Get jobs
+      script: '|||pan-os'
+      type: regular
+      version: -1
+    taskid: b52574b1-d682-4e60-81e6-6a92589fb862
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1070
+        }
+      }
+  "8":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: status
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: InstallJob1.response.result.job.type
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Content
+                root: InstallJob1.response.result.job
+          operator: isEqualString
+          right:
+            value:
+              simple: ACT
+      label: ACT
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "16"
+      FIN:
+      - "11"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6200cd75-3c1f-40a7-878c-a25e6b1804f7
+      iscommand: false
+      name: Is the job active?
+      type: condition
+      version: -1
+    taskid: 6200cd75-3c1f-40a7-878c-a25e6b1804f7
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1245
+        }
+      }
+  "11":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: status
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: InstallJob3.response.result.job.type
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Content
+                root: InstallJob3.response.result.job
+          operator: isEqualString
+          right:
+            value:
+              simple: FIN
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: result
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: InstallJob3.response.result.job.type
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Content
+                root: InstallJob3.response.result.job
+          operator: isEqualString
+          right:
+            value:
+              simple: OK
+      label: "yes"
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "12"
+      "yes":
+      - "13"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: b4b24f9f-4871-49a5-87af-fbea8b95cab4
+      iscommand: false
+      name: Did it complete?
+      type: condition
+      version: -1
+    taskid: b4b24f9f-4871-49a5-87af-fbea8b95cab4
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1770
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: ${InstallJob2.response.result.job.details.line}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 99c6d101-424b-471d-85d0-a331636db514
+      iscommand: false
+      name: Job Failed
+      script: Print
+      type: regular
+      version: -1
+    taskid: 99c6d101-424b-471d-85d0-a331636db514
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1945
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: cf82e981-30a0-4a27-8297-5ffa956c3113
+      iscommand: false
+      name: Finish
+      type: title
+      version: -1
+    taskid: cf82e981-30a0-4a27-8297-5ffa956c3113
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -390,
+          "y": 2130
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    form:
+      description: 'The content to be installed should be minimum required content
+        for the firewall upgrade as per the selected target version. '
+      expired: false
+      questions:
+      - defaultrows: []
+        fieldassociated: ""
+        gridcolumns: []
+        id: "0"
+        label: ""
+        labelarg:
+          simple: Please give the Filename for the content to be installed on the
+            firewall.
+        options: []
+        optionsarg: []
+        placeholder: ""
+        readonly: false
+        required: true
+        tooltip: 'eg: panupv2-all-contents-8900-8988'
+        type: shortText
+      sender: ""
+      title: Collect the Filename for the content to be installed on the firewall.
+      totalanswers: 0
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    message:
+      bcc: null
+      body:
+        simple: Please give the Filename for the content to be installed on the firewall.
+      cc: null
+      format: ""
+      methods: []
+      subject: null
+      timings:
+        completeafterreplies: 1
+        completeaftersla: false
+        completeafterv2: true
+        retriescount: 2
+        retriesinterval: 360
+      to: null
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a851c56d-574f-4b9b-8243-d9aaa8e22f83
+      iscommand: false
+      name: Please give the content filename to be downloaded and installed
+      type: collection
+      version: -1
+    taskid: a851c56d-574f-4b9b-8243-d9aaa8e22f83
+    timertriggers: []
+    type: collection
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": -170
+        }
+      }
+  "15":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: Collect the Filename for the content to be installed on the
+                firewall.Answers.0
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "13"
+      "yes":
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: ef68ee27-c6c8-4bd0-8a3b-d14562ae0ebd
+      iscommand: false
+      name: Did we get a response?
+      type: condition
+      version: -1
+    taskid: ef68ee27-c6c8-4bd0-8a3b-d14562ae0ebd
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 10
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      seconds:
+        simple: "240"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sleep for X seconds.
+      id: 63dccc2f-39e7-44f9-80fd-5317e5cc4700
+      iscommand: false
+      name: Wait for the Content Download to complete
+      script: Sleep
+      type: regular
+      version: -1
+    taskid: 63dccc2f-39e7-44f9-80fd-5317e5cc4700
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 190,
+          "y": 1430
+        }
+      }
+  "17":
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      cmd:
+        simple: <show><jobs><id>${InstallJob.response.result.job}</id></jobs></show>
+      extend-context:
+        simple: InstallJob3=
+      ignore-outputs:
+        simple: "true"
+      type:
+        simple: op
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Runs any command supported in the API.
+      id: aa1138bc-2e5d-4388-804c-f808aad70a97
+      iscommand: true
+      name: Get jobs
+      script: '|||pan-os'
+      type: regular
+      version: -1
+    taskid: aa1138bc-2e5d-4388-804c-f808aad70a97
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 200,
+          "y": 1580
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 2505,
+        "width": 1250,
+        "x": -390,
+        "y": -310
+      }
+    }
+  }
