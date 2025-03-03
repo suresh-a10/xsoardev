@@ -39,13 +39,22 @@ script: |2+
   from typing import Dict, Any
   import traceback
   import json
+  import csv
 
-
+  all_results=[]
   def core_api_post(URI,BODY,FILE_NAME):
+      request_body = json.loads(BODY)
 
-      results=demisto.executeCommand("core-api-post", {"uri":URI,"body":json.loads(BODY)})[0]['Contents']['response']
+      while True:
+          results=demisto.executeCommand("core-api-post", {"uri":URI,"body":request_body})[0]['Contents']['response']
 
-      if results['total'] > 0 and len(results['data']) >0:
+          if results['total'] > 0 and len(results['data'])==0:
+              demisto.results("No incidents were found !!!")
+              break
+          all_results.extend(results['data'])
+          request_body['page']+=1
+
+
               demisto.results(demisto.executeCommand("ExportToCSV", {"fileName":FILE_NAME,"csvArray":results['data'],"headers":"id,name"}))
       else:
           demisto.results("No incidents were found !!!")
@@ -76,7 +85,6 @@ script: |2+
       main()
 
 scripttarget: 0
-sourcescripid: e4958dca-31ec-4b0f-8b93-da7839c9d43a
 subtype: python3
 tags: []
 type: python
