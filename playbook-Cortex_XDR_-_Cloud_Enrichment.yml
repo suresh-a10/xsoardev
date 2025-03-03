@@ -1,0 +1,1017 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.5.0
+    itemVersion: 1.0.23
+    packID: CloudIncidentResponse
+    packName: Cloud Incident Response
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: |-
+  This playbook is responsible for collecting data from Cortex XDR detector and enriching data for further usage and building the layout.
+
+  The playbook collects or enriches the following data:
+  - Resource enrichment
+     - Previous activity seen in the specified region or project
+  - Account enrichment
+  - Network enrichment
+     - Attacker IP
+     - Geolocation
+     - ASN
+id: Cortex XDR - Cloud Enrichment
+inputs:
+- description: Determines whether to convert the IP address to a hostname using a
+    DNS query (True/ False).
+  key: ResolveIP
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "True"
+- description: A list of internal IP ranges to check IP addresses against. \nFor IP
+    Enrichment - Generic v2 playbook.
+  key: InternalRange
+  playbookInputQuery: null
+  required: false
+  value:
+    complex:
+      accessor: PrivateIPs
+      root: lists
+      transformers:
+      - args:
+          error_if_no_match: {}
+          ignore_case: {}
+          multi_line: {}
+          period_matches_newline: {}
+          regex:
+            value:
+              simple: (\b(?:\d{1,3}\.){3}\d{1,3}\b/\d{1,2})
+          unpack_matches: {}
+        operator: RegexExtractAll
+      - args:
+          separator:
+            value:
+              simple: ','
+        operator: join
+name: Cortex XDR - Cloud Enrichment
+outputs:
+- contextPath: IP
+  description: The IP objects.
+  type: unknown
+- contextPath: DBotScore
+  description: Indicator, Score, Type, Vendor.
+  type: unknown
+- contextPath: Account
+  description: The account object.
+  type: unknown
+- contextPath: IAM
+  description: Generic IAM output.
+  type: unknown
+- contextPath: ASNType
+  description: Checks for cloud ASNs.
+  type: unknown
+- contextPath: isKnownRegion
+  description: Checks if any recent activity was seen in the region.
+  type: unknown
+- contextPath: isKnownProject
+  description: Checks if any recent activity was seen in the project.
+  type: unknown
+- contextPath: resourceCount
+  description: Involved resource count.
+  type: unknown
+- contextPath: uniqueRegionCount
+  description: Involved region distinct count.
+  type: unknown
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+      - "5"
+      - "3"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 280437bf-7c8b-4c43-8ed0-80179d539365
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 280437bf-7c8b-4c43-8ed0-80179d539365
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 760,
+          "y": 100
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1fae28e0-d79d-4aa3-86d8-d87b702c80a3
+      iscommand: false
+      name: Network Enrichment
+      type: title
+      version: -1
+    taskid: 1fae28e0-d79d-4aa3-86d8-d87b702c80a3
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 260,
+          "y": 240
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      left:
+        complex:
+          accessor: caller_ip
+          root: alertJson.raw_abioc.event
+      right:
+        simple: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Determines whether an IPv4 address is contained in at least one
+        of the comma-delimited CIDR ranges. Multiple IPv4 addresses can be passed
+        as a comma-delimited list and each will be tested.
+      id: 1286a5ae-df9a-46e0-8603-258f9e1bc044
+      iscommand: false
+      name: Check if the caller_ip is an internal IP address
+      script: IsInCidrRanges
+      type: regular
+      version: -1
+    taskid: 1286a5ae-df9a-46e0-8603-258f9e1bc044
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 260,
+          "y": 540
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "31"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: eca3525b-a59e-450e-8c9f-d1e9ac217721
+      iscommand: false
+      name: Resource Enrichment
+      type: title
+      version: -1
+    taskid: eca3525b-a59e-450e-8c9f-d1e9ac217721
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 1240,
+          "y": 240
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "33"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: e36b5f99-e8c1-4f2b-8739-09e57f5f68d2
+      iscommand: false
+      name: Identity Enrichment
+      type: title
+      version: -1
+    taskid: e36b5f99-e8c1-4f2b-8739-09e57f5f68d2
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 760,
+          "y": 240
+        }
+      }
+  "6":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "30"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      ip:
+        complex:
+          accessor: hostip
+          root: incident.xdralerts
+          transformers:
+          - operator: uniq
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Gets a quick indicator of the risk associated with an IP address.
+      id: bed915ec-699c-4289-8e18-09a200000d57
+      iscommand: true
+      name: Get Geolocation data
+      script: '|||ip'
+      type: regular
+      version: -1
+    taskid: bed915ec-699c-4289-8e18-09a200000d57
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 260,
+          "y": 700
+        }
+      }
+  "10":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: caller_ip_asn_org
+                root: alertJson._all_events
+          operator: containsGeneral
+          right:
+            value:
+              simple: AMAZON
+        - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: caller_ip_asn_org
+                root: alertJson._all_events
+          operator: containsGeneral
+          right:
+            value:
+              simple: MICROSOFT
+      label: "yes"
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "32"
+      "yes":
+      - "14"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: A transformer for simple if-then-else logic.
+      id: 44284f85-df86-43ee-8bac-1776a18f1edf
+      iscommand: false
+      name: Is it cloud ASN?
+      type: condition
+      version: -1
+    taskid: 44284f85-df86-43ee-8bac-1776a18f1edf
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 260,
+          "y": 1030
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      condition:
+        simple: lhs>rhs
+      else:
+        simple: unknownASN
+      extend-context:
+        simple: We isKnownASN=
+      lhs:
+        complex:
+          accessor: days_seen_count
+          root: alertJson.raw_abioc.event.additional_profiles.profile_cloud_provider_caller_ip_asn.caller_ip_asn*cloud_provider
+      rhs:
+        simple: "0"
+      then:
+        simple: knownASN
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: A transformer for simple if-then-else logic.
+      id: d7a832e7-b723-4140-8238-d88faecb68e5
+      iscommand: false
+      name: Was the ASN used in the past?
+      script: If-Then-Else
+      type: regular
+      version: -1
+    taskid: d7a832e7-b723-4140-8238-d88faecb68e5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 260,
+          "y": 1210
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      key:
+        simple: tempRegionsList
+      value:
+        complex:
+          accessor: region
+          root: alertJson._all_events
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: Set a value in context under the key you entered.
+      id: 88139620-a978-4894-8b10-a7c18d778004
+      iscommand: false
+      name: Create regions list
+      script: Set
+      type: regular
+      version: -1
+    taskid: 88139620-a978-4894-8b10-a7c18d778004
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 260,
+          "y": 380
+        }
+      }
+  "20":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      asn:
+        complex:
+          accessor: caller_ip_asn_org
+          root: alertJson.raw_abioc.event
+      locationregion:
+        complex:
+          accessor: region
+          root: alertJson.raw_abioc.event
+      sourcegeolocation:
+        complex:
+          accessor: caller_ip_geolocation
+          root: alertJson.raw_abioc.event
+      sourceips:
+        complex:
+          accessor: caller_ip
+          root: alertJson.raw_abioc.event
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.incident
+      id: c3ae535d-655c-4d82-8ba9-53bd4d1b281c
+      iscommand: true
+      name: Set layout fields
+      script: Builtin|||setIncident
+      type: regular
+      version: -1
+    taskid: c3ae535d-655c-4d82-8ba9-53bd4d1b281c
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 760,
+          "y": 1530
+        }
+      }
+  "21":
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      condition:
+        simple: lhs>rhs
+      else:
+        simple: unknownRegion
+      extend-context:
+        simple: isKnownRegion=
+      lhs:
+        complex:
+          accessor: days_seen_count
+          root: alertJson.raw_abioc.event.additional_profiles.profile_cloud_provider_region_project.cloud_provider*project*region
+      rhs:
+        simple: "0"
+      then:
+        simple: knownRegion
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: A transformer for simple if-then-else logic.
+      id: 61921fc3-03f7-4d84-8ebc-590fb9020ac9
+      iscommand: false
+      name: Check for previous activity seen in the region
+      script: If-Then-Else
+      type: regular
+      version: -1
+    taskid: 61921fc3-03f7-4d84-8ebc-590fb9020ac9
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1240,
+          "y": 540
+        }
+      }
+  "22":
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 2
+    scriptarguments:
+      condition:
+        simple: lhs>rhs
+      else:
+        simple: unkownProject
+      extend-context:
+        simple: isKnownProject=
+      lhs:
+        complex:
+          accessor: days_seen_count
+          root: alertJson.raw_abioc.event.additional_profiles.profile_cloud_provider_project.cloud_provider*project
+      rhs:
+        simple: "0"
+      then:
+        simple: kownProject
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: A transformer for simple if-then-else logic.
+      id: 56bededd-3021-4462-8bd0-b4bc2fc4d5b5
+      iscommand: false
+      name: Check for previous activity seen in the project
+      script: If-Then-Else
+      type: regular
+      version: -1
+    taskid: 56bededd-3021-4462-8bd0-b4bc2fc4d5b5
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1240,
+          "y": 700
+        }
+      }
+  "26":
+    continueonerrortype: ""
+    id: "26"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "34"
+      - "35"
+      - "20"
+      - "37"
+      - "38"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1d3ef6c5-666e-4b76-851a-2ac2650b4fbd
+      iscommand: false
+      name: Layout Setup
+      type: title
+      version: -1
+    taskid: 1d3ef6c5-666e-4b76-851a-2ac2650b4fbd
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 760,
+          "y": 1390
+        }
+      }
+  "30":
+    continueonerrortype: ""
+    id: "30"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      IP:
+        complex:
+          accessor: caller_ip
+          root: alertJson.raw_abioc.event
+      InternalRange:
+        complex:
+          root: inputs.InternalRange
+          transformers:
+          - operator: uniq
+      ResolveIP:
+        complex:
+          root: inputs.ResolveIP
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Enrich IP addresses using one or more integrations.
+
+        - Resolve IP addresses to host names (DNS)
+        - Provide threat information
+        - Separate internal and external IP addresses
+        - For internal IP addresses, get host information
+      id: 1ec16ecb-f62c-4845-840d-e5ee894d5025
+      iscommand: false
+      name: IP Enrichment - Generic v2
+      playbookId: IP Enrichment - Generic v2
+      type: playbook
+      version: -1
+    taskid: 1ec16ecb-f62c-4845-840d-e5ee894d5025
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 260,
+          "y": 870
+        }
+      }
+  "31":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "31"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "21"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: tempResourcesList
+      value:
+        complex:
+          accessor: cloud_compute_machine_type
+          root: alertJson._all_events
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: da21d4f0-5796-4be2-8501-691d0791e7f7
+      iscommand: false
+      name: Count unique instances
+      script: Set
+      type: regular
+      version: -1
+    taskid: da21d4f0-5796-4be2-8501-691d0791e7f7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1240,
+          "y": 380
+        }
+      }
+  "32":
+    continueonerrortype: ""
+    id: "32"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: ASNType
+      value:
+        simple: notCloudASN
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: b8b63e85-fc54-4e33-8b9d-3cb4c016e7ab
+      iscommand: false
+      name: Set ASN type
+      script: Set
+      type: regular
+      version: -1
+    taskid: b8b63e85-fc54-4e33-8b9d-3cb4c016e7ab
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -170,
+          "y": 1210
+        }
+      }
+  "33":
+    continueonerrortype: ""
+    id: "33"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "26"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      Username:
+        complex:
+          accessor: Username
+          root: Account
+          transformers:
+          - operator: uniq
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Enrich accounts using one or more integrations.
+        Supported integrations:
+        - Active Directory
+        - SailPoint IdentityNow
+        - SailPoint IdentityIQ
+        - PingOne
+        - Okta
+        - AWS IAM
+
+        Also, the playbook supports the generic command 'iam-get-user' (implemented in IAM integrations). For more information, visit https://xsoar.pan.dev/docs/integrations/iam-integrations.
+      id: 91623920-73c3-40a0-8ee6-e5bf2115d5e3
+      iscommand: false
+      name: Account Enrichment - Generic v2.1
+      playbookId: Account Enrichment - Generic v2.1
+      type: playbook
+      version: -1
+    taskid: 91623920-73c3-40a0-8ee6-e5bf2115d5e3
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 760,
+          "y": 380
+        }
+      }
+  "34":
+    continueonerrortype: ""
+    id: "34"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: uniqueRegionCount
+      value:
+        complex:
+          accessor: region
+          root: alertJson._all_events
+          transformers:
+          - operator: uniq
+          - operator: count
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 1b1a65bb-4bbc-42ef-8363-3ab7a5f6d497
+      iscommand: false
+      name: Count unique regions
+      script: Set
+      type: regular
+      version: -1
+    taskid: 1b1a65bb-4bbc-42ef-8363-3ab7a5f6d497
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -80,
+          "y": 1530
+        }
+      }
+  "35":
+    continueonerrortype: ""
+    id: "35"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      incidentsQuery:
+        simple: id:${incident.id}
+      listSeparator:
+        simple: ','
+      sourceContextKey:
+        simple: tempRegionsList
+      targetIncidentField:
+        simple: cloudregionlist
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: "Copy a context key to an incident field of multiple incidents,
+        based on an incident query.\n\nThis automation runs using the default Limited
+        User role, unless you explicitly change the permissions.\nFor more information,
+        see the section about permissions here:\n- For Cortex XSOAR 6 see https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.x/Cortex-XSOAR-Playbook-Design-Guide/Automations
+        \n- For Cortex XSOAR 8 Cloud see https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/8/Cortex-XSOAR-Cloud-Documentation/Create-a-script\n-
+        For Cortex XSOAR 8.7 On-prem see https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/8.7/Cortex-XSOAR-On-prem-Documentation/Create-a-script"
+      id: 168c73f8-a795-46c3-80a9-e9ab71e32659
+      iscommand: false
+      name: Set regions list in incident field
+      script: CopyContextToField
+      type: regular
+      version: -1
+    taskid: 168c73f8-a795-46c3-80a9-e9ab71e32659
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 340,
+          "y": 1530
+        }
+      }
+  "36":
+    continueonerrortype: ""
+    id: "36"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f37d02dc-b715-4d6e-8fa5-98c9e82fde64
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: f37d02dc-b715-4d6e-8fa5-98c9e82fde64
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 760,
+          "y": 1700
+        }
+      }
+  "37":
+    continueonerrortype: ""
+    id: "37"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: resourceCount
+      value:
+        complex:
+          accessor: cloud_compute_machine_type
+          root: alertJson._all_events
+          transformers:
+          - operator: count
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 2e0978cb-12e4-4a14-8ada-c8866d5db7c4
+      iscommand: false
+      name: Count resources
+      script: Set
+      type: regular
+      version: -1
+    taskid: 2e0978cb-12e4-4a14-8ada-c8866d5db7c4
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1180,
+          "y": 1530
+        }
+      }
+  "38":
+    continueonerrortype: ""
+    id: "38"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "36"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      incidentsQuery:
+        simple: id:${incident.id}
+      listSeparator:
+        simple: ','
+      sourceContextKey:
+        simple: tempResourcesList
+      targetIncidentField:
+        simple: cloudresourcelist
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: "Copy a context key to an incident field of multiple incidents,
+        based on an incident query.\n\nThis automation runs using the default Limited
+        User role, unless you explicitly change the permissions.\nFor more information,
+        see the section about permissions here:\n- For Cortex XSOAR 6 see https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.x/Cortex-XSOAR-Playbook-Design-Guide/Automations
+        \n- For Cortex XSOAR 8 Cloud see https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/8/Cortex-XSOAR-Cloud-Documentation/Create-a-script\n-
+        For Cortex XSOAR 8.7 On-prem see https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/8.7/Cortex-XSOAR-On-prem-Documentation/Create-a-script"
+      id: 2bdd3968-30c6-49e4-837b-454d30639c51
+      iscommand: false
+      name: Set resources list in incident field
+      script: CopyContextToField
+      type: regular
+      version: -1
+    taskid: 2bdd3968-30c6-49e4-837b-454d30639c51
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 1600,
+          "y": 1530
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "10_14_yes": 0.41
+    },
+    "paper": {
+      "dimensions": {
+        "height": 1665,
+        "width": 2150,
+        "x": -170,
+        "y": 100
+      }
+    }
+  }
