@@ -20,28 +20,23 @@ name: CD_QradarStartTimer_PROD_v2
 pswd: ""
 runas: DBotWeakRole
 runonce: false
-script: |-
-  # Python template - reading arguments, calling a command, handling errors and returning results
-  demisto.executeCommand('setIncident',{ 'owner':"",'cdincidentstate':"New",'cdassignmentgroup':"L1 Analyst",'snowcategory':"Central-Security",'notesselection':"Work Notes",'snowstate':"New",'snowcompany':"CCBPI",'snowcaller':"web_ccbpi_demisto_dynamics",'snowbusinessservice':"SOC",'snowshortdescription':"Creating ITSM Incident In ServiceNow"})
-  '''demisto.executeCommand('setIncident',{ 'cdincidentstate':"New"})
-  demisto.executeCommand('setIncident',{ 'cdassignmentgroup':"L1 Analyst"})
-  demisto.executeCommand('setIncident',{ 'snowcategory':"Central-Security"})
-  demisto.executeCommand('setIncident',{ 'notesselection':"Work Notes"})
-  demisto.executeCommand('setIncident',{ 'snowstate':"New"})
-  demisto.executeCommand('setIncident',{ 'snowcompany':"CCBPI"})
-  demisto.executeCommand('setIncident',{ 'snowcaller':"web_ccbpi_demisto_dynamics"})
-  #demisto.executeCommand('setIncident',{ 'snowconfigurationitem':""})
-  demisto.executeCommand('setIncident',{ 'snowbusinessservice':"SOC"})
-  # demisto.executeCommand('setIncident',{ 'snowassignmentgroup':"SNOW_SIEM Security Operations Center"})
-  demisto.executeCommand('setIncident',{ 'snowshortdescription':"Creating ITSM Incident In ServiceNow"})'''
+script: |2-
+
+
+
+  demisto.executeCommand('setIncident',{ 'owner':"",'cdincidentstate':"New",'cdassignmentgroup':"L1 Analyst",
+                                          'snowcategory':"Central-Security",'notesselection':"Work Notes",
+                                          'snowstate':"New",'snowcompany':"CCBPI",'snowcaller':"web_ccbpi_demisto_dynamics",
+                                          'snowbusinessservice':"SOC",'snowshortdescription':"Creating ITSM Incident In ServiceNow"})
+
+
   Response_SLA = [45,60,120,480]
   Notification_SLA = [60,90,240,480]
   Resolution_SLA = [240,960,1800,2880]
 
-  inc_data = demisto.incidents()[0]
 
-  custom_fields = inc_data.get("CustomFields",{})
-
+  Magnitude_SLA={10:[45,60,240],9:[60,90,960],8:[60,90,960],7:[120,240,1800],6:[120,240,1800],5:[120,240,1800],
+                 4:[480,480,2800],3:[480,480,2800],2:[480,480,2800],1:[480,480,2800],0:[480,480,2800]}
 
   now = datetime.utcnow()
   now = now.strftime("%Y-%m-%d %H:%M:%S")
@@ -52,64 +47,44 @@ script: |-
   #current_time = datetime.datetime.now()
   newtime = now.strftime('%Y-%m-%dT%H:%M:%S+00:00')
 
+
+  inc_data = demisto.incidents()[0]
+
+  custom_fields = inc_data.get("CustomFields",{})
+
   magnitude = custom_fields.get("cdsmagnitude")
 
+
+  def set_fields(sla):
+
+      demisto.executeCommand("setIncident",{'sla': sla[0]  , "slaField":"cdresponsesla"})
+      demisto.executeCommand("setIncident",{'sla': sla[1] , "slaField":"cdresolvergroupnotificationsla"})
+      demisto.executeCommand("setIncident",{'sla': sla[2] , "slaField":"cdresolutionsla"})
+      demisto.executeCommand("setIncident",{"snowurgency":'1 - High',"snowimpact":'1 - High',"severity":'Critical',"cdpriority":'P1',
+                                            "cdexpectedresponsesla":sla[0],"cdexpectedresolvergroupnotificationsla":sla[1],"cdexpectedresolutionsla":sla[2]})
+      demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
+      demisto.executeCommand('startTimer',{ 'timerField':'cdresolvergroupnotificationsla' })
+
   if magnitude == 10:
-      demisto.executeCommand("setIncident",{'sla': Response_SLA[0]  , "slaField":"cdresponsesla"})
-      demisto.executeCommand("setIncident",{'sla': Notification_SLA[0] , "slaField":"cdresolvergroupnotificationsla"})
-      demisto.executeCommand("setIncident",{'sla': Resolution_SLA[0] , "slaField":"cdresolutionsla"})
-      demisto.executeCommand("setIncident",{"snowurgency":'1 - High',"snowimpact":'1 - High',"severity":'Critical',"cdpriority":'P1'})
-      #demisto.executeCommand("setIncident",{"severity":'Critical',"cdpriority":'P1'})
-      demisto.executeCommand("setIncident",{"cdexpectedresponsesla":Response_SLA[0]})
-      demisto.executeCommand("setIncident",{"cdexpectedresolvergroupnotificationsla":Notification_SLA[0]})
-      demisto.executeCommand("setIncident",{"cdexpectedresolutionsla":Resolution_SLA[0]})
-      demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
-      demisto.executeCommand('startTimer',{ 'timerField':'cdresolvergroupnotificationsla' })
-     #demisto.executeCommand("setIncident",{'cdnotificationslastarttime':newtime})
+
+      sla=Magnitude_SLA[magnitude]
+      set_fields(sla)
   elif magnitude==9 or magnitude==8:
-      demisto.executeCommand("setIncident",{'sla': Response_SLA[1]  , "slaField":"cdresponsesla"})
-      demisto.executeCommand("setIncident",{'sla': Notification_SLA[1] , "slaField":"cdresolvergroupnotificationsla"})
-      demisto.executeCommand("setIncident",{'sla': Resolution_SLA[1] , "slaField":"cdresolutionsla"})
-      demisto.executeCommand("setIncident",{"snowurgency":'1 - High',"snowimpact":'2 - Medium',"severity":'High',"cdpriority":'P2'})
-      #demisto.executeCommand("setIncident",{"severity":'High',"cdpriority":'P2'})
-      demisto.executeCommand("setIncident",{"cdexpectedresponsesla":Response_SLA[1]})
-      demisto.executeCommand("setIncident",{"cdexpectedresolvergroupnotificationsla":Notification_SLA[1]})
-      demisto.executeCommand("setIncident",{"cdexpectedresolutionsla":Resolution_SLA[1]})
-      demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
-      demisto.executeCommand('startTimer',{ 'timerField':'cdresolvergroupnotificationsla' })
-      #demisto.executeCommand("setIncident",{'cdnotificationslastarttime':newtime})
+      sla=Magnitude_SLA[magnitude]
+      set_fields(sla)
   elif magnitude>=5 and magnitude<=7:
-      demisto.executeCommand("setIncident",{'sla': Response_SLA[2]  , "slaField":"cdresponsesla"})
-      demisto.executeCommand("setIncident",{'sla': Notification_SLA[2] , "slaField":"cdresolvergroupnotificationsla"})
-      demisto.executeCommand("setIncident",{'sla': Resolution_SLA[2] , "slaField":"cdresolutionsla"})
-      demisto.executeCommand("setIncident",{"severity":'Medium',"cdpriority":'P3',"snowurgency":'2 - Medium',"snowimpact":'2 - Medium'})
-      demisto.executeCommand("setIncident",{"cdexpectedresponsesla":Response_SLA[2]})
-      demisto.executeCommand("setIncident",{"cdexpectedresolvergroupnotificationsla":Notification_SLA[2]})
-      demisto.executeCommand("setIncident",{"cdexpectedresolutionsla":Resolution_SLA[2]})
-      demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
-      demisto.executeCommand('startTimer',{ 'timerField':'cdresolvergroupnotificationsla' })
+      sla=Magnitude_SLA[magnitude]
+      set_fields(sla)
   elif magnitude>=0 and magnitude<=4:
-      demisto.executeCommand("setIncident",{'sla': Response_SLA[3]  , "slaField":"cdresponsesla"})
-      demisto.executeCommand("setIncident",{'sla': Notification_SLA[3] , "slaField":"cdresolvergroupnotificationsla"})
-      demisto.executeCommand("setIncident",{"severity":'Low',"cdpriority":'P4',"snowurgency":'3 - Low',"snowimpact":'3 - Low'})
-      #demisto.executeCommand("setIncident",{"snowurgency":'3 - Low',"snowimpact":'3 - Low'})
-      demisto.executeCommand("setIncident",{'sla': Resolution_SLA[3] , "slaField":"cdresolutionsla"})
-      demisto.executeCommand("setIncident",{"cdexpectedresponsesla":Response_SLA[3]})
-      demisto.executeCommand("setIncident",{"cdexpectedresolvergroupnotificationsla":Notification_SLA[3]})
-      demisto.executeCommand("setIncident",{"cdexpectedresolutionsla":Resolution_SLA[3]})
-      demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
-      demisto.executeCommand('startTimer',{ 'timerField':'cdresolvergroupnotificationsla' })
+      sla=Magnitude_SLA[magnitude]
+      set_fields(sla)
   else:
       demisto.executeCommand("setIncident",{"severity":'Informational'})
       demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
       demisto.executeCommand('startTimer',{ 'timerField':'cdresolvergroupnotificationsla' })
 
-
-  demisto.executeCommand('startTimer',{ 'timerField':'cdresponsesla' })
-  demisto.executeCommand('startTimer',{ 'timerField':'cdresolvergroupnotificationsla' })
   demisto.results(True)
 scripttarget: 0
-sourcescripid: 00e4f787-0481-4bc6-8aad-36b353e99c5a
 subtype: python3
 tags:
 - pre-processing
