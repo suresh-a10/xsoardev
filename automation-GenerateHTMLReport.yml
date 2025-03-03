@@ -1,0 +1,73 @@
+args:
+- description: HTML list name
+  name: listName
+  required: true
+- description: incident query to search and fill the html report
+  name: query
+  required: true
+- defaultValue: 1 days ago
+  description: 'incidents search fromDate. Ex: 1 days ago, 30 days ago, etc'
+  name: fromDate
+- description: Name of the report file
+  name: ReportFileName
+  required: true
+- auto: PREDEFINED
+  default: true
+  defaultValue: pdf
+  description: Type of the file
+  name: FileType
+  predefined:
+  - pdf
+  - png
+commonfields:
+  id: 92a1888e-70aa-42d3-8056-562769f1d1a4
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.12.8.1983910
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: GenerateHTMLReport
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  args = demisto.args()
+
+  #Fetch the HTML template from the XSOAR LIST and split it based on the delimiter
+  html = demisto.executeCommand("getList", {"listName" : args['listName']})[0]['Contents'].split("----")
+
+  #Search the incidents based on the provided query and fromDate
+  incidents = demisto.executeCommand("SearchIncidentsSummary", {"query":args['query'], "fromdate":args['fromDate'] })[0]['Contents'][0]['Contents']['data']
+
+  #Loop over the foundIncidents and prepare the data in table <tr> <td> format
+  tBody = ""
+  for inc in incidents:
+      tData = "<tr> <td>" + inc['id'] + "</td>"
+      tData += "<td>" + inc['name'] + "</td>"
+      tData += "<td>" + inc['sourceBrand'] + "</td>"
+      tData += "<td>" + str(inc['sla']) + "</td>"
+      tData += "<td>" + inc['owner'] + "</td>"
+      tData += "<td>" + inc['type'] + "</td> </tr>"
+      tBody += tData
+      tData = ""
+
+  #Concatenate and prepare the final HTML
+  updatedHtml = html[0] + tBody + html[1]
+
+  #Export the HTML data in the PDF or PNG file format
+  demisto.results(demisto.executeCommand("rasterize-email", {"htmlBody" : updatedHtml, "file_name":args['ReportFileName'], "type":args['FileType']}))
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
