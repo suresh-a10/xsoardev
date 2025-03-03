@@ -1,0 +1,67 @@
+args:
+- description: The XSOAR list with stored metrics.
+  name: listname
+  required: true
+commonfields:
+  id: XMetricsYear
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.10.0
+    itemVersion: 2.0.9
+    packID: CommunityCommonDashboards
+    packName: Community Common Dashboards
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.11.10.115186
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: XMetricsYear
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('XMetricsYear', 'start', __line__())
+  demisto.debug('pack name = Community Common Dashboards, pack version = 2.0.9')
+
+
+
+
+  def LoadList(listname: str) -> dict:
+      results = demisto.executeCommand("getList", {'listName': listname})[0]['Contents']
+      fields = {}
+      if "Item not found" not in results and (results is not None or results != ""):
+          if results != "":
+              fields = json.loads(results)
+      return (fields)
+
+
+  def main():
+      try:
+          metricslist = demisto.args()["listname"]
+          metrics = LoadList(metricslist)
+          if metrics:
+              return_results("# " + json.dumps(int(metrics.get("YEAR", ""))))
+          else:
+              return_results("# No Data for Last Year")
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f"XMetricsYear - exception failed to execute. Error: {str(ex)}")
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+  register_module_line('XMetricsYear', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags:
+- widget
+timeout: 300ns
+type: python
