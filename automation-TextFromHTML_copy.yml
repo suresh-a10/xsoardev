@@ -1,0 +1,48 @@
+args:
+- default: true
+  description: The HTML to strip tags from
+  name: value
+  required: true
+comment: Extract regular text from the given HTML
+commonfields:
+  id: f4af8794-c1a5-4f05-8751-c9b09e6ff587
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python:2.7.18.24066
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: TextFromHTML_copy
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  import re
+  html = demisto.args()['value'].encode('utf-8')
+  # print(html)
+  body = re.search(ur'<body.*/body>', html, re.M + re.S + re.I + re.U)
+  # print(body)
+  if body and body.group(0):
+      data = re.sub(ur'<.*?>', '', body.group(0))
+      entities = {'quot': '"', 'amp': '&', 'apos': "'", 'lt': '<', 'gt': '>', 'nbsp': ' ', 'copy': '(C)', 'reg': '(R)', 'tilde': '~', 'ldquo': '"', 'rdquo': '"', 'hellip': '...'}
+      for e in entities:
+          data = data.replace('&' + e + ';', entities[e])
+      demisto.results(data)
+  else:
+      demisto.results('Could not extract text')
+scripttarget: 0
+subtype: python2
+tags:
+- Utility
+- transformer
+type: python
