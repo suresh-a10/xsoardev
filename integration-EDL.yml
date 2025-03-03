@@ -174,7 +174,7 @@ configuration:
     For example - if the number is 8, then 0.0.0.0/2 is excluded from the list.
   advanced: true
   defaultvalue: "8"
-  display: Maximum CIDR network prefix bits size
+  display: Maximum Size of CIDR Block (by mask bit)
   name: maximum_cidr_size
   required: false
   section: Collect
@@ -202,6 +202,7 @@ configuration:
   display: Add HSTS header
   name: hsts_header
   required: false
+  section: Collect
   type: 8
 - additionalinfo: For use with McAfee Web Gateway format - set the indicator list
     type.
@@ -306,7 +307,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.5.0
-    itemVersion: 3.3.6
+    itemVersion: 3.3.8
     packID: EDL
     packName: Generic Export Indicators Service
     packPropagationLabels:
@@ -316,79 +317,78 @@ contentitemexportablefields:
     toServerVersion: ""
 description: Use the Generic Export Indicators Service integration to provide an endpoint
   with a list of indicators as a service for the system indicators.
-detaileddescription: |-
-  ## How to Access the Generic Export Indicators Service
-
-  If you have several Generic Export Indicators Service integration instances, make sure to use **different listening ports** to separate the outbound feeds.
-  Note: After a successful configuration of an instance, if the 'test button' is clicked again, it may result in a failure due to an incorrect assumption that the port is already in use. Nevertheless, it is important to highlight that despite this issue, the instance will continue to function correctly.
-
-
-
-
-
-
-
-
-  ### Access the Generic Export Indicators Service by URL and Port (HTTP)
-  In a web browser, go to **http://<cortex-xsoar-server-address>:<listen_port>**.
-
-  **Note**: For security purposes, Cortex XSOAR recommends that you use HTTPS when accessing the indicator service through the URL and port. To do so, you must provide a certificate and private key, in the respective fields. In addition, make sure to provide credentials that must be used to connect to the integration instance.
-
-  **Note**: By default, the route to access the Generic Export Indicators Service by instance name will be open without security hardening and might expose you to network risks. Cortex XSOAR recommends that you use the service with a username and password. Click **Switch to username and password** and provide the credentials that must be used to access the service.
-
-  **Note**: The `Listen Port` parameter is required.
-
-  1. Navigate to **Settings > About > Troubleshooting**.
-  2. In the **Server Configuration** section, verify that the `instance.execute.external.<instance_name>` key is set to `true`. If this key does not exist, click **+ Add Server Configuration** and add the `instance.execute.external.<instance_name>` and set the value to `true`. See [this documentation](https://xsoar.pan.dev/docs/reference/articles/long-running-invoke) for further information.
-  3.  In a web browser, go to
-      `https://*<xsoar_address>*/instance/execute/*<instance_name>*`
-       (In Multi Tenant environments, go to `https://<cortex-xsoar-address>/acc-<account name>/instance/execute/<instance_name>/`)
-
-
-  #### Note:
-  When using more than one server in High Availability (HA) mode, the External Dynamic List (EDL) should be configured to listen on a route, not on a port.
-
-  In "route" listen mode, a request received by any of the app servers will be redirected to the one currently running the NGINX container.
-  This does not happen in "port" listen mode, that's why "route" mode should be used.
-
-  If the app server running the container fails, the container should restart on a different app server.
-  Failover time should be about 1 minute plus the container startup time.
-
-  ### Modify Request Parameters Through the URL
-  Use the following arguments in the URL to change the request:
-
-  | argument | Description | Example |
-  | --- | --- | --- |
-  | **n** | The maximum number of entries in the output. If no value is provided, will use the value specified in the *List Size* parameter configured in the instance configuration. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?n=50 |
-  | **s** | The starting entry index from which to export the indicators when index 0 is the first position. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?s=10&n=50 |
-  | **v** | The output format. Supports `PAN-OS (text)`, `CSV`, `JSON`, `mwg` and `proxysg` (alias: `bluecoat`). | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=json |
-  | **q** | The query used to retrieve indicators from the system. If you are using this argument, no more than 100,000 can be exported through the EDL. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?q="type:ip and sourceBrand:my_source" |
-  | **t** | Only with `mwg` format. The type indicated on the top of the exported list. Supports: string, applcontrol, dimension, category, ip, mediatype, number and regex. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=mwg&t=ip |
-  | **sp** | If set. will strip ports off URLs, otherwise will ignore URLs with ports. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=text&sp |
-  | **di** | Only with `PAN-OS (text)` format. If set, will ignore URLs which are not compliant with PAN-OS URL format instead of being re-written. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=text&di |
-  | **pr** | If set, will strip protocols off URLs.| https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=text&pr |
-  |**cd** | Only with `proxysg` format. The default category for the exported indicators. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=proxysg&cd=default_category |
-  | **ca** | Only with `proxysg` format. The categories which will be exported. Indicators not in these categories will be classified as the default category. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=proxysg&ca=category1,category2 |
-  | **tr** | Only with `PAN-OS (text)` format. Whether to collapse IPs.<br/>* 0 - Do not collapse.<br/>* 1 - Collapse to ranges.<br/>* 2 - Collapse to CIDRs. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?q="type:ip and sourceBrand:my_source"&tr=1 |
-  | **tx** | Whether to output `CSV` formats as textual web pages. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=csv&tx |
-
-  ### When Running in On-Demand Mode
-  Make sure you run the ***!export-indicators-list-update*** command for the first time to initialize the export process.
-
-  ### Important Notes:
-  - If constantly using different queries for the same EDL instance through the *q* inline argument, it is recommended to use different instances of the EDL (one for each query), and set each one with a default query for better performance.
-  - When using the *q* inline argument, the number of exported indicators is limited to 100,000 due to performance reasons. To export more than 100,000 indicators, create a new instance of the integration with the desired Indicator Query and List Size.
-
-  ## Troubleshoot
-
-  To view logs concerning the creation of the indicator list and its current status add the `/log` suffix to the list URL.
-
-
-
-  `https://*<xsoar_address>*/instance/execute/*<instance_name>*/log`
-
-  ---
-  [View Integration Documentation](https://xsoar.pan.dev/docs/reference/integrations/edl)
+detaileddescription: "## How to Access the Generic Export Indicators Service\n\nIf
+  you have several Generic Export Indicators Service integration instances, make sure
+  to use **different listening ports** to separate the outbound feeds.\nNote: After
+  a successful configuration of an instance, if the 'test button' is clicked again,
+  it may result in a failure due to an incorrect assumption that the port is already
+  in use. Nevertheless, it is important to highlight that despite this issue, the
+  instance will continue to function correctly.\n\nThe Generic Export Indicators Service
+  is a long-running integration. For more information about long-running integrations,
+  check out the  \n\n\n\n\n\n\n\n### Access the Generic Export Indicators Service
+  by URL and Port (HTTP)\nIn a web browser, go to **http://<cortex-xsoar-server-address>:<listen_port>**.\n\n**Note**:
+  For security purposes, Cortex XSOAR recommends that you use HTTPS when accessing
+  the indicator service through the URL and port. To do so, you must provide a certificate
+  and private key, in the respective fields. In addition, make sure to provide credentials
+  that must be used to connect to the integration instance.\n\n**Note**: By default,
+  the route to access the Generic Export Indicators Service by instance name will
+  be open without security hardening and might expose you to network risks. Cortex
+  XSOAR recommends that you use the service with a username and password. Click **Switch
+  to username and password** and provide the credentials that must be used to access
+  the service.\n\n**Note**: The `Listen Port` parameter is required.\n\n1. Navigate
+  to **Settings > About > Troubleshooting**.\n2. In the **Server Configuration** section,
+  verify that the `instance.execute.external.<instance_name>` key is set to `true`.
+  If this key does not exist, click **+ Add Server Configuration** and add the `instance.execute.external.<instance_name>`
+  and set the value to `true`. See [this documentation](https://xsoar.pan.dev/docs/reference/articles/long-running-invoke)
+  for further information.\n3.  In a web browser, go to\n    `https://*<xsoar_address>*/instance/execute/*<instance_name>*`\n
+  \    (In Multi Tenant environments, go to `https://<cortex-xsoar-address>/acc-<account
+  name>/instance/execute/<instance_name>/`)\n\n\n#### Note:\nWhen using more than
+  one server in High Availability (HA) mode, the External Dynamic List (EDL) should
+  be configured to listen on a route, not on a port.\n\nIn \"route\" listen mode,
+  a request received by any of the app servers will be redirected to the one currently
+  running the NGINX container.\nThis does not happen in \"port\" listen mode, that's
+  why \"route\" mode should be used.\n\nIf the app server running the container fails,
+  the container should restart on a different app server.\nFailover time should be
+  about 1 minute plus the container startup time.\n\n### Modify Request Parameters
+  Through the URL\nUse the following arguments in the URL to change the request:\n\n|
+  argument | Description | Example |\n| --- | --- | --- |\n| **n** | The maximum number
+  of entries in the output. If no value is provided, will use the value specified
+  in the *List Size* parameter configured in the instance configuration. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?n=50
+  |\n| **s** | The starting entry index from which to export the indicators when index
+  0 is the first position. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?s=10&n=50
+  |\n| **v** | The output format. Supports `PAN-OS (text)`, `CSV`, `JSON`, `mwg` and
+  `proxysg` (alias: `bluecoat`). | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=json
+  |\n| **q** | The query used to retrieve indicators from the system. If you are using
+  this argument, no more than 100,000 can be exported through the EDL. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?q=\"type:ip
+  and sourceBrand:my_source\" |\n| **t** | Only with `mwg` format. The type indicated
+  on the top of the exported list. Supports: string, applcontrol, dimension, category,
+  ip, mediatype, number and regex. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=mwg&t=ip
+  |\n| **sp** | If set. will strip ports off URLs, otherwise will ignore URLs with
+  ports. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=text&sp
+  |\n| **di** | Only with `PAN-OS (text)` format. If set, will ignore URLs which are
+  not compliant with PAN-OS URL format instead of being re-written. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=text&di
+  |\n| **pr** | If set, will strip protocols off URLs.| https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=text&pr
+  |\n|**cd** | Only with `proxysg` format. The default category for the exported indicators.
+  | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=proxysg&cd=default_category
+  |\n| **ca** | Only with `proxysg` format. The categories which will be exported.
+  Indicators not in these categories will be classified as the default category. |
+  https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=proxysg&ca=category1,category2
+  |\n| **tr** | Only with `PAN-OS (text)` format. Whether to collapse IPs.<br/>* 0
+  - Do not collapse.<br/>* 1 - Collapse to ranges.<br/>* 2 - Collapse to CIDRs. |
+  https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?q=\"type:ip
+  and sourceBrand:my_source\"&tr=1 |\n| **tx** | Whether to output `CSV` formats as
+  textual web pages. | https://{cortex-xsoar_instance}/instance/execute/{ExportIndicators_instance_name}?v=csv&tx
+  |\n\n### When Running in On-Demand Mode\nMake sure you run the ***!export-indicators-list-update***
+  command for the first time to initialize the export process.\n\n### Important Notes:\n-
+  If constantly using different queries for the same EDL instance through the *q*
+  inline argument, it is recommended to use different instances of the EDL (one for
+  each query), and set each one with a default query for better performance.\n- When
+  using the *q* inline argument, the number of exported indicators is limited to 100,000
+  due to performance reasons. To export more than 100,000 indicators, create a new
+  instance of the integration with the desired Indicator Query and List Size.\n\n##
+  Troubleshoot\n\nTo view logs concerning the creation of the indicator list and its
+  current status add the `/log` suffix to the list URL.\n\n\n\n`https://*<xsoar_address>*/instance/execute/*<instance_name>*/log`\n\n---\n[View
+  Integration Documentation](https://xsoar.pan.dev/docs/reference/integrations/edl)"
 display: Generic Export Indicators Service
 image: data:image/png;base64,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
 name: EDL
@@ -585,7 +585,7 @@ script:
   runonce: false
   script: |
     register_module_line('EDL', 'start', __line__())
-    demisto.debug('pack name = Generic Export Indicators Service, pack version = 3.3.6')
+    demisto.debug('pack name = Generic Export Indicators Service, pack version = 3.3.8')
     import os
     from datetime import datetime
     from pathlib import Path
@@ -1425,7 +1425,8 @@ script:
                     formatted_indicators.write(new_line + domain)
                     new_line = '\n'
 
-            if ioc_type == FeedIndicatorType.CIDR and is_large_cidr(indicator, request_args.maximum_cidr_size):
+            if ioc_type in [FeedIndicatorType.CIDR, FeedIndicatorType.IPv6CIDR] and is_large_cidr(indicator,
+                                                                                                  request_args.maximum_cidr_size):
                 log_stats = log_indicator_line(raw_indicator=indicator_raw,
                                                indicator=indicator,
                                                action=IndicatorAction.DROPPED.value,
