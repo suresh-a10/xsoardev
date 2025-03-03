@@ -1,0 +1,98 @@
+args:
+- description: Query for indicators to delete.
+  name: indicator_query
+- description: Comma-separated list of indicator values to delete.
+  name: indicator_values
+- description: Comma-separated list of indicator IDs to delete.
+  name: indicator_ids
+- auto: PREDEFINED
+  defaultValue: "false"
+  description: Whether to add the deleted indicator to the Exclusion List.
+  name: exclude
+  predefined:
+  - "true"
+  - "false"
+- description: Reason for indicator exclusion.
+  name: exclusion_reason
+comment: Delete indicators based on query, values, or IDs.
+commonfields:
+  id: DeleteIndicators
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.10.0
+    itemVersion: 1.3.15
+    packID: CommunityCommonScripts
+    packName: Community Common Scripts
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+dockerimage: demisto/python3:3.11.10.115186
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: DeleteIndicators
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |
+  register_module_line('DeleteIndicators', 'start', __line__())
+  demisto.debug('pack name = Community Common Scripts, pack version = 1.3.15')
+
+
+
+
+  def main():
+      try:
+          args = demisto.args()
+          query = args.get('indicator_query', None)
+          indicator_vals = argToList(args.get('indicator_values', None))
+          indicator_ids = argToList(args.get('indicator_ids', None))
+          do_not_whitelist = not argToBoolean(args.get('exclude', False))
+          reason = args.get('exclusion_reason', '')
+
+          # Ensure only one argument is supplied for the list of indicators to delete
+          args = [query, indicator_vals, indicator_ids]
+          if sum(bool(arg) for arg in args) != 1:
+              return_error(
+                  "Invalid input: Exactly ONE of the following arguments must be provided: "
+                  "'indicator_query', 'indicator_values', or 'indicator_ids'."
+              )
+
+          if query:
+              search_query = query
+          elif indicator_vals:
+              search_query = f"value:({' '.join(indicator_vals)})"
+          elif indicator_ids:
+              search_query = f"id:({' '.join(indicator_ids)})"
+          else:
+              search_query = ""
+              demisto.debug(f"didn't match any condition. Initializing {search_query=}")
+
+          res = execute_command("deleteIndicators", {
+              "query": search_query,
+              "doNotWhitelist": do_not_whitelist,
+              "reason": reason
+          })
+          if is_error(res):
+              raise Exception(res)
+          else:
+              return_results(res)
+
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute DeleteIndicators. Error: {str(ex)}')
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+  register_module_line('DeleteIndicators', 'end', __line__())
+scripttarget: 0
+subtype: python3
+system: true
+tags: []
+type: python
