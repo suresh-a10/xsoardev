@@ -89,7 +89,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 1.39.2
+    itemVersion: 1.39.21
     packID: Base
     packName: Base
     packPropagationLabels:
@@ -97,7 +97,7 @@ contentitemexportablefields:
     prevname: ""
     propagationLabels: []
     toServerVersion: ""
-dockerimage: demisto/ml:1.0.0.105874
+dockerimage: demisto/ml:1.0.0.1870375
 engineinfo: {}
 mainengineinfo: {}
 name: DBotPredictPhishingWords
@@ -124,7 +124,7 @@ runas: DBotWeakRole
 runonce: false
 script: |
   register_module_line('DBotPredictPhishingWords', 'start', __line__())
-  demisto.debug('pack name = Base, pack version = 1.39.2')
+  demisto.debug('pack name = Base, pack version = 1.39.21')
   # pylint: disable=no-member
 
   from string import punctuation
@@ -162,6 +162,7 @@ script: |
               return None
           return res_model[0]["Contents"], UNKNOWN_MODEL_TYPE
 
+      res = None
       if store_type == "mlModel":
           res = load_from_models(model_name) or load_from_list(model_name)
       elif store_type == "list":
@@ -179,6 +180,8 @@ script: |
 
 
   def preprocess_text(text, model_type, is_return_error):
+      hash_seed, clean_html, preprocess_type = None, None, None
+
       if model_type in [FASTTEXT_MODEL_TYPE, UNKNOWN_MODEL_TYPE]:
           preprocess_type = 'nlp'
           hash_seed = demisto.args().get('hashSeed')
@@ -187,6 +190,9 @@ script: |
           preprocess_type = 'none'
           hash_seed = None
           clean_html = 'false'
+
+      input_type, input_ = None, None
+
       if isinstance(text, str):
           input_type = 'string'
           input_ = text
