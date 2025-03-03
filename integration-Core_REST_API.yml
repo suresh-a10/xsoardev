@@ -9,6 +9,7 @@ configuration:
   display: Core Server URL
   name: url
   required: true
+  section: Connect
   type: 0
 - additionalinfo: Please provide API Key ID when using Cortex XSIAM or Cortex XSOAR
     8.0.0 and above.
@@ -16,6 +17,7 @@ configuration:
   displaypassword: API Key
   name: creds_apikey
   required: false
+  section: Connect
   type: 9
 - additionalinfo: Whether authentication should be using "Standard" API key or "Advanced"
     API key. For XSOAR version < 8.0.0, choose "Standard".
@@ -26,31 +28,36 @@ configuration:
   - Standard
   - Advanced
   required: false
+  section: Connect
   type: 15
 - defaultvalue: https://marketplace.xsoar.paloaltonetworks.com/content/packs/
   display: Base marketplace url
   name: marketplace_url
   required: false
+  section: Connect
   type: 0
 - display: Trust any certificate (not secure)
   name: insecure
   required: false
+  section: Connect
   type: 8
 - display: Use system proxy settings
   name: proxy
   required: false
+  section: Connect
   type: 8
 - additionalinfo: Whether API calls should be made to the current tenant instead of
     the main tenant.
   display: Use tenant
   name: use_tenant
   required: false
+  section: Connect
   type: 8
 contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 1.3.64
+    itemVersion: 1.3.66
     packID: DemistoRESTAPI
     packName: Cortex REST API
     packPropagationLabels:
@@ -249,11 +256,6 @@ script:
       isArray: true
       name: ids
       required: true
-    - defaultValue: id,name,type,severity,status
-      description: 'Comma separated list of fields to return, case sensitive. Set
-        "all" for all fields. WARNING: Setting all fields may result in big results.'
-      isArray: true
-      name: fields
     description: Delete Core incidents.
     execution: true
     name: core-delete-incidents
@@ -327,7 +329,7 @@ script:
         as a value in Context.
   runonce: false
   script: |
-    // pack version: 1.3.64
+    // pack version: 1.3.66
 
     const MIN_HOSTED_XSOAR_VERSION = '8.0.0';
 
@@ -524,39 +526,23 @@ script:
         }
     };
 
-    function reduce_one_entry(data, keep_fields) {
+    function reduce_data(data, keep_fields) {
         var new_d = {};
         for (var field_index = 0; field_index < keep_fields.length; field_index += 1) {
             var field = keep_fields[field_index];
-            if (data[field]) {
+            if (field in data) {
                 new_d[field] = data[field];
             }
         }
         return new_d;
     }
 
-    function reduce_data(data, fields_to_keep) {
-        if (data instanceof Array) {
-            var new_data = [];
-            for (var data_index = 0; data_index < data.length; data_index += 1) {
-                var d = data[data_index];
-                new_data.push(reduce_one_entry(d, fields_to_keep));
-            }
-            return new_data;
-        }
-        else {
-            if (data.constructor == Object) {
-                return [reduce_one_entry(data, fields_to_keep)];
-            }
-        }
-        return data;
-    }
-
-    var deleteIncidents = function(ids_to_delete, fields_to_keep) {
+    var deleteIncidents = function(ids_to_delete) {
         var body = {
             ids: ids_to_delete,
             all: false,
-            filter: {}
+            filter: {"size": 1},
+            excludeIncidentsResponseData: true // exclude unrelated data in response
         };
 
         var res = sendRequest('POST', '/incident/batchDelete', JSON.stringify(body));
@@ -564,16 +550,15 @@ script:
             throw res[0].Contents;
         }
 
-        var response = res['response'];
-        if (fields_to_keep && (fields_to_keep != "all")) {
-            response['data'] = reduce_data(response['data'], fields_to_keep);
-        }
-        var md = tableToMarkdown('Core delete incidents', response, ['data', 'total', "notUpdated"]);
+        var relevant_headers = ['totalDeleted', "notUpdated", 'total']
+        var response = reduce_data(res['response'], relevant_headers)
+
+        var md = tableToMarkdown('Core delete incidents', response);
 
         return {
             ContentsFormat: formats.json,
             Type: entryTypes.note,
-            Contents: res,
+            Contents: {"response": response},
             HumanReadable: md
         };
     };
@@ -909,8 +894,7 @@ script:
         case 'demisto-delete-incidents':
         case 'core-delete-incidents':
             var ids = argToList(args.ids);
-            var fields = argToList(args.fields);
-            return deleteIncidents(ids, fields);
+            return deleteIncidents(ids);
         case 'demisto-api-install-packs':
         case 'core-api-install-packs':
             return installPacks(args.packs_to_install, args.file_url, args.entry_id, args.skip_verify, args.skip_validation);
