@@ -53,6 +53,9 @@ tasks:
     ignoreworker: false
     isautoswitchedtoquietmode: false
     isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
     note: false
     quietmode: 0
     scriptarguments:
@@ -87,221 +90,6 @@ tasks:
           "y": -165
         }
       }
-  "2":
-    continueonerrortype: ""
-    id: "2"
-    ignoreworker: false
-    isautoswitchedtoquietmode: false
-    isoversize: false
-    note: false
-    quietmode: 0
-    reputationcalc: 1
-    scriptarguments:
-      body:
-        simple: |-
-          {
-            "all" : true,
-            "columns" : [ "id","name","status","owner","duedate" ],
-            "filter" : {
-              "fields" : [ "id","name","status","owner","duedate" ],
-              "page" : ${incident.pageno},
-              "query" : ${incident.incidentsearchquery},
-              "size" : ${incident.pagesize},
-              "sort" : [ {
-                "asc" : true,
-                "field" : "id"
-              } ],
-              "fromDate":${incident.fromdate},
-              "toDate":${incident.todate},
-              "totalOnly" : true,
-              "trim_events" : 0
-            },
-            "force" : true,
-            "overrideInvestigation" : true
-          }
-      execution-timeout:
-        simple: "1800"
-      extend-context:
-        simple: IncidentData.total=.response.total::IncidentData.foundIncidents=.response.data={\"id\":val.id,\"name\":val.name}
-      uri:
-        simple: /incidents/search
-      using:
-        simple: Core REST API_instance_1
-    separatecontext: false
-    skipunavailable: false
-    task:
-      brand: Core REST API
-      description: send HTTP POST request.
-      id: 29159588-aa35-4387-8efc-148217b3502b
-      iscommand: true
-      name: Post API request with FromDate and ToDate to Batch export Incidents
-      script: Core REST API|||core-api-post
-      type: regular
-      version: -1
-    taskid: 29159588-aa35-4387-8efc-148217b3502b
-    timertriggers: []
-    type: regular
-    view: |-
-      {
-        "position": {
-          "x": 1110,
-          "y": 300
-        }
-      }
-  "3":
-    conditions:
-    - condition:
-      - - left:
-            iscontext: true
-            value:
-              simple: IncidentData.foundIncidents
-          operator: isNotEmpty
-      label: Results exists
-    continueonerrortype: ""
-    id: "3"
-    ignoreworker: false
-    isautoswitchedtoquietmode: false
-    isoversize: false
-    nexttasks:
-      '#default#':
-      - "5"
-      Results exists:
-      - "4"
-    note: false
-    quietmode: 0
-    separatecontext: false
-    skipunavailable: false
-    task:
-      brand: ""
-      id: 860a0487-4558-4369-8c65-cfcbc9c6750d
-      iscommand: false
-      name: Check incident data exists or not?
-      type: condition
-      version: -1
-    taskid: 860a0487-4558-4369-8c65-cfcbc9c6750d
-    timertriggers: []
-    type: condition
-    view: |-
-      {
-        "position": {
-          "x": 260,
-          "y": 565
-        }
-      }
-  "4":
-    continueonerrortype: ""
-    id: "4"
-    ignoreworker: false
-    isautoswitchedtoquietmode: false
-    isoversize: false
-    nexttasks:
-      '#none#':
-      - "6"
-    note: false
-    quietmode: 0
-    scriptarguments:
-      csvArray:
-        simple: ${IncidentData.foundIncidents}
-      fileName:
-        simple: incident_report_${incident.fromdate}_${incident.todate}
-    separatecontext: false
-    skipunavailable: false
-    task:
-      brand: ""
-      description: Export given array to csv file.
-      id: 8e90544e-181a-4563-8ff1-b81c81f8fe4b
-      iscommand: false
-      name: Export Incidents to CSV
-      script: ExportToCSV
-      type: regular
-      version: -1
-    taskid: 8e90544e-181a-4563-8ff1-b81c81f8fe4b
-    timertriggers: []
-    type: regular
-    view: |-
-      {
-        "position": {
-          "x": 700,
-          "y": 740
-        }
-      }
-  "5":
-    continueonerrortype: ""
-    id: "5"
-    ignoreworker: false
-    isautoswitchedtoquietmode: false
-    isoversize: false
-    nexttasks:
-      '#none#':
-      - "7"
-    note: false
-    quietmode: 0
-    scriptarguments:
-      value:
-        simple: No Results Returned !! Please check you incident search query
-    separatecontext: false
-    skipunavailable: false
-    task:
-      brand: ""
-      description: Prints text to war room (Markdown supported)
-      id: f37fde8c-250b-441e-8186-56262a47d2ce
-      iscommand: false
-      name: No Results Returned
-      script: Print
-      type: regular
-      version: -1
-    taskid: f37fde8c-250b-441e-8186-56262a47d2ce
-    timertriggers: []
-    type: regular
-    view: |-
-      {
-        "position": {
-          "x": -110,
-          "y": 880
-        }
-      }
-  "6":
-    continueonerrortype: ""
-    id: "6"
-    ignoreworker: false
-    isautoswitchedtoquietmode: false
-    isoversize: false
-    nexttasks:
-      '#none#':
-      - "7"
-    note: false
-    quietmode: 0
-    scriptarguments:
-      key:
-        simple: IncidentData
-      subplaybook:
-        simple: "yes"
-    separatecontext: false
-    skipunavailable: false
-    task:
-      brand: ""
-      description: "Delete field from context.\n\nThis automation runs using the default
-        Limited User role, unless you explicitly change the permissions.\nFor more
-        information, see the section about permissions here:\n- For Cortex XSOAR 6
-        see https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/6.x/Cortex-XSOAR-Playbook-Design-Guide/Automations
-        \n- For Cortex XSOAR 8 Cloud see https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/8/Cortex-XSOAR-Cloud-Documentation/Create-a-script\n-
-        For Cortex XSOAR 8.7 On-prem see https://docs-cortex.paloaltonetworks.com/r/Cortex-XSOAR/8.7/Cortex-XSOAR-On-prem-Documentation/Create-a-script"
-      id: 331b9377-20d3-4456-895d-9fab933f39a7
-      iscommand: false
-      name: DeleteContext
-      script: DeleteContext
-      type: regular
-      version: -1
-    taskid: 331b9377-20d3-4456-895d-9fab933f39a7
-    timertriggers: []
-    type: regular
-    view: |-
-      {
-        "position": {
-          "x": 710,
-          "y": 930
-        }
-      }
   "7":
     continueonerrortype: ""
     id: "7"
@@ -325,8 +113,8 @@ tasks:
     view: |-
       {
         "position": {
-          "x": 280,
-          "y": 1250
+          "x": 60,
+          "y": 670
         }
       }
   "8":
@@ -359,28 +147,28 @@ tasks:
     isoversize: false
     nexttasks:
       From Date & To Date defined:
-      - "9"
+      - "11"
       Relative time range:
-      - "10"
+      - "12"
     note: false
     quietmode: 0
     separatecontext: false
     skipunavailable: false
     task:
       brand: ""
-      id: 27186c2f-3b6a-4fdb-8812-558a3eb2a409
+      id: aef28487-e824-4d2a-8cc3-aefc5d2f316e
       iscommand: false
       name: Check fromDate & toDate exist or not
       type: condition
       version: -1
-    taskid: 27186c2f-3b6a-4fdb-8812-558a3eb2a409
+    taskid: aef28487-e824-4d2a-8cc3-aefc5d2f316e
     timertriggers: []
     type: condition
     view: |-
       {
         "position": {
           "x": 260,
-          "y": 165
+          "y": 15
         }
       }
   "9":
@@ -389,9 +177,6 @@ tasks:
     ignoreworker: false
     isautoswitchedtoquietmode: false
     isoversize: false
-    nexttasks:
-      '#none#':
-      - "3"
     note: false
     quietmode: 0
     reputationcalc: 1
@@ -402,7 +187,7 @@ tasks:
             "all" : true,
             "filter" : {
             "fields" : [ "id","name","status","owner","duedate" ],
-          "page":0,
+          "page":${incident.pageno},
           "size":${incident.pagesize},
           "query":${incident.incidentsearchquery},
           "sort":[{"asc":false,"field":"id"}],
@@ -417,27 +202,24 @@ tasks:
         simple: IncidentData.total=.response.total::IncidentData.foundIncidents=.response.data={"id":val.id,"name":val.name}
       uri:
         simple: /incidents/search
-      using:
-        simple: Core REST API_instance_1
     separatecontext: false
     skipunavailable: false
     task:
       brand: Core REST API
-      description: send HTTP POST request.
-      id: 3dddcd09-3b21-4ea6-8b7f-205e77428d67
-      iscommand: true
+      id: 1e79cebb-6583-488d-873e-35136db66288
+      iscommand: false
       name: Post API request with FromDate and ToDate to Batch export Incidents
-      script: Core REST API|||core-api-post
+      script: e4958dca-31ec-4b0f-8b93-da7839c9d43a
       type: regular
       version: -1
-    taskid: 3dddcd09-3b21-4ea6-8b7f-205e77428d67
+    taskid: 1e79cebb-6583-488d-873e-35136db66288
     timertriggers: []
     type: regular
     view: |-
       {
         "position": {
-          "x": -120,
-          "y": 340
+          "x": -860,
+          "y": 375
         }
       }
   "10":
@@ -446,9 +228,6 @@ tasks:
     ignoreworker: false
     isautoswitchedtoquietmode: false
     isoversize: false
-    nexttasks:
-      '#none#':
-      - "3"
     note: false
     quietmode: 0
     reputationcalc: 1
@@ -459,7 +238,7 @@ tasks:
             "all" : true,
             "filter" : {
             "fields" : [ "id","name","status","owner","duedate" ],
-          "page":0,
+          "page":${incident.pageno},
           "period":{
           "byFrom":"days",
           "fromValue":${incident.relativetimerange},
@@ -484,63 +263,74 @@ tasks:
     task:
       brand: Core REST API
       description: send HTTP POST request.
-      id: 2ae2e7e5-d623-4037-8b0d-812ace3c3aff
+      id: 026dd0e9-dc95-4e38-8d83-13f48a281714
       iscommand: true
       name: Post API request with Relative Time Range to Batch export Incidents
       script: Core REST API|||core-api-post
       type: regular
       version: -1
-    taskid: 2ae2e7e5-d623-4037-8b0d-812ace3c3aff
+    taskid: 026dd0e9-dc95-4e38-8d83-13f48a281714
     timertriggers: []
     type: regular
     view: |-
       {
         "position": {
-          "x": 610,
-          "y": 380
+          "x": 1380,
+          "y": 310
         }
       }
   "11":
-    conditions:
-    - condition:
-      - - left:
-            iscontext: true
-            value:
-              simple: incident.pageno
-          operator: isEqualNumber
-          right:
-            value:
-              simple: "4"
-      label: "yes"
     continueonerrortype: ""
     id: "11"
     ignoreworker: false
     isautoswitchedtoquietmode: false
     isoversize: false
     nexttasks:
-      '#default#':
-      - "13"
-      "yes":
-      - "12"
+      '#none#':
+      - "7"
     note: false
     quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      body:
+        simple: |-
+          {
+            "all" : true,
+            "filter" : {
+            "fields" : [ "id","name","status","owner","duedate" ],
+          "page":${incident.pageno},
+          "size":${incident.pagesize},
+          "query":${incident.incidentsearchquery},
+          "sort":[{"asc":false,"field":"id"}],
+          "fromDate":${incident.fromdate},
+          "toDate":${incident.todate},
+              "trim_events" : 0
+            },
+            "force" : true,
+            "overrideInvestigation" : true
+          }
+      filename:
+        simple: Incident_${incident.name}.csv
+      uri:
+        simple: /incidents/search
     separatecontext: false
     skipunavailable: false
     task:
-      brand: ""
-      id: 001ded86-ae76-43a1-8729-88d63838e8ff
+      brand: Core REST API
+      id: 528a16b5-6ab6-4abd-8d98-ede302049789
       iscommand: false
-      name: Untitled Task
-      type: condition
+      name: Post API request with FromDate and ToDate to Batch export Incidents
+      script: e4958dca-31ec-4b0f-8b93-da7839c9d43a
+      type: regular
       version: -1
-    taskid: 001ded86-ae76-43a1-8729-88d63838e8ff
+    taskid: 528a16b5-6ab6-4abd-8d98-ede302049789
     timertriggers: []
-    type: condition
+    type: regular
     view: |-
       {
         "position": {
-          "x": -290,
-          "y": 10
+          "x": -120,
+          "y": 270
         }
       }
   "12":
@@ -551,53 +341,53 @@ tasks:
     isoversize: false
     nexttasks:
       '#none#':
-      - "13"
+      - "7"
     note: false
     quietmode: 0
+    reputationcalc: 1
+    scriptarguments:
+      body:
+        simple: |-
+          {
+            "all" : true,
+            "filter" : {
+            "fields" : [ "id","name","status","owner","duedate" ],
+          "page":${incident.pageno},
+          "period":{
+          "byFrom":"days",
+          "fromValue":${incident.relativetimerange},
+          "byTo":"days",
+          "toValue":0},
+          "size":${incident.pagesize},
+          "query":${incident.incidentsearchquery},
+          "sort":[{"asc":false,"field":"id"}],
+              "trim_events" : 0
+            },
+            "force" : true,
+            "overrideInvestigation" : true
+          }
+      filename:
+        simple: Incident_${incident.name}.csv
+      uri:
+        simple: /incidents/search
     separatecontext: false
     skipunavailable: false
     task:
-      brand: ""
-      id: 30ea38ee-e303-4dda-8ac7-683bac5b37db
+      brand: Core REST API
+      id: b51f66e1-4100-4761-8df6-409bc66d482c
       iscommand: false
-      name: Untitled Task
+      name: Post API request with Relative Time Range to Batch export Incidents
+      script: e4958dca-31ec-4b0f-8b93-da7839c9d43a
       type: regular
       version: -1
-    taskid: 30ea38ee-e303-4dda-8ac7-683bac5b37db
+    taskid: b51f66e1-4100-4761-8df6-409bc66d482c
     timertriggers: []
     type: regular
     view: |-
       {
         "position": {
-          "x": -650,
-          "y": 180
-        }
-      }
-  "13":
-    continueonerrortype: ""
-    id: "13"
-    ignoreworker: false
-    isautoswitchedtoquietmode: false
-    isoversize: false
-    note: false
-    quietmode: 0
-    separatecontext: false
-    skipunavailable: false
-    task:
-      brand: ""
-      id: bb19f8df-4d89-4b3b-82c2-1f33f0f50ce4
-      iscommand: false
-      name: Untitled Task
-      type: title
-      version: -1
-    taskid: bb19f8df-4d89-4b3b-82c2-1f33f0f50ce4
-    timertriggers: []
-    type: title
-    view: |-
-      {
-        "position": {
-          "x": -590,
-          "y": 410
+          "x": 520,
+          "y": 260
         }
       }
 version: -1
@@ -606,9 +396,9 @@ view: |-
     "linkLabelsPosition": {},
     "paper": {
       "dimensions": {
-        "height": 1655,
-        "width": 2140,
-        "x": -650,
+        "height": 1075,
+        "width": 2620,
+        "x": -860,
         "y": -340
       }
     }
