@@ -1,0 +1,94 @@
+commonfields:
+  id: a6fa3298-0b93-47db-8ef1-4e9b84b25131
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.12.8.1983910
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: Script44
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |-
+  incident = demisto.incident()
+  #
+  #l2_users_search = demisto.executeCommand("getUsers",{"roles":"Level2"})[0].get('Contents')
+  #l2_users=[]
+  #for i in l2_users_search:
+  #    l2_users.append(i.get('id'))
+
+
+  #def close_reason_id_for_qradar(closereason):
+  #    check_val = {
+  #        "2": "False-Positive",
+  #        "1": "Non-Issue",
+  #        "3": "Policy Violation",
+  #        "66": "Affected",
+  #        "65": "Aksiyon Alındı",
+  #        "64": "False Positive",
+  #        "63": "Known Scanning",
+  #        "62": "Major",
+  #        "61": "Minor",
+  #        "60": "Near-Miss",
+  #        "59": "Non issue-Perimeter blocked",
+  #        "58": "Not an Issue",
+  #        "57": "Rule Tes",
+  #        "56": "Rule Tuned",
+  #       "55": "Security Device Failure",
+  #        "54": "Ticket closed in Remedy"
+  #    }
+
+
+  incident_type=incident.get('type')
+  srcbrand=incident.get('sourceBrand')
+  #inc_type = incident.get("type")
+  #escalationlevel = incident.get('CustomFields').get('escalationlevel')
+  #allowincidentclosure = incident.get('CustomFields').get('allowincidentclosure', '').lower()
+  incident_id = str(incident.get('id'))
+  name = incident.get("name")
+  created = incident.get("created")
+  owner = incident.get('owner')
+  l1firstresponsewaitingtimer = json.dumps(incident.get('CustomFields').get('l1firstresponsewaitingtimer', ''))
+  l1investigatingtimer = json.dumps(incident.get('CustomFields').get('l1investigatingtimer', ''))
+  l2investigatingtimer = json.dumps(incident.get('CustomFields').get('l2investigatingtimer', ''))
+  l2pooltimer = json.dumps(incident.get('CustomFields').get('l2pooltimer', ''))
+  incident_type = incident.get('type')
+  #incident_resolution=demisto.args().get('resolution')
+  #closingUserId = incident.get('closingUserId')
+  #severity = incident.get('CustomFields').get('triageseverity')
+  closereason = demisto.args().get('closeReason')
+  closenotes = demisto.args().get('closeNotes')
+  targetcompany = demisto.args().get('targetcompany')
+  username = demisto.args().get("closingUserId")
+
+  created_sla= created[:23] + created[-6:]
+  dt=datetime.fromisoformat(created_sla)
+
+  current_time = str(datetime.now())
+  dt2=datetime.strptime(current_time,"%Y-%m-%d %H:%M:%S.%f")
+
+  epoch_cr=dt.timestamp()
+  epoch_cl=dt2.timestamp()
+  idt=(epoch_cl-epoch_cr)
+  idt=int(idt/60)
+  investigation_duration=incident.get('CustomFields').get('l1investigatingtimer').get('totalDuration')
+
+  if investigation_duration is None or isinstance(investigation_duration,(int)) :
+      investigation_duration=0
+  else:
+      pass
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
