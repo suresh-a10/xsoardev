@@ -1,0 +1,292 @@
+{
+	"author": "Cortex XSOAR",
+	"authorImage": "content/packs/Base/Author_image.png",
+	"beta": false,
+	"cacheVersn": 0,
+	"categories": [
+		"Data Enrichment \u0026 Threat Intelligence"
+	],
+	"certification": "certified",
+	"contentItemTypes": [
+		"automation",
+		"incidentfield",
+		"playbook",
+		"layoutscontainer"
+	],
+	"contentItems": {
+		"automation": [
+			{
+				"description": "This script retrieves additional original alert information from the context.",
+				"name": "XCloudRelatedAlertsWidget",
+				"tags": [
+					"dynamic-section"
+				]
+			},
+			{
+				"description": "Display the Cloud indicators found in a dynamic-section",
+				"name": "displayCloudIndicators",
+				"tags": [
+					"dynamic-section"
+				]
+			},
+			{
+				"description": "This script will extract indicators from a given AWS CloudTrail or GCP Logging event.",
+				"name": "ExtractIndicators-CloudLogging",
+				"tags": []
+			},
+			{
+				"description": "This script returns an HTML result of the cloud providers in the incident. The result will be displayed in the following font colors: AWS - red, GCP - green, Azure - blue.",
+				"name": "XCloudProviderWidget",
+				"tags": [
+					"dynamic-section"
+				]
+			}
+		],
+		"classifier": null,
+		"dashboard": null,
+		"genericfield": null,
+		"generictype": null,
+		"incidentfield": [
+			{
+				"description": "",
+				"name": "Is VPN IP Address",
+				"type": "boolean"
+			}
+		],
+		"incidenttype": null,
+		"indicatorfield": null,
+		"integration": null,
+		"layoutscontainer": [
+			{
+				"description": "",
+				"name": "Cortex XDR - XCLOUD Cryptojacking"
+			}
+		],
+		"list": null,
+		"playbook": [
+			{
+				"description": "---\n\n## Cloud Threat Hunting - Persistence Playbook\n\nThe playbook is responsible for hunting persistence activity in the cloud. It supports AWS, GCP, and Azure - one at a time.\n\n### Hunting Queries\n\nThe playbook executes hunting queries for each provider related to each of the following:\n\n1. IAM\n2. Compute Resources\n3. Compute Functions\n\n### Indicator Extraction\n\nIf relevant events are found during the search, indicators will be extracted using the `ExtractIndicators-CloudLogging` script.\n\n---",
+				"name": "Cloud Threat Hunting - Persistence"
+			},
+			{
+				"description": "This playbook sets the alert's verdict as malicious if one of the following conditions is true:\n1. If the source IP address is malicious\n2. If the incident includes both \"Unusual allocation of multiple cloud compute resources\" AND \"Cloud identity reached a throttling API rate\" (medium/high severity)\n3. If the incident includes both \"Unusual allocation of multiple cloud compute resources\" AND \"Suspicious heavy allocation of compute resources - possible mining activity\" \n4. If the incident includes \"Unusual allocation of multiple cloud compute resources\" with medium/high severity, the source ASN isn't known, and the source IP isn't known as well.\n5. If the incident includes both \"Unusual allocation of multiple cloud compute resources\" AND \"A cloud compute instance was created in a dormant region\"\n\nIf none of the conditions is true, the playbook will wait for an analyst's decision.",
+				"name": "Cortex XDR - XCloud Cryptojacking - Set Verdict"
+			},
+			{
+				"description": "## Data Exfiltration Response\n\nThe Data Exfiltration Response playbook is designed to address data exfiltration activity alerts in the cloud environment. This playbook is intended for handling \"An identity performed a suspicious download of multiple cloud storage object\" alert.\nThe playbook supports AWS, GCP, and Azure and executes the following:\n- Enrichment involved assets. \n- Determines the appropriate verdict based on the data collected from the enrichment phase. \n- Cloud Persistence Threat Hunting:\n  - Conducts threat hunting activities to identify any cloud persistence techniques\n- Verdict Handling:\n  - Handles false positives identified during the investigation\n  - Handles true positives by initiating appropriate response actions",
+				"name": "Cortex XDR - Cloud Data Exfiltration Response"
+			},
+			{
+				"description": "This playbook is responsible for collecting data from Cortex XDR detector and enriching data for further usage and building the layout.\n\nThe playbook collects or enriches the following data:\n- Resource enrichment\n   - Previous activity seen in the specified region or project\n- Account enrichment\n- Network enrichment\n   - Attacker IP\n   - Geolocation\n   - ASN",
+				"name": "Cortex XDR - Cloud Enrichment"
+			},
+			{
+				"description": "Investigates a Cortex XDR incident containing a Cloud Cryptojacking related alert. \nThe playbook supports AWS, Azure, and GCP and executes the following:\n\n- Cloud enrichment:\n   - Collects info about the involved resources\n   - Collects info about the involved identities\n   - Collects info about the involved IPs\n- Verdict decision tree\n- Verdict handling:\n   - Handle False Positives\n   - Handle True Positives\n      - Cloud Response - Generic sub-playbook.\n- Notifies the SOC if a malicious verdict was found",
+				"name": "Cortex XDR - XCloud Cryptojacking"
+			},
+			{
+				"description": "---\n\n## Cloud Token Theft Response Playbook\n\nThe **Cloud Token Theft Response Playbook** provides a structured and comprehensive flow to effectively respond to and mitigate alerts involving the theft of cloud tokens. The playbook supports AWS, GCP, and Azure and executes the following:\n\n**Cloud Enrichment:**\n- Enriches the involved resources.\n- Enriches the involved identities.\n- Enriches the involved IPs.\n\n**Verdict Decision Tree:**\n- Determines the appropriate verdict based on the investigation findings.\n\n**Early Containment using the Cloud Response - Generic Playbook:**\n- Implements early containment measures to prevent further impact.\n\n**Cloud Persistence Threat Hunting:**\n- Conducts threat hunting activities to identify any cloud persistence techniques.\n\n**Enriching and Responding to Hunting Findings:**\n- Performs additional enrichment and responds to the findings from threat hunting.\n\n**Verdict Handling:**\n- Handles false positives identified during the investigation.\n- Handles true positives by initiating appropriate response actions.\n\n---",
+				"name": "Cortex XDR - XCloud Token Theft Response"
+			},
+			{
+				"description": "---\n\n## Cloud Token Theft  - Set Verdict Playbook\n\nThe playbook is built from a decision tree whose ultimate goal is to decide whether the observed activity is malicious.\n\n### Event Search\n\nThe playbook searches for events based on the attacker's IP address within the last two hours.\n\n### Tests Performed\n\nThe following tests are performed on the observed activity:\n\n1. **Malicious IP Check**: Determines if the IP address is malicious.\n2. **CSP ASN Check**: Checks if the activity was performed from an Autonomous System Number (ASN) belonging to one of the Cloud Service Providers (CSPs).\n3. **IP and ASN History Check**: Verifies if the IP address and ASN have been previously observed.\n4. **Region Check**: Determines if the API call was made from outside the recognized region.\n5. **Anomalous State Check**: Checks if the API call was made from an anomalous state.\n6. **Alert Check**: Looks for any related alerts around the event, including:\n   - Possible cloud instance metadata service (IMDS) abuse.\n   - Impossible Traveler by cloud identity.\n\n---",
+				"name": "Cortex XDR - XCloud Token Theft - Set Verdict"
+			},
+			{
+				"description": "Investigate and respond to Cortex XDR Cloud alerts where a Cloud IAM user`s access key is used suspiciously to access the cloud environment. \nThe following alerts are supported for AWS, Azure, and GCP environments.\n- Penetration testing tool attempt\n- Penetration testing tool activity\n- Suspicious API call from a Tor exit node\n\n",
+				"name": "Cortex XDR - Cloud IAM User Access Investigation"
+			},
+			{
+				"description": "This playbook ensures a swift and effective response to malicious activities within Kubernetes environments, leveraging cloud-native tools to maintain cluster security and integrity.\n\nThe playbook is designed to handle agent-generated alerts due to malicious activities within Kubernetes (K8S) pods, such as mining activities, which require immediate action. The playbook also addresses scenarios where the malicious pod is killed, but the malicious K8S workload repeatedly creates new pods.\n\n### Key Features:\n\nAWS Function Integration: This utilizes an AWS Lambda function that can manage resources and facilitate rapid response actions within an Amazon EKS cluster without the need for third-party tools such as Kubectl.\n\nThe Lambda function can initiate the following response actions:\n\n    - Pod Termination: The playbook includes steps to safely terminate the affected pod within the K8S environment.\n    - Workload Suspension: If necessary, the playbook can be escalated to suspend the entire workload associated with the mining activity.\n\nOnce the Lambda function execution is completed, the playbook deletes all of the created objects to ensure undesirable usage.\n\n### Workflow:\n\n1. Alert Detection: The playbook begins with the monitoring agent detecting a mining alert within a Kubernetes pod.\n2. Alert Validation: Validates the alert to ensure it is not a false positive.\n3. Response Decision: \n    - Pod Termination: If the mining activity is isolated to a single pod, the AWS Lambda function is invoked to terminate the affected pod within the K8S environment.\n    - Workload Suspension: If the mining activity is widespread or poses a significant threat, the AWS Lambda function suspends the entire workload within the K8S environment.\n4. Cleanup: This action initiates the complete removal of all objects created for the Lambda execution for security and hardening purposes.\n\n### Required Integration\n\n#### AWS IAM (Identity and Access Management)\n- [AWS IAM API Documentation](https://docs.aws.amazon.com/IAM/latest/APIReference/Welcome.html)\n- [Cortex XSOAR AWS IAM Integration](https://cortex.marketplace.pan.dev/marketplace/details/AWSIAM/)\n\n#### AWS EC2 (Elastic Compute Cloud)\n- [AWS EC2 API Documentation](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Welcome.html)\n- [Cortex XSOAR AWS EC2 Integration](https://cortex.marketplace.pan.dev/marketplace/details/AWSEC2/)\n\n#### AWS EKS (Elastic Kubernetes Service)\n- [AWS EKS API Documentation](https://docs.aws.amazon.com/eks/latest/APIReference/Welcome.html)\n- [Cortex XSOAR AWS EKS Integration](https://cortex.marketplace.pan.dev/marketplace/details/AWSEKS/)\n\n#### AWS Lambda\n- [AWS Lambda API Documentation](https://docs.aws.amazon.com/lambda/latest/dg/API_Reference.html)\n- [Cortex XSOAR AWS Lambda Integration](https://cortex.marketplace.pan.dev/marketplace/details/AWSLambda/).",
+				"name": "Cortex XDR - Malicious Pod Response - Agent"
+			}
+		],
+		"report": null,
+		"reputation": null,
+		"widget": null,
+		"wizard": null
+	},
+	"currentVersion": "1.0.23",
+	"definitionId": "",
+	"dependencies": {
+		"AWS-CloudTrail": {
+			"author": "Cortex XSOAR",
+			"certification": "certified",
+			"mandatory": true,
+			"minVersion": "1.1.6",
+			"name": "AWS - CloudTrail"
+		},
+		"AWS-Enrichment-Remediation": {
+			"author": "Cortex XSOAR",
+			"certification": "certified",
+			"mandatory": true,
+			"minVersion": "1.1.21",
+			"name": "AWS Enrichment and Remediation"
+		},
+		"AWS-Lambda": {
+			"author": "Cortex XSOAR",
+			"certification": "certified",
+			"mandatory": true,
+			"minVersion": "1.3.11",
+			"name": "AWS - Lambda"
+		},
+		"AzureLogAnalytics": {
+			"author": "Cortex XSOAR",
+			"certification": "certified",
+			"mandatory": false,
+			"minVersion": "1.1.43",
+			"name": "Azure Log Analytics"
+		},
+		"Base": {
+			"author": "Cortex XSOAR",
+			"certification": "certified",
+			"mandatory": true,
+			"minVersion": "1.39.18",
+			"name": "Base"
+		},
+		"CommonPlaybooks": {
+			"author": "Cortex XSOAR",
+			"certification": "certified",
+			"mandatory": true,
+			"minVersion": "2.6.50",
+			"name": "Common Playbooks"
+		},
+		"CommonScripts": {
+			"author": "Cortex XSOAR",
+			"certification": "certified",
+			"mandatory": true,
+			"minVersion": "1.19.18",
+			"name": "Common Scripts"
+		},
+		"CommonTypes": {
+			"author": "Cortex XSOAR",
+			"certification": "certified",
+			"mandatory": false,
+			"minVersion": "3.8.3",
+			"name": "Common Types"
+		},
+		"CortexXDR": {
+			"author": "Cortex XSOAR",
+			"certification": "certified",
+			"mandatory": true,
+			"minVersion": "6.2.10",
+			"name": "Cortex XDR by Palo Alto Networks"
+		},
+		"FiltersAndTransformers": {
+			"author": "Cortex XSOAR",
+			"certification": "certified",
+			"mandatory": true,
+			"minVersion": "1.2.89",
+			"name": "Filters And Transformers"
+		},
+		"GoogleCloudLogging": {
+			"author": "Cortex XSOAR",
+			"certification": "certified",
+			"mandatory": false,
+			"minVersion": "1.0.19",
+			"name": "Google Cloud Logging"
+		},
+		"Identity": {
+			"author": "Cortex XSOAR",
+			"certification": "certified",
+			"mandatory": false,
+			"minVersion": "1.0.5",
+			"name": "Identity"
+		},
+		"TIM_Processing": {
+			"author": "Cortex XSOAR",
+			"certification": "certified",
+			"mandatory": true,
+			"minVersion": "1.1.27",
+			"name": "TIM - Indicator Auto-Processing"
+		}
+	},
+	"deprecated": false,
+	"description": "This content Pack helps you automate collection, investigation, and remediation of incidents related to cloud infrastructure activities in AWS, Azure, and GCP.",
+	"disabledMonthly": false,
+	"downloads": 1283,
+	"eulaLink": "https://github.com/demisto/content/blob/master/LICENSE",
+	"fromServerVersion": "6.5.0",
+	"general": [
+		"generalFieldCertified",
+		"generalFieldByCortexXSOAR",
+		"generalFieldFree",
+		"generalFieldSupportIncluded"
+	],
+	"id": "CloudIncidentResponse",
+	"installMessage": "",
+	"integrations": [
+		{
+			"imagePath": "content/packs/CortexXDR/CortexXDR-IOC_image.png",
+			"name": "Cortex XDR - IOC"
+		},
+		{
+			"imagePath": "content/packs/CortexXDR/CortexXDR-XQLQueryEngine_image.png",
+			"name": "Cortex XDR - XQL Query Engine"
+		},
+		{
+			"imagePath": "content/packs/CortexXDR/CortexXDR-IR_image.png",
+			"name": "Palo Alto Networks Cortex XDR - Investigation and Response"
+		},
+		{
+			"imagePath": "content/packs/AzureLogAnalytics/AzureLogAnalytics_image.png",
+			"name": "Azure Log Analytics"
+		},
+		{
+			"imagePath": "content/packs/AWS-Lambda/AWS-Lambda_image.png",
+			"name": "AWS - Lambda"
+		},
+		{
+			"imagePath": "content/packs/AWS-CloudTrail/AWS-CloudTrail_image.png",
+			"name": "AWS - CloudTrail"
+		},
+		{
+			"imagePath": "content/packs/GoogleCloudLogging/GoogleCloudLogging_image.png",
+			"name": "Google Cloud Logging"
+		}
+	],
+	"itemVersion": "1.0.23",
+	"keywords": [
+		"Cloud",
+		"IR",
+		"Incident Response",
+		"Token Theft",
+		"Credentials",
+		"XDR",
+		"XCloud",
+		"Response"
+	],
+	"legacy": true,
+	"name": "Cloud Incident Response",
+	"packID": "CloudIncidentResponse",
+	"packName": "",
+	"premium": false,
+	"previewOnly": false,
+	"price": 0,
+	"propagationLabels": [
+		"all"
+	],
+	"rawKeywords": null,
+	"rawTags": null,
+	"rawUseCases": null,
+	"readme": "# Cloud Incident Response\n\nAs enterprise resources are moving to the cloud, attackers develop dedicated attacks to be able to access, manipulate, and exfiltrate cloud information and resources. Adequate response and remediation of such attacks requires cloud knowledge and extensive context.\n\nThis content pack helps you automate collection from cloud logs and then perform investigation and automated remediation of incidents based on cloud infrastructure activities in AWS, Azure, and GCP. It does not require an agent, resulting in a shorter time to resolution for cloud incidents.\n\nTo analyze cloud infrastructure alerts, a XSIAM license or a Cortex XDR Pro per TB license is required. Audit logs from the cloud provider should be ingested. The configuration varies between the different cloud providers:\n\n[Set up cloud audit logs for Azure](https://docs-cortex.paloaltonetworks.com/r/Cortex-XDR/Cortex-XDR-Pro-Administrator-Guide/Ingest-Logs-from-Microsoft-Azure-Event-Hub)  \n[Set up cloud audit logs for AWS](https://docs-cortex.paloaltonetworks.com/r/Cortex-XDR/Cortex-XDR-Pro-Administrator-Guide/External-Data-Ingestion-Vendor-Support)  \n[Set up cloud audit logs for GCP](https://docs-cortex.paloaltonetworks.com/r/Cortex-XDR/Cortex-XDR-Pro-Administrator-Guide/Ingest-Logs-and-Data-from-a-GCP-Pub/Sub?tocId=xlX52RIi48J7B4I5mEr4mw)\n\n## What does this pack do?\n\nThis pack includes a collection of investigation and response playbooks for cloud alerts, aiding analyst investigations. The playbooks can also be used as templates to enrich, hunt, and block indicators.\n\nThe playbooks included in this pack help save time and automate repetitive tasks:\n\n- Extract and enrich all relevant indicators from the alert.\n- Automate alert triage.\n- Investigate and hunt for additional activities by running advanced queries across major CSPs.\n- Interact with the analyst to choose a remediation path or close the incident as a false positive based on the gathered information and incident severity.\n- Hunt for related IOCs.\n- Remediate the alerts by blocking malicious indicators, terminating newly created resources, and more.\n\nAs part of this pack, you will also get an out-of-the-box layout to facilitate analyst investigation. All of these components are easily customizable to suit the needs of your organization.\n\n\n\n## Playbooks\n\nThe pack consists of three comprehensive playbooks tailored for handling common cloud security incidents\n### 1. Cloud Token Theft\n\nThe Cloud Token Theft playbook is designed to guide security analysts through the response process in cases of compromised cloud access tokens. These tokens are crucial for accessing cloud resources and are often targeted by attackers to gain unauthorized access.\n\n\n\n\n\n- [Cortex XDR - Cloud Token Theft Response](https://xsoar.pan.dev/docs/reference/playbooks/cortex-xdr---x-cloud-token-theft-response)\n### 2. Cryptojacking Response\n\nThe Cryptojacking Response playbook assists security teams in detecting and mitigating cryptojacking incidents, where attackers illicitly use an organization's cloud resources to mine cryptocurrencies.\n\n\n\n\n- [Cortex XDR - Cloud Cryptojacking](https://xsoar.pan.dev/docs/reference/playbooks/cortex-xdr---cloud-cryptomining)\n### 3. IAM User Investigation\n\nThe IAM User Investigation playbook provides step-by-step instructions for investigating suspicious activities related to IAM (Identity and Access Management) users in the cloud environment. It aids in identifying potential account compromises and unauthorized access.\n\n\n\n\n- [Cortex XDR - Cloud IAM User Access Investigation](https://xsoar.pan.dev/docs/reference/playbooks/cortex-xdr---cloud-iam-user-access-investigation)\n### Investigative Playbooks\n\n* [Cloud Response - Generic](https://xsoar.pan.dev/docs/reference/playbooks/cloud-response---generic)\n* [Cloud Threat Hunting - Persistence](https://xsoar.pan.dev/docs/reference/playbooks/cloud-threat-hunting---persistence)\n* [Cloud Enrichment - Generic](https://xsoar.pan.dev/docs/reference/playbooks/cloud-enrichment---generic)\n\n## How to Use the Playbooks\n\nEach playbook is provided in a user-friendly format, detailing the necessary actions, procedures, and tools required for effective incident response. To use the playbooks, follow the respective links provided above.",
+	"searchRank": 10,
+	"serverMaxVersion": "",
+	"serverMinVersion": "6.5.0",
+	"support": "xsoar",
+	"supportDetails": {
+		"email": "",
+		"url": "https://www.paloaltonetworks.com/cortex"
+	},
+	"tags": [
+		"Use Case"
+	],
+	"toServerVersion": "",
+	"updated": "2025-02-04T20:38:36Z",
+	"useCases": [
+		"Incident Response"
+	],
+	"version": -1,
+	"versionInfo": "2139494",
+	"videos": []
+}
