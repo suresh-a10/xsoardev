@@ -125,40 +125,39 @@ configuration:
   required: false
   section: Connect
   type: 8
-- advanced: true
-  display: Long running instance
+- additionalinfo: 'Optional - Welcome message when creating new incidents using the
+    bot. If left empty (default option) the current default welcome message will be
+    used, i.e., "Successfully created incident <incident_name>. View it on: <incident_link>".
+    If the parameter is set to "no_welcome_message" value, no message will be displayed.
+    Any non-empty string value set will be used as the custom new incident welcome
+    message.'
+  defaultvalue: 'Successfully created incident <incident_name>. View it on: <incident_link>'
+  display: Custom New Incident Welcome Message
+  name: new_incident_welcome_message
+  required: false
+  section: Connect
+  type: 0
+- display: Long running instance
   name: longRunning
   required: false
   section: Connect
   type: 8
-- advanced: true
-  display: Listen port, e.g. 7000 (Required for investigation mirroring and direct
-    messages)
+- additionalinfo: E.g., 7000 (Required for investigation mirroring and direct messages).
+  display: Listen port
   name: longRunningPort
   required: false
-  section: Collect
+  section: Connect
   type: 0
 - display: Incident type
   name: incidentType
   required: false
   section: Connect
   type: 13
-- additionalinfo: 'Optional - Welcome message when creating new incidents using the
-    bot. If left empty (default option) the current default welcome message will be
-    used, i.e., "Successfully created incident <incident_name>. View it on: <incident_link>".
-    If the parameter is set to "no_welcome_message" value, no message will be displayed.
-    Lastly, any non-empty string value set will be used as the custom new incident
-    welcome message.'
-  defaultvalue: 'Successfully created incident <incident_name>. View it on: <incident_link>'
-  display: Custom New Incident Welcome Message
-  name: new_incident_welcome_message
-  required: false
-  type: 0
 contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 1.5.9
+    itemVersion: 1.5.16
     packID: MicrosoftTeams
     packName: Microsoft Teams
     packPropagationLabels:
@@ -214,6 +213,9 @@ script:
         exist, and this value will override the default channel configured in the
         integration parameters.
       name: team
+    - description: ID of the message to send the notification to as a reply when sending
+        to a channel.
+      name: message_id
     - description: The Microsoft Teams adaptive card to send.
       name: adaptive_card
     - description: The team member to which to send the message.
@@ -224,7 +226,15 @@ script:
     description: |-
       Sends a message to the specified teams.
       To mention a user in the message, add a semicolon ";" at the end of the user mention. For example: @Bruce Willis;.
+
+      If sending a reply to a message, the message ID must be provided and the reply will be sent via the Graph API which means
+      the message will appear from the account used to authorize the integration instance and not the bot. Setting the account's name
+      and picture to match the bot will make it appear to be from the same source.
     name: send-notification
+    outputs:
+    - contextPath: MicrosoftTeams.Message.ID
+      description: ID of the message sent.
+      type: String
   - arguments:
     - auto: PREDEFINED
       default: true
@@ -636,6 +646,26 @@ script:
         shared with the conversation member.
       type: String
   - arguments:
+    - description: ID of the message to update. Also referred to as Activity ID.
+      name: message_id
+      required: true
+    - description: The team in which the specified message exists.
+      name: team
+    - description: The channel in which the specified message exists.
+      name: channel
+    - description: The new message content.
+      name: message
+    - description: The team member the message to be edited was sent to.
+      name: team_member
+    - description: Whether or not an adaptive card is being updated.
+      name: format_as_card
+    description: Updates a message.
+    name: microsoft-teams-message-update
+    outputs:
+    - contextPath: MicrosoftTeams.Message.ID
+      description: ID of the message sent.
+      type: String
+  - arguments:
     - description: The chat ID / group chat name (topic) / oneOnOne member (Display
         name/mail/UPN).
       name: chat
@@ -838,7 +868,7 @@ script:
       be added to the Demisto bot configuration in Microsoft Teams as part of the
       prerequisites of the integration's setup. For more information, see - https://xsoar.pan.dev/docs/reference/integrations/microsoft-teams#create-the-demisto-bot-in-microsoft-teams."
     name: microsoft-teams-create-messaging-endpoint
-  dockerimage: demisto/teams:1.0.0.116912
+  dockerimage: demisto/teams:1.0.0.1860894
   isFetchSamples: true
   longRunning: true
   longRunningPort: true
@@ -846,7 +876,7 @@ script:
   runonce: false
   script: |
     register_module_line('Microsoft Teams', 'start', __line__())
-    demisto.debug('pack name = Microsoft Teams, pack version = 1.5.9')
+    demisto.debug('pack name = Microsoft Teams, pack version = 1.5.16')
 
 
 
@@ -1243,8 +1273,10 @@ script:
             team_members: list = team.get('team_members', [])
             for member in team_members:
                 if member.get('id') == team_member_id:
+                    demisto.debug(f'get_team_member details: {member=}')
                     team_member['username'] = member.get('name', '')
-                    team_member['user_email'] = member.get('userPrincipalName', '')
+                    team_member['user_email'] = member.get('email', '')
+                    team_member['user_principal_name'] = member.get('userPrincipalName', '')
                     return team_member
 
         raise ValueError('Team member was not found')
@@ -1257,15 +1289,16 @@ script:
         :param integration_context: Cached object to search for team member in
         :return: Team member ID
         """
-        demisto.debug(f"requested team member: {requested_team_member}")
+        demisto.debug(f"Requested team member: {requested_team_member}")
         teams: list = json.loads(integration_context.get('teams', '[]'))
-        demisto.debug(f"we've got {len(teams)} teams saved in integration context")
+        demisto.debug(f"We've got {len(teams)} teams saved in integration context")
         for team in teams:
             team_members: list = team.get('team_members', [])
             for team_member in team_members:
-                if requested_team_member in {team_member.get('name', ''), team_member.get('userPrincipalName', '').lower()}:
-                    return team_member.get('id')
-
+                member_properties = [team_member.get('email', '').lower(), team_member.get(
+                    'userPrincipalName', '').lower(), team_member.get('name', '').lower()]
+                if requested_team_member.lower() in [value.lower() for value in member_properties]:
+                    return team_member.get("id")
         raise ValueError(f'Team member {requested_team_member} was not found')
 
 
@@ -2367,16 +2400,20 @@ script:
 
         # bot is already part of the chat
         if is_bot_in_chat(chat_id):
+            demisto.debug(f"Bot is already part of the chat - chat ID: {chat_id}")
             return
         res = http_request('GET', f"{GRAPH_BASE_URL}/v1.0/appCatalogs/teamsApps",
                            params={"$filter": f"externalId eq '{BOT_ID}'"})
-        app_data = res.get('value')[0]      # type: ignore
-        bot_internal_id = app_data.get('id')
-
-        request_json = {"teamsApp@odata.bind": f"https://graph.microsoft.com/v1.0/appCatalogs/teamsApps/{bot_internal_id}"}
-        http_request('POST', f'{GRAPH_BASE_URL}/v1.0/chats/{chat_id}/installedApps', json_=request_json)
-
-        demisto.debug(f"Bot {app_data.get('displayName')} with {BOT_ID} ID was added to chat successfully")
+        demisto.debug(f"res is: {res}")
+        demisto.debug(f"res type is: {type(res)}")
+        if isinstance(res, dict):
+            app_data = res.get('value')[0]      # type: ignore
+            bot_internal_id = app_data.get('id')
+            request_json = {"teamsApp@odata.bind": f"https://graph.microsoft.com/v1.0/appCatalogs/teamsApps/{bot_internal_id}"}
+            http_request('POST', f'{GRAPH_BASE_URL}/v1.0/chats/{chat_id}/installedApps', json_=request_json)
+            demisto.debug(f"Bot {app_data.get('displayName')} with {BOT_ID} ID was added to chat successfully")
+        else:
+            demisto.debug("Bot not in catalog")
 
 
     def chat_create_command():
@@ -2740,6 +2777,7 @@ script:
                     return channel.get('channel_id')
         url: str = f'{GRAPH_BASE_URL}/v1.0/teams/{team_aad_id}/channels'
         response: dict = cast(dict[Any, Any], http_request('GET', url))
+        demisto.debug(f"Get channels response: {json.dumps(response)}")
         channel_id: str = ''
         channels: list = response.get('value', [])
         for channel in channels:
@@ -2761,8 +2799,10 @@ script:
         """
         url = f'{GRAPH_BASE_URL}/v1.0/teams/{team_id}/channels/{channel_id}'
         response: dict = cast(dict[Any, Any], http_request('GET', url))
-        demisto.debug(f"The channel membershipType = {response.get('membershipType')}")
-        return response.get('membershipType', 'standard')
+        membershipType = response.get('membershipType', 'standard')
+        demisto.debug(f"The channel membershipType = {membershipType}")
+        demisto.debug(f"Get channel response: {json.dumps(response)}")
+        return membershipType
 
 
     def get_team_members(service_url: str, team_id: str) -> list:
@@ -2777,6 +2817,25 @@ script:
         return response
 
 
+    def update_integration_context_with_all_team_members(integration_context):
+        """
+        Retrieves all members from all teams and updates members in integration context.
+        """
+        service_url: str = integration_context.get('service_url', '')
+        teams: list = json.loads(integration_context.get('teams', '[]'))
+        for team in teams:
+            team_id = team.get('team_id', '')
+            team_name = team.get('team_name', '')
+            demisto.debug(f'Request members for {team_id=} {team_name=}')
+            url = f'{service_url}/v3/conversations/{team_id}/members'
+            team_members: list = cast(list[Any], http_request('GET', url, api='bot'))
+            demisto.debug(f'Updating {team_name=} with {team_members=}')
+            team['team_members'] = team_members
+        demisto.debug(f'Setting integration_context with {teams=}')
+        integration_context['teams'] = json.dumps(teams)
+        set_integration_context(integration_context)
+
+
     def get_channel_members(team_id: str, channel_id: str) -> list[dict[str, Any]]:
         """
         Retrieves channel members given a channel
@@ -2789,26 +2848,35 @@ script:
         return response.get('value', [])
 
 
-    def update_message(service_url: str, conversation_id: str, activity_id: str, text: str):
+    def update_message(service_url: str, conversation_id: str, message_id: str, text: str, format_as_card: bool = True) -> dict:
         """
         Updates a message in Microsoft Teams channel
         :param service_url: Bot service URL to query
         :param conversation_id: Conversation ID of message to update
-        :param activity_id: Activity ID of message to update
+        :param message_id: ID of message to update, also referred to as Activity ID in the bot API
         :param text: Text to update in the message
-        :return: None
+        :param format_as_card: Whether to format the text as an adaptive card
+        :return: dict
         """
-        body = [{
-            'type': 'TextBlock',
-            'text': text
-        }]
-        adaptive_card: dict = create_adaptive_card(body=body)
-        conversation = {
-            'type': 'message',
-            'attachments': [adaptive_card]
-        }
-        url: str = f'{service_url}/v3/conversations/{conversation_id}/activities/{activity_id}'
-        http_request('PUT', url, json_=conversation, api='bot')
+        if format_as_card:
+            body = [{
+                'type': 'TextBlock',
+                'text': text
+            }]
+            adaptive_card: dict = create_adaptive_card(body=body)
+            conversation = {
+                'type': 'message',
+                'attachments': [adaptive_card]
+            }
+        else:
+            conversation = {
+                'type': 'message',
+                'text': text
+            }
+        url: str = f'{service_url}/v3/conversations/{conversation_id}/activities/{message_id}'  # type:ignore
+        res: dict = http_request('PUT', url, json_=conversation, api='bot')  # type:ignore
+
+        return res
 
 
     def close_channel_request(team_aad_id: str, channel_id: str):
@@ -2890,16 +2958,26 @@ script:
         return response.get('id', '')
 
 
-    def send_message_request(service_url: str, channel_id: str, conversation: dict):
+    def send_message_request(service_url: str,
+                             channel_id: str,
+                             conversation: dict,
+                             message_id: str = '',
+                             team_aad_id: str = '') -> dict:
         """
         Sends an HTTP request to send message to Microsoft Teams
         :param channel_id: ID of channel to send message in
         :param conversation: Conversation message object to send
+        :param message_id: ID of message to post the reply in
         :param service_url: Bot service URL to query
-        :return: None
+        :return: dict
         """
-        url: str = f'{service_url}/v3/conversations/{channel_id}/activities'
-        http_request('POST', url, json_=conversation, api='bot')
+        if not message_id:
+            url: str = f'{service_url}/v3/conversations/{channel_id}/activities'
+            res: dict = http_request('POST', url, json_=conversation, api='bot')  # type:ignore
+        else:
+            url: str = f'{GRAPH_BASE_URL}/v1.0/teams/{team_aad_id}/channels/{channel_id}/messages/{message_id}/replies'  # type:ignore
+            res: dict = http_request('POST', url, json_=conversation)  # type:ignore
+        return res
 
 
     def process_mentioned_users_in_message(message: str) -> tuple[list, str]:
@@ -2931,9 +3009,11 @@ script:
         message_type: str = demisto.args().get('messageType', '')
         original_message: str = demisto.args().get('originalMessage', '')
         message: str = demisto.args().get('message', '')
+        message_id: str = demisto.args().get('message_id', '')
+        team_name: str = demisto.args().get('team', '') or demisto.params().get('team', '')
         external_form_url_header: str | None = demisto.args().get(
             'external_form_url_header') or demisto.params().get('external_form_url_header')
-        demisto.debug(f"in send message with message type: {message_type}, and channel name:{demisto.args().get('channel')}")
+        demisto.debug(f"In send message with message type: {message_type}, and channel name:{demisto.args().get('channel')}")
         try:
             adaptive_card: dict = json.loads(demisto.args().get('adaptive_card', '{}'))
         except ValueError:
@@ -2984,10 +3064,19 @@ script:
         integration_context: dict = get_integration_context()
         channel_id = ''
         personal_conversation_id = ''
+        if team_name:
+            team_aad_id: str = get_team_aad_id(team_name)
+        else:
+            team_aad_id = ''
         if channel_name:
-            channel_id = get_channel_id_for_send_notification(channel_name, message_type)
+            channel_id = get_channel_id_for_send_notification(team_aad_id, channel_name, message_type)
         elif team_member:
-            team_member_id: str = get_team_member_id(team_member, integration_context)
+            try:
+                team_member_id: str = get_team_member_id(team_member, integration_context)
+            except Exception:
+                demisto.debug(f"Did not find '{team_member=}' will update integration context with all team members.")
+                update_integration_context_with_all_team_members(integration_context)
+                team_member_id = get_team_member_id(team_member, integration_context)
             personal_conversation_id = create_personal_conversation(integration_context, team_member_id)
 
         recipient: str = channel_id or personal_conversation_id
@@ -3010,11 +3099,21 @@ script:
                 mentioned_users, formatted_message_with_mentions = process_mentioned_users_in_message(formatted_message)
                 entities = mentioned_users_to_entities(mentioned_users, integration_context)
                 demisto.info(f'msg: {formatted_message_with_mentions}, ent: {entities}')
-                conversation = {
-                    'type': 'message',
-                    'text': formatted_message_with_mentions,
-                    'entities': entities
-                }
+                if not message_id:
+                    conversation = {
+                        'type': 'message',
+                        'text': formatted_message_with_mentions,
+                        'entities': entities
+                    }
+                else:
+                    conversation = {
+                        'body': {
+                            'contentType': 'html',
+                            'content': formatted_message_with_mentions
+                        }
+                    }
+                    if entities:
+                        conversation['body']['mentions'] = entities
         else:  # Adaptive card
             entitlement_match_ac: Match[str] | None = re.search(ENTITLEMENT_REGEX, adaptive_card.get('entitlement', ''))
             if entitlement_match_ac:
@@ -3028,19 +3127,70 @@ script:
         if not service_url:
             raise ValueError('Did not find service URL. Try messaging the bot on Microsoft Teams')
 
-        send_message_request(service_url, recipient, conversation)
-        demisto.results('Message was sent successfully.')
+        res: dict = send_message_request(service_url, recipient, conversation, message_id, team_aad_id)
+        results = CommandResults(
+            outputs={"ID": res.get('id')},
+            outputs_prefix='MicrosoftTeams.Message',
+            readable_output='Message was sent successfully.',
+            raw_response=res
+        )
+        return_results(results)
 
 
-    def get_channel_id_for_send_notification(channel_name: str, message_type: str):
+    def message_update_command():
+        message: str = demisto.args().get('message', '')
+        message_id: str = demisto.args().get('message_id', '')
+        team_name: str = demisto.args().get('team', '') or demisto.params().get('team', '')
+        channel_name: str = demisto.args().get('channel', '')
+        format_as_card: bool = argToBoolean(demisto.args().get('format_as_card', 'true'))
+
+        team_member: str = demisto.args().get('team_member', '') or demisto.args().get('to', '')
+        if re.match(r'\b[^@]+@[^@]+\.[^@]+\b', team_member):  # team member is an email
+            team_member = team_member.lower()
+
+        if not (team_member or channel_name):
+            raise ValueError('No channel or team member to send message were provided.')
+
+        if team_member and channel_name:
+            raise ValueError('Provide either channel or team member to send message to, not both.')
+
+        integration_context: dict = get_integration_context()
+        channel_id = ''
+        personal_conversation_id = ''
+        if team_name:
+            team_aad_id: str = get_team_aad_id(team_name)
+        else:
+            team_aad_id = ''
+        if channel_name:
+            channel_id = get_channel_id_for_send_notification(team_aad_id, channel_name, '')
+        elif team_member:
+            team_member_id: str = get_team_member_id(team_member, integration_context)
+            personal_conversation_id = create_personal_conversation(integration_context, team_member_id)
+
+        recipient: str = channel_id or personal_conversation_id
+
+        service_url: str = integration_context.get('service_url', '')
+        if not service_url:
+            raise ValueError('Did not find service URL. Try messaging the bot on Microsoft Teams')
+
+        res: dict = update_message(service_url, recipient, message_id, message, format_as_card=format_as_card)
+
+        results = CommandResults(
+            outputs={"ID": res.get('id')},
+            outputs_prefix='MicrosoftTeams.Message',
+            readable_output='Message was sent successfully.',
+            raw_response=res
+        )
+        return_results(results)
+
+
+    def get_channel_id_for_send_notification(team_aad_id: str, channel_name: str, message_type: str):
         """
         Returns the channel ID to send the message to
         :param channel_name: The name of the channel.
         :param message_type: The type of message to be sent.
         :return: the channel ID
         """
-        team_name: str = demisto.args().get('team', '') or demisto.params().get('team', '')
-        team_aad_id: str = get_team_aad_id(team_name)
         investigation_id = ''
         if message_type == MESSAGE_TYPES['mirror_entry']:
             # Got an entry from the War Room to mirror to Teams
@@ -3272,11 +3422,19 @@ script:
         team_member: dict = get_team_member(integration_context, user_id)
         if team_member:
             # enrich our data with the sender info
+            demisto.debug(f'direct_message_handler for: {team_member=}')
             request_body['from'].update(team_member)
 
         username: str = team_member.get('username', '')
         user_email: str = team_member.get('user_email', '')
-        demisto_user = demisto.findUser(email=user_email) if user_email else demisto.findUser(username=username)
+        user_upn = team_member.get('user_principal_name', '')
+        demisto_user = demisto.findUser(email=user_email)
+        if not demisto_user:
+            demisto_user = demisto.findUser(username=username)
+        if not demisto_user:
+            demisto_user = demisto.findUser(email=user_upn)
+        if not demisto_user:
+            demisto.debug('direct_message_handler Failed to find user by email, username and UPN')
 
         formatted_message = ''
 
@@ -3365,6 +3523,7 @@ script:
             content=response
         )
         activity_id: str = request_body.get('replyToId', '')
+        demisto.debug(f"Request data: {request_body}")
         service_url: str = integration_context.get('service_url', '')
         if not service_url:
             raise ValueError('Did not find service URL. Try messaging the bot on Microsoft Teams')
@@ -3631,6 +3790,25 @@ script:
                 time.sleep(5)
 
 
+    def get_token_permissions(access_token: str) -> list[str]:
+        """
+        Decodes the provided access token and retrieves a list of API permissions associated with the token.
+
+        :param access_token: the access token to decode.
+        :return: A list of the token's API permission roles.
+        """
+        decoded_token = jwt.decode(access_token, options={"verify_signature": False})
+
+        if AUTH_TYPE == CLIENT_CREDENTIALS_FLOW:
+            roles = decoded_token.get('roles', [])
+
+        else:  # Authorization code flow
+            roles = decoded_token.get('scp', '')
+            roles = roles.split()
+
+        return roles
+
+
     def token_permissions_list_command():
         """
         Gets the Graph access token stored in the integration context and displays the token's API permissions in the war room.
@@ -3647,18 +3825,11 @@ script:
 
         # Decode the token and extract the roles:
         if access_token:
-            decoded_token = jwt.decode(access_token, options={"verify_signature": False})
-
-            if AUTH_TYPE == CLIENT_CREDENTIALS_FLOW:
-                roles = decoded_token.get('roles', [])
-
-            else:  # Authorization code flow
-                roles = decoded_token.get('scp', '')
-                roles = roles.split()
+            roles = get_token_permissions(access_token)
 
             if roles:
-                hr = tableToMarkdown(f'The current API permissions in the Teams application are: ({len(roles)})',
-                                     sorted(roles), headers=['Permission'])
+                hr = tableToMarkdown(f'The current API permissions in the Teams application are: ({len(roles)})\n'
+                                     f'Authorization type is: {AUTH_TYPE}', sorted(roles), headers=['Permission'])
             else:
                 hr = 'No permissions obtained for the used graph access token.'
 
@@ -3868,7 +4039,8 @@ script:
             'microsoft-teams-generate-login-url': generate_login_url_command,
             'microsoft-teams-auth-reset': reset_graph_auth_command,
             'microsoft-teams-token-permissions-list': token_permissions_list_command,
-            'microsoft-teams-create-messaging-endpoint': create_messaging_endpoint_command
+            'microsoft-teams-create-messaging-endpoint': create_messaging_endpoint_command,
+            'microsoft-teams-message-update': message_update_command
         }
 
         commands_auth_code: dict = {
