@@ -17,13 +17,6 @@
 	"contentItems": {
 		"automation": [
 			{
-				"description": "Displays the original email in HTML format.",
-				"name": "DisplayEmailHtml",
-				"tags": [
-					"dynamic-section"
-				]
-			},
-			{
 				"description": "Dynamic-section script for 'Email Threads' layout.\nThis script searches for email threads stored in the Incident context and outputs a table summarizing them.",
 				"name": "SummarizeEmailThreads",
 				"tags": [
@@ -36,6 +29,14 @@
 				"tags": []
 			},
 			{
+				"description": "Preprocessing script for email communication layout.\nThis script checks if the incoming email contains an Incident ID to link the mail to an existing incident, and tags the email as \"email-thread\".\nThis script runs with elevated permissions. \nCortex XSOAR recommends using the built-in RBAC functionality to limit access to only those users requiring access to this script.\nFor more information about the preprocessing rules, refer to: https://demisto.developers.paloaltonetworks.com/docs/incidents/incident-pre-processing",
+				"name": "PreprocessEmail",
+				"tags": [
+					"email",
+					"preProcessing"
+				]
+			},
+			{
 				"description": "Dynamic-section script for 'Email Threads' layout.\nThis script renders all email messages with the thread number specified in the \"Email Selected Thread\" field and outputs them as a single HTML output.",
 				"name": "DisplayEmailHtmlThread",
 				"tags": [
@@ -43,15 +44,19 @@
 				]
 			},
 			{
-				"description": "Preprocessing script for email communication layout.\nThis script checks if the incoming email contains an Incident ID to link the mail to an existing incident, and tags the email as \"email-thread\".\nThis script runs with elevated permissions. \nCortex XSOAR recommends using the built-in RBAC functionality to limit access to only those users requiring access to this script.\nFor more information about the preprocessing rules, refer to: https://demisto.developers.paloaltonetworks.com/docs/incidents/incident-pre-processing",
-				"name": "PreprocessEmail",
+				"description": "Displays the original email in HTML format.",
+				"name": "DisplayEmailHtml",
 				"tags": [
-					"email",
-					"preProcessing"
+					"dynamic-section"
 				]
 			}
 		],
 		"classifier": [
+			{
+				"description": "Classifies EWS email messages.",
+				"id": "0cc88f85-97b7-452e-839c-b58daf0bcf8d",
+				"name": "EWS - Classifier - Email Communication"
+			},
 			{
 				"description": "Classifies Gmail email messages.",
 				"id": "83d66f08-42b4-4ca6-8145-99bcf7c6b8e5",
@@ -61,11 +66,6 @@
 				"description": "Classifies MS Graph Mail Single User email messages.",
 				"id": "MS Graph Mail Single User - Classifier - Email Communication",
 				"name": "MS Graph Mail Single User - Classifier - Email Communication"
-			},
-			{
-				"description": "Classifies EWS email messages.",
-				"id": "0cc88f85-97b7-452e-839c-b58daf0bcf8d",
-				"name": "EWS - Classifier - Email Communication"
 			},
 			{
 				"description": "Classifies MS Graph Mail email messages.",
@@ -83,14 +83,14 @@
 				"name": "MS Graph Mail Single User - Incoming Mapper - Email Communication"
 			},
 			{
-				"description": "Maps incoming EWS email message fields.",
-				"id": "e92f424d-51f4-4d7c-8e35-502f2a4dac02",
-				"name": "EWS - Incoming Mapper - Email Communication"
-			},
-			{
 				"description": "Maps incoming MS Graph Mail email message fields.",
 				"id": "4f31271a-c22a-4615-862d-2e315778676e",
 				"name": "MS Graph Mail - Incoming Mapper - Email Communication"
+			},
+			{
+				"description": "Maps incoming EWS email message fields.",
+				"id": "e92f424d-51f4-4d7c-8e35-502f2a4dac02",
+				"name": "EWS - Incoming Mapper - Email Communication"
 			}
 		],
 		"dashboard": null,
@@ -98,24 +98,9 @@
 		"generictype": null,
 		"incidentfield": [
 			{
-				"description": "Use this field to specify recipients of new email message to send",
-				"name": "Email New Recipients",
-				"type": "shortText"
-			},
-			{
 				"description": "Add attachments to send here",
 				"name": "Email New Attachment",
 				"type": "attachments"
-			},
-			{
-				"description": "Use this field to create email body text for use in 'Email Threads' layout",
-				"name": "Email New Body",
-				"type": "markdown"
-			},
-			{
-				"description": "Field to contain multiple generated codes for matching incoming emails with Incidents",
-				"name": "Email Generated Codes",
-				"type": "longText"
 			},
 			{
 				"description": "",
@@ -141,6 +126,21 @@
 				"description": "Select the email thread number to view or reply to.",
 				"name": "Email Selected Thread",
 				"type": "shortText"
+			},
+			{
+				"description": "Use this field to specify recipients of new email message to send",
+				"name": "Email New Recipients",
+				"type": "shortText"
+			},
+			{
+				"description": "Use this field to create email body text for use in 'Email Threads' layout",
+				"name": "Email New Body",
+				"type": "markdown"
+			},
+			{
+				"description": "Field to contain multiple generated codes for matching incoming emails with Incidents",
+				"name": "Email Generated Codes",
+				"type": "longText"
 			}
 		],
 		"incidenttype": [
@@ -158,11 +158,11 @@
 		"layoutscontainer": [
 			{
 				"description": "",
-				"name": "Email Communication"
+				"name": "Email Threads"
 			},
 			{
 				"description": "",
-				"name": "Email Threads"
+				"name": "Email Communication"
 			}
 		],
 		"list": null,
@@ -172,21 +172,21 @@
 		"widget": null,
 		"wizard": null
 	},
-	"currentVersion": "2.0.36",
+	"currentVersion": "2.0.37",
 	"definitionId": "",
 	"dependencies": {
 		"Base": {
 			"author": "Cortex XSOAR",
 			"certification": "certified",
 			"mandatory": true,
-			"minVersion": "1.39.2",
+			"minVersion": "1.39.12",
 			"name": "Base"
 		},
 		"CommonTypes": {
 			"author": "Cortex XSOAR",
 			"certification": "certified",
 			"mandatory": true,
-			"minVersion": "3.7.0",
+			"minVersion": "3.8.2",
 			"name": "Common Types"
 		},
 		"DemistoRESTAPI": {
@@ -200,7 +200,7 @@
 			"author": "Cortex XSOAR",
 			"certification": "certified",
 			"mandatory": true,
-			"minVersion": "1.2.86",
+			"minVersion": "1.2.87",
 			"name": "Filters And Transformers"
 		},
 		"Gmail": {
@@ -221,14 +221,14 @@
 			"author": "Cortex XSOAR",
 			"certification": "certified",
 			"mandatory": false,
-			"minVersion": "2.1.17",
+			"minVersion": "2.1.21",
 			"name": "Microsoft Exchange On-Premise"
 		},
 		"MicrosoftExchangeOnline": {
 			"author": "Cortex XSOAR",
 			"certification": "certified",
 			"mandatory": false,
-			"minVersion": "1.5.22",
+			"minVersion": "1.5.23",
 			"name": "Microsoft Exchange Online"
 		},
 		"MicrosoftGraphMail": {
@@ -242,14 +242,14 @@
 			"author": "Cortex XSOAR",
 			"certification": "certified",
 			"mandatory": true,
-			"minVersion": "3.6.28",
+			"minVersion": "3.6.29",
 			"name": "Phishing"
 		}
 	},
 	"deprecated": false,
 	"description": "Do you have to send multiple emails to end users? This content pack helps you streamline the process and automate updates, notifications and more.\n",
 	"disabledMonthly": false,
-	"downloads": 10758,
+	"downloads": 10914,
 	"eulaLink": "https://github.com/demisto/content/blob/master/LICENSE",
 	"fromServerVersion": "5.0.0",
 	"general": [
@@ -334,7 +334,7 @@
 			"name": "Gmail Single User"
 		}
 	],
-	"itemVersion": "2.0.36",
+	"itemVersion": "2.0.37",
 	"keywords": [],
 	"legacy": true,
 	"name": "Email Communication",
@@ -362,10 +362,10 @@
 		"Use Case"
 	],
 	"toServerVersion": "",
-	"updated": "2024-12-18T20:30:23Z",
+	"updated": "2025-01-09T10:35:44Z",
 	"useCases": [],
 	"version": -1,
-	"versionInfo": "1834150",
+	"versionInfo": "1953876",
 	"videos": [
 		"https://www.youtube.com/watch?v=-5YdMPyOz4w"
 	]
