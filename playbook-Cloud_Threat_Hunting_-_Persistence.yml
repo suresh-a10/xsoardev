@@ -1,0 +1,1395 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: 6.8.0
+    itemVersion: 1.0.23
+    packID: CloudIncidentResponse
+    packName: Cloud Incident Response
+    packPropagationLabels:
+    - all
+    prevname: ""
+    propagationLabels: []
+    toServerVersion: ""
+description: |-
+  ---
+
+  ## Cloud Threat Hunting - Persistence Playbook
+
+  The playbook is responsible for hunting persistence activity in the cloud. It supports AWS, GCP, and Azure - one at a time.
+
+  ### Hunting Queries
+
+  The playbook executes hunting queries for each provider related to each of the following:
+
+  1. IAM
+  2. Compute Resources
+  3. Compute Functions
+
+  ### Indicator Extraction
+
+  If relevant events are found during the search, indicators will be extracted using the `ExtractIndicators-CloudLogging` script.
+
+  ---
+id: Cloud Threat Hunting - Persistence
+inputs:
+- description: |-
+    The cloud service provider involved.
+    The supported CSPs are AWS, Azure and GCP.
+  key: cloudProvider
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The AWS access key ID.
+  key: AWSAccessKeyID
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The username that initiated the API call.
+  key: username
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: |-
+    The region to search for events in.
+    e.g. us-east-1, us-west-2, etc.
+  key: region
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: |-
+    The timespan to limit by the hunting query.
+    e.g.,
+    Use 2d for timespan of 2 days
+    Use 1.5h for timespan of 1.5 hour
+    Use 30m for timespan of 30 minutes
+  key: AzureTimespan
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: |-
+    Date and time in the following format - yyyy-mm-ddThh:mm:ss
+    e.g.,
+    2022-05-29T12:00:00
+    2021-01-01T12:00:00
+  key: AWSTimespan
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: |-
+    Date in ISO.
+    e.g.
+    2022-05-29T12:00:00.123Z
+    2021-01-01T12:00:00.234Z
+  key: GCPTimespan
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: The GCP project name.
+  key: GCPProjectName
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: Cloud Threat Hunting - Persistence
+outputs:
+- contextPath: CloudIndicators.arn
+  description: The ARN.
+- contextPath: CloudIndicators.access_key_id
+  description: The AWS access key ID.
+- contextPath: CloudIndicators.resource_name
+  description: The resource name.
+- contextPath: CloudIndicators.source_ip
+  description: The source IP.
+- contextPath: CloudIndicators.username
+  description: The username used by the attacker.
+- contextPath: CloudIndicators.event_name
+  description: The name of the event.
+- contextPath: CloudIndicators.user_agent
+  description: The user agent used by the attacker.
+starttaskid: "0"
+system: true
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: d03533f4-d52f-47d8-8c85-1a69c1eef655
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: d03533f4-d52f-47d8-8c85-1a69c1eef655
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": -150
+        }
+      }
+  "1":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.cloudProvider
+          operator: isEqualString
+          right:
+            value:
+              simple: AWS
+      label: AWS
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.cloudProvider
+          operator: isEqualString
+          right:
+            value:
+              simple: Azure
+      label: Azure
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                root: inputs.cloudProvider
+          operator: isEqualString
+          right:
+            value:
+              simple: GCP
+      label: GCP
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      AWS:
+      - "2"
+      Azure:
+      - "3"
+      GCP:
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks the cloud provider.
+      id: a808eff0-094b-4973-8a91-4026a4c2504a
+      iscommand: false
+      name: Select cloud provider
+      type: condition
+      version: -1
+    taskid: a808eff0-094b-4973-8a91-4026a4c2504a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": -20
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "19"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 2ddf36db-6ccd-4781-8a99-86b69773d5b6
+      iscommand: false
+      name: AWS
+      type: title
+      version: -1
+    taskid: 2ddf36db-6ccd-4781-8a99-86b69773d5b6
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 200
+        }
+      }
+  "3":
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "18"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a86c9c09-f132-4bcc-80f4-c8acdf62004d
+      iscommand: false
+      name: Azure
+      type: title
+      version: -1
+    taskid: a86c9c09-f132-4bcc-80f4-c8acdf62004d
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 200
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "20"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4cfe1349-6619-4d8f-886e-44368d5a1965
+      iscommand: false
+      name: GCP
+      type: title
+      version: -1
+    taskid: 4cfe1349-6619-4d8f-886e-44368d5a1965
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 200
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "6"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: CloudPersistence.ComputeInstances=
+      ignore-outputs:
+        simple: "false"
+      query:
+        simple: |-
+          AzureActivity
+          | where OperationNameValue in~ ("microsoft.compute/virtualMachines/write", "microsoft.compute/virtualMachines/extensions/write", "Microsoft.Network/networkSecurityGroups/securityRules/write", "Microsoft.Compute/virtualMachines/runCommand/action") and Caller contains "${inputs.username}"
+      timespan:
+        complex:
+          root: inputs.AzureTimespan
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Executes an analytics query for data.
+      id: 75e423b7-0a3b-4857-8546-dfdd66e7ea3d
+      iscommand: true
+      name: Hunt for Compute Instance persistence activity
+      script: '|||azure-log-analytics-execute-query'
+      tags:
+      - PersistenceHunting
+      type: regular
+      version: -1
+    taskid: 75e423b7-0a3b-4857-8546-dfdd66e7ea3d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 690
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: CloudPersistence.ComputeFunctions=
+      ignore-outputs:
+        simple: "false"
+      query:
+        simple: |-
+          AzureActivity
+          | where OperationNameValue in~ ("Microsoft.Logic/workflows/write", "Microsoft.Logic/workflows/run/action", "Microsoft.Web/sites/Write", "microsoft.web/sites/functions/write", "Microsoft.Automation/automationAccounts/runbooks", "Microsoft.Automation/automationAccounts/jobs/write", "Microsoft.Automation/automationAccounts/runbooks/publish/action", "Microsoft.Automation/automationAccounts/runbooks/draft/write", "Microsoft.Automation/automationAccounts/runbooks/write", "Microsoft.Automation/automationAccounts/Schedules/write") and Caller contains "${inputs.username}"
+      timespan:
+        complex:
+          root: inputs.AzureTimespan
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Executes an analytics query for data.
+      id: 63c03081-5c05-4ad9-87b8-62265e5f9fbc
+      iscommand: true
+      name: Hunt for Compute Function persistence activity
+      script: '|||azure-log-analytics-execute-query'
+      tags:
+      - PersistenceHunting
+      type: regular
+      version: -1
+    taskid: 63c03081-5c05-4ad9-87b8-62265e5f9fbc
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 850
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: CloudPersistence.IAM=
+      ignore-outputs:
+        simple: "false"
+      query:
+        simple: |-
+          AzureActivity
+          | where OperationNameValue in~ ("microsoft.directory/users/create", "microsoft.directory/users/enable", "microsoft.directory/users/restore", "microsoft.directory/servicePrincipals/owners/update", "microsoft.directory/servicePrincipals/credentials/update", "microsoft.directory/servicePrincipals/enable", "microsoft.directory/users/password/update", "microsoft.directory/servicePrincipals/create", "microsoft.directory/applications/create", "microsoft.directory/servicePrincipals/create") and Caller contains "${inputs.username}"
+      timespan:
+        complex:
+          root: inputs.AzureTimespan
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Executes an analytics query for data.
+      id: 69fca908-df76-4c2e-8b27-bf2b5f023472
+      iscommand: true
+      name: Hunt for IAM persistence activity
+      script: '|||azure-log-analytics-execute-query'
+      tags:
+      - PersistenceHunting
+      type: regular
+      version: -1
+    taskid: 69fca908-df76-4c2e-8b27-bf2b5f023472
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 530
+        }
+      }
+  "8":
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      attributeKey:
+        simple: AccessKeyId
+      attributeValue:
+        complex:
+          root: inputs.AWSAccessKeyID
+      region:
+        complex:
+          root: inputs.region
+      startTime:
+        complex:
+          root: inputs.AWSTimespan
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Looks up API activity events captured by CloudTrail that create,
+        update, or delete resources in your account. Events for a region can be looked
+        up for the times in which you had CloudTrail turned on in that region during
+        the last seven days.
+      id: 2f66656d-24b3-4e62-8ec8-550327cd39d7
+      iscommand: true
+      name: Fetch events for specified Access Key ID
+      script: '|||aws-cloudtrail-lookup-events'
+      type: regular
+      version: -1
+    taskid: 2f66656d-24b3-4e62-8ec8-550327cd39d7
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 530
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "17"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: c853705f-8944-4808-8b76-3dac7b1ed7cb
+      iscommand: false
+      name: Filter Events
+      type: title
+      version: -1
+    taskid: c853705f-8944-4808-8b76-3dac7b1ed7cb
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 705
+        }
+      }
+  "11":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "12"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: CloudPersistence.ComputeInstances
+      value:
+        complex:
+          accessor: CloudTrailEvent
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: CreateKeyPair
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: ImportKeyPair
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: RunInstances
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: ModifyInstanceAttributes
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: CreateLaunchTemplate
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: CreateLaunchTemplateVersion
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: CreateSecurityGroup
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: ModifySecurityGroupRules
+            - left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: AuthorizeSecurityGroupIngress
+            - left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: AuthorizeSecurityGroupEgress
+          root: AWS.CloudTrail.Events
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: 9c0e98a2-33dd-428f-8d30-f73bccd6faa6
+      iscommand: false
+      name: Hunt for Compute Instance persistence activity
+      script: Set
+      tags:
+      - PersistenceHunting
+      type: regular
+      version: -1
+    taskid: 9c0e98a2-33dd-428f-8d30-f73bccd6faa6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1010
+        }
+      }
+  "12":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: CloudPersistence.ComputeFunctions
+      value:
+        complex:
+          accessor: CloudTrailEvent
+          filters:
+          - - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: CreateFunction
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: UpdateFunctionCode
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: UpdateFunctionConfiguration
+            - left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: InvokeFunction
+          root: AWS.CloudTrail.Events
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: ab3c96ec-7c74-4a22-8bc5-06bf2289e9d2
+      iscommand: false
+      name: Hunt for Compute Function persistence activity
+      script: Set
+      tags:
+      - PersistenceHunting
+      type: regular
+      version: -1
+    taskid: ab3c96ec-7c74-4a22-8bc5-06bf2289e9d2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1170
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "14"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: CloudPersistence.IAM=
+      filter:
+        simple: |-
+          log_id("cloudaudit.googleapis.com/activity") AND timestamp>="${inputs.GCPTimespan}" AND
+          protoPayload.methodName =("google.iam.admin.v1.EnableServiceAccount" OR "google.iam.admin.v1.CreateServiceAccountKey" OR "google.iam.admin.v1.CreateServiceAccount" OR "google.iam.admin.v1.CreateRole" OR "google.iam.admin.v1.UpdateRole" OR "google.iam.admin.v1.generateAccessToken" OR "google.iam.serviceAccount.setIamPolicy")
+      ignore-outputs:
+        simple: "false"
+      project_name:
+        complex:
+          root: inputs.GCPProjectName
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Lists log entries. Use this method to retrieve log entries that
+        originated from a project/folder/organization/billing account.
+      id: 5fd9b3f4-8d03-498b-85eb-dd47e30a5b2a
+      iscommand: true
+      name: Hunt for IAM persistence activity
+      script: '|||gcp-logging-log-entries-list'
+      tags:
+      - PersistenceHunting
+      type: regular
+      version: -1
+    taskid: 5fd9b3f4-8d03-498b-85eb-dd47e30a5b2a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 530
+        }
+      }
+  "14":
+    continueonerrortype: ""
+    id: "14"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "15"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: CloudPersistence.ComputeInstances=
+      filter:
+        simple: |-
+          log_id("cloudaudit.googleapis.com/activity") AND timestamp>="${inputs.GCPTimespan}" AND
+          protoPayload.methodName =("compute.v1.instances.insert" OR "compute.v1.instances.setMetadata" OR "compute.v1.disks.insert" OR "compute.v1.instanceTemplates.insert" OR "compute.v1.instanceGroups.insert" OR "compute.v1.firewalls.insert" OR "compute.v1.firewalls.update" OR "compute.v1.firewalls.patch")
+      ignore-outputs:
+        simple: "false"
+      project_name:
+        complex:
+          root: inputs.GCPProjectName
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Lists log entries. Use this method to retrieve log entries that
+        originated from a project/folder/organization/billing account.
+      id: 41f44847-b7a4-4361-8354-543d811e607d
+      iscommand: true
+      name: Hunt for Compute Instance persistence activity
+      script: '|||gcp-logging-log-entries-list'
+      tags:
+      - PersistenceHunting
+      type: regular
+      version: -1
+    taskid: 41f44847-b7a4-4361-8354-543d811e607d
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 690
+        }
+      }
+  "15":
+    continueonerrortype: ""
+    id: "15"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "16"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      extend-context:
+        simple: CloudPersistence.ComputeFunctions=
+      filter:
+        simple: |-
+          log_id("cloudaudit.googleapis.com/activity") AND timestamp>="${inputs.GCPTimespan}" AND
+          protoPayload.methodName =("google.cloud.functions.v1.CloudFunctionsService.CreateFunction" OR "google.cloud.functions.v1.CloudFunctionsService.UpdateFunction")
+      ignore-outputs:
+        simple: "false"
+      project_name:
+        complex:
+          root: inputs.GCPProjectName
+    separatecontext: false
+    skipunavailable: true
+    task:
+      brand: ""
+      description: Lists log entries. Use this method to retrieve log entries that
+        originated from a project/folder/organization/billing account.
+      id: 68dade83-92ae-410f-81c5-5e8bcde3a326
+      iscommand: true
+      name: Hunt for Compute Function persistence activity
+      script: '|||gcp-logging-log-entries-list'
+      tags:
+      - PersistenceHunting
+      type: regular
+      version: -1
+    taskid: 68dade83-92ae-410f-81c5-5e8bcde3a326
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 850
+        }
+      }
+  "16":
+    continueonerrortype: ""
+    id: "16"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "22"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 6bc4fc6a-b397-46f0-806d-23adb6501bf2
+      iscommand: false
+      name: Extract Indicators
+      type: title
+      version: -1
+    taskid: 6bc4fc6a-b397-46f0-806d-23adb6501bf2
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1340
+        }
+      }
+  "17":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "17"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      key:
+        simple: CloudPersistence.IAM
+      value:
+        complex:
+          accessor: CloudTrailEvent
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: CreateUser
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: CreateGroup
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: CreatePolicy
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: CreateRole
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: CreateAccessKey
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: UpdateAccessKey
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events
+              operator: isEqualString
+              right:
+                value:
+                  simple: CreateLoginProfile
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events
+              operator: isEqualString
+              right:
+                value:
+                  simple: UpdateLoginProfile
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: AddUserToGroup
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: AttachUserPolicy
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: PutRolePolicy
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: PutUserPolicy
+            - left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: PutGroupPolicy
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: UploadSSHPublicKey
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: UpdateAssumeRolePolicy
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: CreateSAMLProvider
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: UpdateSAMLProvider
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: AssumeRole
+            - ignorecase: true
+              left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: GetSessionToken
+            - left:
+                iscontext: true
+                value:
+                  simple: AWS.CloudTrail.Events.EventName
+              operator: isEqualString
+              right:
+                value:
+                  simple: GetFederationToken
+          root: AWS.CloudTrail.Events
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Set a value in context under the key you entered.
+      id: d21eb234-f1d8-4195-8a16-08df581b07fb
+      iscommand: false
+      name: Hunt for IAM persistence activity
+      script: Set
+      tags:
+      - PersistenceHunting
+      type: regular
+      version: -1
+    taskid: d21eb234-f1d8-4195-8a16-08df581b07fb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 850
+        }
+      }
+  "18":
+    continueonerrortype: ""
+    id: "18"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "16"
+      "yes":
+      - "7"
+    note: false
+    quietmode: 0
+    results:
+    - brandInstances
+    scriptarguments:
+      brandname:
+        simple: Azure Log Analytics
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns 'yes' if integration brand is available. Otherwise returns
+        'no'
+      id: 3ad0bbae-58ac-4126-8549-81fe98dda66b
+      iscommand: false
+      name: Is Azure Log Analytics enabled?
+      script: IsIntegrationAvailable
+      type: condition
+      version: -1
+    taskid: 3ad0bbae-58ac-4126-8549-81fe98dda66b
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 910,
+          "y": 330
+        }
+      }
+  "19":
+    continueonerrortype: ""
+    id: "19"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "16"
+      "yes":
+      - "8"
+    note: false
+    quietmode: 0
+    results:
+    - brandInstances
+    scriptarguments:
+      brandname:
+        simple: AWS - CloudTrail
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns 'yes' if integration brand is available. Otherwise returns
+        'no'
+      id: e125c6ce-476a-4843-8bf3-30fd60392af6
+      iscommand: false
+      name: Is AWS - CloudTrail enabled?
+      script: IsIntegrationAvailable
+      type: condition
+      version: -1
+    taskid: e125c6ce-476a-4843-8bf3-30fd60392af6
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 330
+        }
+      }
+  "20":
+    continueonerrortype: ""
+    id: "20"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      "no":
+      - "16"
+      "yes":
+      - "13"
+    note: false
+    quietmode: 0
+    results:
+    - brandInstances
+    scriptarguments:
+      brandname:
+        simple: GoogleCloudLogging
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Returns 'yes' if integration brand is available. Otherwise returns
+        'no'
+      id: dacd33d5-2f56-4237-8dca-8ce5ef5deb0c
+      iscommand: false
+      name: Is Google Cloud Logging enabled?
+      script: IsIntegrationAvailable
+      type: condition
+      version: -1
+    taskid: dacd33d5-2f56-4237-8dca-8ce5ef5deb0c
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": -10,
+          "y": 330
+        }
+      }
+  "21":
+    continueonerror: true
+    continueonerrortype: ""
+    id: "21"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "23"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      json_data:
+        complex:
+          accessor: IAM
+          root: CloudPersistence
+          transformers:
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: CloudPersistence.ComputeInstances
+            operator: append
+          - args:
+              item:
+                iscontext: true
+                value:
+                  simple: CloudPersistence.ComputeFunctions
+            operator: append
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: This script will extract indicators from a given AWS CloudTrail
+        or GCP Logging event.
+      id: 3ba9c741-d7a7-4de6-86ca-159f1b1228af
+      iscommand: false
+      name: Extract indicators
+      script: ExtractIndicators-CloudLogging
+      type: regular
+      version: -1
+    taskid: 3ba9c741-d7a7-4de6-86ca-159f1b1228af
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1650
+        }
+      }
+  "22":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              complex:
+                accessor: IAM
+                root: CloudPersistence
+                transformers:
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: CloudPersistence.ComputeInstances
+                  operator: append
+                - args:
+                    item:
+                      iscontext: true
+                      value:
+                        simple: CloudPersistence.ComputeFunctions
+                  operator: append
+          operator: isNotEmpty
+          right:
+            value: {}
+      label: "yes"
+    continueonerrortype: ""
+    id: "22"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "23"
+      "yes":
+      - "21"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Checks if any results were received by the threat hunting queries.
+      id: 015006b4-cdec-4f28-8e37-ab6aebb51851
+      iscommand: false
+      name: Found results?
+      type: condition
+      version: -1
+    taskid: 015006b4-cdec-4f28-8e37-ab6aebb51851
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1470
+        }
+      }
+  "23":
+    continueonerrortype: ""
+    id: "23"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: f4bc71ad-e7ea-4891-8c92-9a2a24ce1525
+      iscommand: false
+      name: Done
+      type: title
+      version: -1
+    taskid: f4bc71ad-e7ea-4891-8c92-9a2a24ce1525
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1810
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {
+      "18_16_no": 0.2,
+      "18_7_yes": 0.47,
+      "19_16_no": 0.17,
+      "19_8_yes": 0.44,
+      "1_3_Azure": 0.66,
+      "1_4_GCP": 0.64,
+      "20_13_yes": 0.4,
+      "20_16_no": 0.18,
+      "22_21_yes": 0.39
+    },
+    "paper": {
+      "dimensions": {
+        "height": 2025,
+        "width": 1300,
+        "x": -10,
+        "y": -150
+      }
+    }
+  }
