@@ -6,7 +6,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 1.39.2
+    itemVersion: 1.39.21
     packID: Base
     packName: Base
     packPropagationLabels:
@@ -22,7 +22,7 @@ pswd: ""
 runas: DBotWeakRole
 runonce: false
 script: |
-  demisto.debug('pack name = Base, pack version = 1.39.2')
+  demisto.debug('pack name = Base, pack version = 1.39.21')
   """Common functions script
   This script will be appended to each server script before being executed.
   Please notice that to add custom common code, add it to the CommonServerUserPython script.
@@ -73,6 +73,8 @@ script: |
   XSIAM_EVENT_CHUNK_SIZE = 2 ** 20  # 1 Mib
   XSIAM_EVENT_CHUNK_SIZE_LIMIT = 9 * (10 ** 6)  # 9 MB, note that the allowed max size for 1 entry is 5MB.
   # So if you're using a "heavy" API it is recommended to use maximum of 4MB chunk size.
+  MAX_ALLOWED_ENTRY_SIZE = 5 * (10 ** 6)  # 5 MB, this is the maximum allowed size of a single entry.
+  # So if you're using a "heavy" API it is recommended to use maximum of 9MB chunk size.
   ASSETS = "assets"
   EVENTS = "events"
   DATA_TYPES = [EVENTS, ASSETS]
@@ -81,28 +83,10 @@ script: |
   SAFE_SLEEP_START_TIME = datetime.now()
   MAX_ERROR_MESSAGE_LENGTH = 50000
   NUM_OF_WORKERS = 20
+  HAVE_SUPPORT_MULTITHREADING_CALLED_ONCE = False
 
 
   def register_module_line(module_name, start_end, line, wrapper=0):
-      """
-          Register a module in the line mapping for the traceback line correction algorithm.
-
-          :type module_name: ``str``
-          :param module_name: The name of the module. (required)
-
-          :type start_end: ``str``
-          :param start_end: Whether to register the line as the start or the end of the module.
-              Possible values: start, end. (required)
-
-          :type line: ``int``
-          :param line: the line number to record. (required)
-
-          :type wrapper: ``int``
-          :param wrapper: Wrapper size (used for inline replacements with headers such as ApiModules). (optional)
-
-          :return: None
-          :rtype: ``None``
-      """
       global _MODULES_LINE_MAPPING
       default_module_info = {'start': 0, 'start_wrapper': 0, 'end': float('inf'), 'end_wrapper': float('inf')}
       try:
@@ -122,15 +106,6 @@ script: |
 
 
   def _find_relevant_module(line):
-      """
-      Find which module contains the given line number.
-
-      :type line: ``int``
-      :param trace_str: Line number to search. (required)
-
-      :return: The name of the module.
-      :rtype: ``str``
-      """
       global _MODULES_LINE_MAPPING
 
       relevant_module = ''
@@ -145,15 +120,6 @@ script: |
 
 
   def fix_traceback_line_numbers(trace_str):
-      """
-      Fixes the given traceback line numbers.
-
-      :type trace_str: ``str``
-      :param trace_str: The traceback string to edit. (required)
-
-      :return: The new formated traceback.
-      :rtype: ``str``
-      """
 
       def is_adjusted_block(start, end, adjusted_lines):
           return any(
@@ -6803,7 +6769,7 @@ script: |
               ms = ms / 1000.0
 
           if is_utc:
-              return datetime.utcfromtimestamp(ms).replace(tzinfo=timezone.utc)
+              return datetime.fromtimestamp(ms, tz=timezone.utc)
           else:
               return datetime.fromtimestamp(ms)
       if isinstance(arg, str):
@@ -8853,7 +8819,8 @@ script: |
       :return: The censored request log
       :rtype: ``str``
       """
-      keywords_to_censor = ['Authorization:', 'Cookie', "Token", "username", "password", "apiKey"]
+      keywords_to_censor = ['Authorization:', 'Cookie', "Token", "username",
+                            "password", "Key", "identifier", "credential", "client"]
       lower_keywords_to_censor = [word.lower() for word in keywords_to_censor]
 
       trimed_request_log = request_log.lstrip(SEND_PREFIX)
@@ -8865,8 +8832,8 @@ script: |
           if any(keyword in word.lower() for keyword in lower_keywords_to_censor):
               next_word = request_log_lst[i + 1] if i + 1 < len(request_log_lst) else None
               if next_word:
-                  # If the next word is "Bearer" or "Basic" then we replace the word after it since thats the token
-                  if next_word.lower() in ["bearer", "basic"] and i + 2 < len(request_log_lst):
+                  # If the next word is "Bearer", "JWT" or "Basic" then we replace the word after it since thats the token
+                  if next_word.lower() in ["bearer", "jwt", "basic"] and i + 2 < len(request_log_lst):
                       request_log_lst[i + 2] = MASK
                   elif request_log_lst[i + 1].endswith("}'"):
                       request_log_lst[i + 1] = "\"{}\"}}'".format(MASK)
@@ -10786,6 +10753,10 @@ script: |
       :return: No data returned
       :rtype: ``None``
       """
+      global HAVE_SUPPORT_MULTITHREADING_CALLED_ONCE
+      if HAVE_SUPPORT_MULTITHREADING_CALLED_ONCE:
+          return
+      HAVE_SUPPORT_MULTITHREADING_CALLED_ONCE = True
       global demisto
       prev_do = demisto._Demisto__do  # type: ignore[attr-defined]
       demisto.lock = Lock()  # type: ignore[attr-defined]
@@ -12078,8 +12049,14 @@ script: |
               yield chunk
               chunk = []
               chunk_size = 0
+          data_part_size = sys.getsizeof(data_part)
+          if data_part_size >= MAX_ALLOWED_ENTRY_SIZE:
+              demisto.error(
+                  "entry size {} is larger than the maximum allowed entry size {}, skipping this entry".format(data_part_size,
+                                                                                                               MAX_ALLOWED_ENTRY_SIZE))
+              continue
           chunk.append(data_part)
-          chunk_size += sys.getsizeof(data_part)
+          chunk_size += data_part_size
       if chunk_size != 0:
           demisto.debug("sending the remaining chunk with size: {size}".format(size=chunk_size))
           yield chunk
