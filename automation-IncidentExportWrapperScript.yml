@@ -1,0 +1,81 @@
+args:
+- description: Request endpoint (e.g. /incident or /public_api/v1/incidents/update_incident).
+  name: uri
+  required: true
+- description: Body of HTTP post
+  name: body
+  required: true
+- description: File name
+  name: filename
+  required: true
+commonfields:
+  id: e4958dca-31ec-4b0f-8b93-da7839c9d43a
+  version: -1
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+dockerimage: demisto/python3:3.12.8.1983910
+enabled: true
+engineinfo: {}
+mainengineinfo: {}
+name: IncidentExportWrapperScript
+outputs:
+- contextPath: IncidentData.Total
+- contextPath: IncidentData.Data
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: |2+
+
+
+  from typing import Dict, Any
+  import traceback
+  import json
+
+
+  def core_api_post(URI,BODY,FILE_NAME):
+
+      results=demisto.executeCommand("core-api-post", {"uri":URI,"body":json.loads(BODY)})[0]['Contents']['response']
+
+      if results['total'] > 0 and len(results['data']) >0:
+              demisto.results(demisto.executeCommand("ExportToCSV", {"fileName":FILE_NAME,"csvArray":results['data'],"headers":"id,name"}))
+      else:
+          demisto.results("No incidents were found !!!")
+      return_results(CommandResults(
+      readable_output=tableToMarkdown("Incident Data",{"Total":results['total'],"Data":len(results['data'])}),
+      outputs_prefix="IncidentData",
+      outputs={"Total":results['total'],"Data":len(results['data'])}
+      ))
+
+  def main():
+      try:
+          args=demisto.args()
+          URI=args.get("uri")
+          BODY=args.get("body")
+          FILE_NAME=args.get("filename")
+
+          incident_data=core_api_post(URI,BODY,FILE_NAME)
+
+      except Exception as ex:
+          demisto.error(traceback.format_exc())  # print the traceback
+          return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
+
+
+  ''' ENTRY POINT '''
+
+
+  if __name__ in ('__main__', '__builtin__', 'builtins'):
+      main()
+
+scripttarget: 0
+subtype: python3
+tags: []
+type: python
