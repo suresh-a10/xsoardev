@@ -172,7 +172,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 3.6.28
+    itemVersion: 3.6.36
     packID: Phishing
     packName: Phishing
     packPropagationLabels:
@@ -180,14 +180,14 @@ contentitemexportablefields:
     prevname: ""
     propagationLabels: []
     toServerVersion: ""
-dockerimage: demisto/python3:3.11.10.115186
+dockerimage: demisto/python3:3.12.8.1983910
 enabled: true
 engineinfo: {}
 mainengineinfo: {}
 name: CheckEmailAuthenticity
 outputs:
 - contextPath: Email.SPF.MessageID
-  description: SPF ID
+  description: SPF ID.
   type: String
 - contextPath: Email.SPF.Validation-Result
   description: 'Validation Result. Possible values are "None", "Neutral", "Pass",
@@ -213,16 +213,16 @@ outputs:
     and "Permerror".
   type: String
 - contextPath: Email.DMARC.Tags
-  description: DMARC Tags (if found)
+  description: DMARC Tags (if found).
   type: String
 - contextPath: Email.DMARC.From-Domain
-  description: Sender's Domain
+  description: Sender's Domain.
   type: String
 - contextPath: Email.DKIM.Signing-Domain
-  description: Sender's Domain
+  description: Sender's Domain.
   type: String
 - contextPath: Email.AuthenticityCheck
-  description: 'Possible values are be: Fail / Suspicious / Undetermined / Pass'
+  description: 'Possible values are be: Fail / Suspicious / Undetermined / Pass.'
   type: Unknown
 - contextPath: Email.DKIM
   description: DKIM information extracted from the email.
@@ -242,7 +242,7 @@ runas: DBotWeakRole
 runonce: false
 script: |
   register_module_line('CheckEmailAuthenticity', 'start', __line__())
-  demisto.debug('pack name = Phishing, pack version = 3.6.28')
+  demisto.debug('pack name = Phishing, pack version = 3.6.36')
 
 
 
@@ -275,7 +275,12 @@ script: |
       if sender_ip:
           spf_context['Sender-IP'] = sender_ip[0]
       if spf is not None:
-          spf_context['Reason'] = re.findall(r'\((.+)\)', spf)[0]
+          if reason := re.findall(r'\((.+)\)', spf):
+              spf_context['Reason'] = reason[0]
+          else:
+              reason = spf.split(" ", 1)
+              spf_context['Reason'] = reason[1] if len(reason) > 1 else ""
+
       return spf_context
 
 
