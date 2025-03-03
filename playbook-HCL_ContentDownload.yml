@@ -1,0 +1,657 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+description: HCL - Downloads the latest content on the Firewall which have direct
+  Internet Connectivity with the PANW Updates Server.
+id: 1d90fe8b-875c-4831-8276-f3cc7ed83986
+inputs:
+- description: ""
+  key: target_firewall
+  playbookInputQuery: null
+  required: false
+  value: {}
+- description: ""
+  key: Source_Instance
+  playbookInputQuery: null
+  required: false
+  value: {}
+name: HCL_ContentDownload
+outputs: []
+quiet: true
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 4062f3dc-23f2-4574-8a1e-263780fa772f
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 4062f3dc-23f2-4574-8a1e-263780fa772f
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "5"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      cmd:
+        simple: <request><content><upgrade><download><latest></latest></download></upgrade></content></request>
+      target:
+        simple: ${inputs.target_firewall}
+      type:
+        simple: op
+      using:
+        simple: ${inputs.Source_Instance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Runs any command supported in the API.
+      id: 14c6ba1f-b6f2-4b77-8686-9f9208c14bb6
+      iscommand: true
+      name: Download Latest Content on the Firewall
+      script: '|||pan-os'
+      type: regular
+      version: -1
+    taskid: 14c6ba1f-b6f2-4b77-8686-9f9208c14bb6
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 195
+        }
+      }
+  "2":
+    continueonerrortype: ""
+    id: "2"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      device_filter_string:
+        simple: ${inputs.target_firewall}
+      using:
+        simple: ${inputs.Source_Instance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Gets all the jobs from the devices in the environment, or a single
+        job when the ID is specified.
+      id: d916a3a6-014d-4af8-8e85-662f5dd8cca2
+      iscommand: true
+      name: Get jobs
+      script: '|||pan-os-platform-get-jobs'
+      type: regular
+      version: -1
+    taskid: d916a3a6-014d-4af8-8e85-662f5dd8cca2
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 545
+        }
+      }
+  "3":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: id
+                filters:
+                - - left:
+                      iscontext: true
+                      value:
+                        simple: PANOS.JobStatus.status
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: FIN
+                root: PANOS.JobStatus
+                transformers:
+                - operator: FirstArrayElement
+          operator: isExists
+          right:
+            value: {}
+      label: FIN
+    continueonerrortype: ""
+    id: "3"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "6"
+      FIN:
+      - "4"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: fe9e89aa-55f5-4bad-88e8-9e2647b14c3a
+      iscommand: false
+      name: Is the Content Download job Finished?
+      type: condition
+      version: -1
+    taskid: fe9e89aa-55f5-4bad-88e8-9e2647b14c3a
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 720
+        }
+      }
+  "4":
+    continueonerrortype: ""
+    id: "4"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "7"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      cmd:
+        simple: <request><content><upgrade><install><version>latest</version></install></upgrade></content></request>
+      target:
+        simple: ${inputs.target_firewall}
+      type:
+        simple: op
+      using:
+        simple: ${inputs.Source_Instance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Runs any command supported in the API.
+      id: 05f17774-ec6c-4f76-8c2b-851c1bc44bec
+      iscommand: true
+      name: Install the latest content versions on the firewall
+      script: '|||pan-os'
+      type: regular
+      version: -1
+    taskid: 05f17774-ec6c-4f76-8c2b-851c1bc44bec
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 895
+        }
+      }
+  "5":
+    continueonerrortype: ""
+    id: "5"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "2"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      seconds:
+        simple: "120"
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Sleep for X seconds.
+      id: 3bb1b021-bc15-48a9-83af-405ebf6c29b0
+      iscommand: false
+      name: Sleep - For completing Download
+      script: Sleep
+      type: regular
+      version: -1
+    taskid: 3bb1b021-bc15-48a9-83af-405ebf6c29b0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 370
+        }
+      }
+  "6":
+    continueonerrortype: ""
+    id: "6"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: Content Download Failed
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 15e8d733-86ca-4d95-8215-00983c6fb70e
+      iscommand: false
+      name: Job Failed
+      script: Print
+      type: regular
+      version: -1
+    taskid: 15e8d733-86ca-4d95-8215-00983c6fb70e
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 480,
+          "y": 895
+        }
+      }
+  "7":
+    continueonerrortype: ""
+    id: "7"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "8"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      device_filter_string:
+        simple: ${inputs.target_firewall}
+      job_type:
+        simple: Content
+      status:
+        simple: ACT
+      using:
+        simple: ${inputs.Source_Instance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Gets all the jobs from the devices in the environment, or a single
+        job when the ID is specified.
+      id: 1cc82fc3-cdf1-4b75-8a10-05b0932c8cdb
+      iscommand: true
+      name: Get jobs
+      script: '|||pan-os-platform-get-jobs'
+      type: regular
+      version: -1
+    taskid: 1cc82fc3-cdf1-4b75-8a10-05b0932c8cdb
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1070
+        }
+      }
+  "8":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              simple: PANOS.JobStatus.status
+          operator: isEqualString
+          right:
+            value:
+              simple: ACT
+      label: ACT
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              simple: PANOS.JobStatus.status
+          operator: isEqualString
+          right:
+            value:
+              simple: FIN
+      label: FIN
+    continueonerrortype: ""
+    id: "8"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      ACT:
+      - "9"
+      FIN:
+      - "11"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: a49d31ae-a89f-46fb-8088-2112bf678677
+      iscommand: false
+      name: Is the job active?
+      type: condition
+      version: -1
+    taskid: a49d31ae-a89f-46fb-8088-2112bf678677
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1245
+        }
+      }
+  "9":
+    continueonerrortype: ""
+    id: "9"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    loop:
+      exitCondition: ""
+      iscommand: false
+      max: 100
+      wait: 1
+    nexttasks:
+      '#none#':
+      - "10"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      AdditionalPollingCommandArgNames:
+        simple: device_filter_string,using
+      AdditionalPollingCommandArgValues:
+        simple: ${inputs.target_firewall},${inputs.Source_Instance}
+      Ids:
+        complex:
+          accessor: id
+          root: PANOS.JobStatus
+          transformers:
+          - operator: LastArrayElement
+      Interval:
+        simple: "1"
+      PollingCommandArgName:
+        simple: id
+      PollingCommandName:
+        simple: pan-os-platform-get-jobs
+      Timeout:
+        simple: "30"
+      dt:
+        simple: PANOS.JobStatus(val.status!=="FIN").id
+    separatecontext: true
+    skipunavailable: false
+    task:
+      brand: ""
+      description: |-
+        Use this playbook as a sub-playbook to block execution of the master playbook until a remote action is complete.
+        This playbook implements polling by continuously running the command in Step \#2 until the operation completes.
+        The remote action should have the following structure:
+
+        1. Initiate the operation.
+        2. Poll to check if the operation completed.
+        3. (optional) Get the results of the operation.
+      id: 2055a295-8775-4a3b-83d1-5282799bce0c
+      iscommand: false
+      name: GenericPolling
+      playbookId: GenericPolling
+      type: playbook
+      version: -1
+    taskid: 2055a295-8775-4a3b-83d1-5282799bce0c
+    timertriggers: []
+    type: playbook
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1420
+        }
+      }
+  "10":
+    continueonerrortype: ""
+    id: "10"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "11"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      device_filter_string:
+        simple: ${inputs.target_firewall}
+      id:
+        complex:
+          accessor: id
+          root: PANOS.JobStatus
+          transformers:
+          - operator: LastArrayElement
+      using:
+        simple: ${inputs.Source_Instance}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Gets all the jobs from the devices in the environment, or a single
+        job when the ID is specified.
+      id: 873e3fd1-8c3b-43ee-86b0-db05cb68050a
+      iscommand: true
+      name: Get jobs again to check status
+      script: '|||pan-os-platform-get-jobs'
+      type: regular
+      version: -1
+    taskid: 873e3fd1-8c3b-43ee-86b0-db05cb68050a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 1595
+        }
+      }
+  "11":
+    conditions:
+    - condition:
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: status
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PANOS.JobStatus.type
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Content
+                root: PANOS.JobStatus
+          operator: isEqualString
+          right:
+            value:
+              simple: FIN
+      - - ignorecase: true
+          left:
+            iscontext: true
+            value:
+              complex:
+                accessor: result
+                filters:
+                - - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: PANOS.JobStatus.type
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: Content
+                root: PANOS.JobStatus
+          operator: isEqualString
+          right:
+            value:
+              simple: OK
+      label: "yes"
+    continueonerrortype: ""
+    id: "11"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#default#':
+      - "12"
+      "yes":
+      - "13"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 96ed2bfe-606d-40a7-8337-be3d8cd36f3d
+      iscommand: false
+      name: Did it complete?
+      type: condition
+      version: -1
+    taskid: 96ed2bfe-606d-40a7-8337-be3d8cd36f3d
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 1770
+        }
+      }
+  "12":
+    continueonerrortype: ""
+    id: "12"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      value:
+        simple: Content Installation Job Failed
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: Prints text to war room (Markdown supported)
+      id: 3d7c79b0-ed77-435f-8b43-b889a979d7b3
+      iscommand: false
+      name: Job Failed
+      script: Print
+      type: regular
+      version: -1
+    taskid: 3d7c79b0-ed77-435f-8b43-b889a979d7b3
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 265,
+          "y": 1945
+        }
+      }
+  "13":
+    continueonerrortype: ""
+    id: "13"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 8eb906d9-1358-45a2-8650-735cc174eb8f
+      iscommand: false
+      name: Finish
+      type: title
+      version: -1
+    taskid: 8eb906d9-1358-45a2-8650-735cc174eb8f
+    timertriggers: []
+    type: title
+    view: |-
+      {
+        "position": {
+          "x": -390,
+          "y": 1960
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1990,
+        "width": 1250,
+        "x": -390,
+        "y": 50
+      }
+    }
+  }
