@@ -4906,7 +4906,7 @@ script:
         the role.
       name: roleSessionDuration
     - description: The ID of the network interface.
-      name: networkInterfaceId
+      name: NetworkInterfaceIds
     - description: The maximum number of results to return in a single call. Specify
         a value between 1 and 1000.
       name: MaxResults
@@ -4914,6 +4914,12 @@ script:
       name: NextToken
     description: Describes the specified network interfaces or all your network interfaces.
     name: aws-ec2-describe-network-interfaces
+  - arguments:
+    - description: The identified of the WorkSpace
+      name: workspacedId
+      required: true
+    description: Stop the specified WorkSpaces
+    name: aws-workspaces-stop-workspace
   dockerimage: demisto/boto3py3:1.0.0.115129
   runonce: false
   script: |
@@ -5511,6 +5517,7 @@ script:
         obj = vars(client._client_config)
         kwargs = {}
         data=[]
+        output=[]
 
         if args.get('filters') is not None:
             kwargs.update({'Filters': parse_filter_field(args.get('filters'))})
@@ -5518,17 +5525,40 @@ script:
             kwargs.update({'MaxResults': args.get('MaxResults')})
         if args.get('NextToken') is not None:
             kwargs.update({'NextToken': args.get('NextToken')})
-        if args.get('networkInterfaceId') is not None:
-            kwargs.update({'NetworkInterfaceId': args.get('networkInterfaceId')})
+        if args.get('NetworkInterfaceIds') is not None:
+            kwargs.update({'NetworkInterfaceIds': parse_resource_ids(args.get('NetworkInterfaceIds'))})
 
         response = client.describe_network_interfaces(**kwargs)
 
+        #print(response)
         if len(response['NetworkInterfaces']) == 0:
             return CommandResults(readable_output='No Network Interfaces were found.')
 
+        for i,nwinterfaces in enumerate(response['NetworkInterfaces']):
+            data.append({"AvailabilityZone":nwinterfaces['AvailabilityZone'],
+                         "InterfaceType":nwinterfaces['InterfaceType'],
+                         "MacAddress":nwinterfaces['MacAddress'],
+                         "NetworkInterfaceId":nwinterfaces['NetworkInterfaceId'],
+                         "SourceDestCheck": nwinterfaces['SourceDestCheck'] if 'SourceDestCheck' in nwinterfaces is not None else "None" ,
+                         })
+
+            if 'Groups' in nwinterfaces:
+                for group in nwinterfaces['Groups']:
+                    data[i].update({'GroupId': group['GroupId'],"GroupName":group['GroupName']})
+
+            if 'PrivateIpAddresses' in nwinterfaces:
+                for privateipadresses in nwinterfaces['PrivateIpAddresses']:
+                    data[i].update({'PrivateIpAddress':privateipadresses['PrivateIpAddress'],
+                                    'PrivateDNSName':privateipadresses['PrivateDnsName'] if 'PrivateDnsName' in privateipadresses is not None else "None",
+                                    'PublicDNSName':privateipadresses['Association']['PublicDnsName'] if 'Associlation' in privateipadresses is not None else "None",
+                                    'IpOwnerId':privateipadresses['Association']['IpOwnerId'] if 'Associlation' in privateipadresses is not None else "None",
+                                    'PublicIp':privateipadresses['Association']['PublicIp'] if 'Associlation' in privateipadresses is not None else "None",
+                                    })
+            output.append(nwinterfaces)
         try:
-            output = json.dumps(response['NetworkInterfaces'], cls=DatetimeEncoder)
-            raw = json.loads(output)
+            raw = json.loads(json.dumps(output, cls=DatetimeEncoder))
+            #output = json.dumps(response['NetworkInterfaces'], cls=DatetimeEncoder)
+            #raw = json.loads(output)
         except ValueError as e:
             raise DemistoException(f'Could not decode/encode the raw response - {e}')
         return CommandResults(
@@ -6183,6 +6213,30 @@ script:
         if response['ResponseMetadata']['HTTPStatusCode'] != 200:
             raise DemistoException(f'Unexpected response from AWS - EC2:\n{response}')
         return CommandResults(readable_output="The Instances were stopped")
+
+
+
+
+    @run_on_all_accounts
+    def stop_workspaces_command(args: dict) -> CommandResults:
+        client = build_client(args)
+        data=[]
+        response = client.stop_workspaces(StopWorkspaceRequests=[{"WorkspaceId":parse_resource_ids(args.get('workspaceId'))}])
+        if response['ResponseMetadata']['HTTPStatusCode'] != 200:
+            raise DemistoException(f'Unexpected response from AWS Workspaces :\n{response}')
+
+        data.append(response['FailedRequests'])
+        if len(data) == 0:
+            return CommandResults(readable_output="The workspace was stopped")
+
+        else:
+            return CommandResults(
+            outputs=data,
+            outputs_prefix='AWS.Workspaces',
+            readable_output=tableToMarkdown('AWS EC2 Volumes', data)
+        )
+
+
 
 
     @run_on_all_accounts
@@ -8480,6 +8534,9 @@ script:
 
                 case 'aws-ec2-create-vpc-endpoint':
                     return_results(create_vpc_endpoint_command(args))
+
+                case 'aws-workspaces-stop-workspace':
+                    return_results(stop_workspaces_command(args))
 
         except Exception as e:
             LOG(e)
